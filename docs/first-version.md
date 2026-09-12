@@ -1,13 +1,13 @@
-# First version delivered
+# Current proof of concept: v0.2.0
 
-The guest-mode prototype is implemented. See README.md for installation,
-game controls, limitations and optional API setup.
+The original guest lobby and games now have a bounded peer mesh. Seat handshakes
+discover peers; five-second exchanges share online presence, chat and game rooms.
+Each app owns its local node, retains it while visiting games, and stops it on exit.
+Other nodes continue if the original bootstrap node leaves.
 
-Deliberate small-version choices: one server multiplexes game rooms; shared-board
-co-op Tetris; bundled prompts; round-local bluff scoring; seat-based LAN address prompts;
-no authentication or persistent database. Intra sign-in remains a coming-later
-placeholder; a green palette entry is reserved for verified identity.
+Game logic remains intentionally simple: shared-board co-op Tetris, timed bluff
+rounds, built-in prompts, per-round scoring. Authentication remains a placeholder.
+See README.md and protocol.md for installation, controls, lifecycle and limits.
 
-Optional public zsh helpers now provide dailylogin; existing personal functions are preserved.
-Campus deployment and desktop notification verification are delegated separately
-through the enrolled mac-remote device, not inferred from localhost tests.
+The public zsh helper installer keeps executables in the Documents clone and
+preserves personal dailylogin functions.

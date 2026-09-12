@@ -18,7 +18,7 @@ HELP = [
     '/who /rooms /games | /host tetris | /host bluff free | /host bluff prompt',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
-    '/signin (coming later) | /notify on|off | /help | /quit',
+    '/signin (coming later) | /notify on|off | /home (your node) | /help | /quit',
     'Chat: type and Enter. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
     'Bluff: identify each entry author in order; own entry is ignored in scoring.',
@@ -77,7 +77,7 @@ class Client:
             def show():
                 try:
                     subprocess.run(['notify-send','--app-name=42SG LAN','--expire-time=7000',
-                                    '--','42SG LAN invitation',safe(text)],
+                                    '--','42SG LAN',safe(text)],
                                    stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3)
                 except (OSError,subprocess.TimeoutExpired):
                     pass
@@ -95,15 +95,20 @@ class Client:
             except queue.Empty:
                 break
             kind = msg.get('type')
-            if kind in ('event','error','invite'):
+            if kind in ('event','error','invite','online'):
                 self.lines.append(safe(msg.get('text','')))
-                if kind=='invite':
+                if kind in ('invite','online'):
                     self.notify(msg.get('text',''))
             elif kind=='welcome':
                 self.id = msg['id']
                 self.lines.append(f"Connected. Server {msg['version']}; Guest (unverified).")
             elif kind=='state':
+                old_rooms = {(r.get('address'),r.get('port'),r['id']) for r in self.state.get('rooms',[])}
                 self.state = msg
+                for room in msg.get('rooms',[]):
+                    if (room.get('address'),room.get('port'),room['id']) not in old_rooms:
+                        self.lines.append(f"Game {room['name']} hosted by {room['host']}: /connect {room.get('address')} {room.get('port')}, then /join {room['id']}")
+
             elif kind=='game':
                 new = msg.get('room') != self.game.get('room')
                 self.game = msg
@@ -217,6 +222,8 @@ class Client:
             curses.init_pair(1,curses.COLOR_GREEN,curses.COLOR_BLACK)
         while True:
             self.consume()
+            if not self.connected and self.home != self.current:
+                return self.home
             self.draw(screen)
             key = screen.getch()
             if key in (3,4):
@@ -257,6 +264,8 @@ class Client:
                         return target,port
                     except ValueError:
                         self.lines.append('Use /connect IP_OR_SEAT [PORT].')
+                elif text=='/home':
+                    return self.home
                 elif text=='/quit':
                     break
                 elif text=='/help':
@@ -274,18 +283,24 @@ class Client:
             elif 32<=key<=126 and len(self.input)<400:
                 self.input += chr(key)
 
-def connect(host,port,name=None,notify=True):
+def connect(host,port,name=None,notify=True,peer_callback=None,home=None):
     username = name or pwd.getpwuid(os.getuid()).pw_name
     while True:
         print(f'Connecting to {host}:{port} as Guest...')
         try:
             sock = socket.create_connection((host,port),timeout=5)
         except OSError as e:
+            if home and (host,port)!=home:
+                print(f'Peer unavailable; returning to your node. {e}')
+                host,port = home
+                continue
             raise OSError(f'Cannot connect to {host}:{port}. Friend must run lan42; check seat/network. {e}')
         with sock:
             sock.settimeout(None)
             client = Client(sock,username,socket.gethostname(),notify)
             client.port = port
+            client.home = home or (host,port)
+            client.current = (host,port)
             destination = curses.wrapper(client.run)
             # Explicitly shutdown: the receive thread's file object also owns the socket.
             try:
@@ -295,3 +310,9 @@ def connect(host,port,name=None,notify=True):
         if not destination:
             return
         host,port = destination
+        if peer_callback:
+            try:
+                peer_callback(host,port)
+            except (OSError,RuntimeError,ValueError) as e:
+                print(f'Peer unavailable: {e}. Returning to your node.')
+                host,port = home

@@ -2,7 +2,7 @@
 
 A small **guest-mode terminal lobby for friends on the same LAN**, with chat,
 desktop invitations, co-op Tetris and an anonymous-message bluffing game.
-Version **0.1.2**. Python 3.9+ standard library, Git, and a terminal with curses.
+Version **0.2.0**. Python 3.9+ standard library, Git, and a terminal with curses.
 No pip dependencies, sudo, external prompt service, or account setup.
 
 ## Install and play
@@ -44,26 +44,45 @@ people are seated (Intra login required). A seat's address is not proof that a
 lobby is running there. No wildcard scan is performed; an unreachable server
 produces a connection error. TCP **31416** is the default; --port overrides it.
 
-### The server stays running
+### Peer nodes: no central lobby
 
-Launching lan42 starts a detached background server, or reconnects to the
-existing compatible server. **Closing the client window, /quit, or joining a
-friend's server does not stop your own server or disconnect its other players.**
-There is no need to keep an extra terminal window open for the server.
+Each running app owns a local node. Entering one friend's seat performs a
+handshake and exchanges known peer addresses. Nodes then contact known peers
+directly every **5 seconds**. There is no campus scan or central directory.
+Online students, chat, game advertisements and invitations spread across these
+linked nodes. A new isolated node needs one live friend's address to join them.
 
-The log and PID file are under ~/.local/state/42sg-campus-lan/
-(or XDG_STATE_HOME/42sg-campus-lan). For port 31416 they are named
-server-31416.log and server-31416.pid. The PID file may remain after exit.
-If you deliberately want to stop the server, check the recorded PID and process
-with ps first, then terminate that process. Stopping it disconnects its clients.
-Logout, reboot, OS process cleanup and crashes can still stop a background
-process; this is not an always-on system service.
+Peers receive notices such as **“thtay came online! Cluster 1, row 2, seat 3.
+Go say hi!”** The seat comes from the LAN address (or a matching cluster hostname),
+not a five-second API query. Unknown seats are labelled rather than invented.
+All identities remain Guest. /notify off disables your desktop notices.
 
-Running servers are reused, never automatically killed or restarted for updates.
-Their loaded version may be older than an updated client; startup prints the
-server version. A deliberate restart applies server code updates.
-Advanced use: lan42 server runs in the foreground and ends if that process is
-stopped. The normal lan42 / lan42 host command uses the persistent background mode.
+Your local node stays alive while you visit another node's game; /home returns
+to your own lobby. **Quitting the app or closing its terminal ends your local
+node**, announces your departure, and leaves other nodes running independently.
+Unexpected failures expire from peer presence after approximately 16 seconds.
+A game ends if its hosting node quits. If you were visiting that node, your client
+returns to your own node. No game-state migration is attempted.
+
+This replaces the old v0.1 behaviour where a background host remained after quit.
+There is still a helper server process, but its lifetime now follows the app's
+local control connection. Heartbeats cover crashes and lost control connections.
+With normal app usage, when everyone quits, no network remains. An explicitly
+started foreground launch.sh server remains until its operator stops it.
+
+Logs and PID files remain under ~/.local/state/42sg-campus-lan/
+(or XDG_STATE_HOME/42sg-campus-lan), named server-31416.log and server-31416.pid
+for the default port. No executable is installed there.
+Updating source does not forcibly terminate an existing server. **All friends
+must update to v0.2.0 (protocol 2)**. Stop any old v0.1 server deliberately after
+checking its PID/process, then reopen the app; old servers are not auto-killed.
+For multiple test nodes on one computer, choose distinct ports; join supports
+--local-port for your own node separately from the friend's --port.
+
+For five nodes, the full mesh makes roughly **20 small exchanges every five
+seconds across the group** while healthy (plus client/game traffic).
+Peers are capped at 16 per node. This is modest traffic, but campus policy and
+network isolation still determine whether it is permitted and reachable.
 
 Every launch attempts git pull --ff-only, then prints version, commit and date.
 Local edits skip updating; failed updates use the local version with a warning.
@@ -83,16 +102,14 @@ Use a terminal at least **76 columns × 28 rows**. ASCII text input in this vers
   invitation to their running lobby. First host or join a game room.
 - The friend sees the source address, then uses /connect IP PORT and /join NUMBER.
   An invitation never automatically moves a player or runs a game.
-- /invite-room notifies peers already on your current server. Invitations have a
+- /invite-room shares the invitation across linked nodes. Invitations have a
   10-second cooldown. /notify off mutes your desktop notices.
 - /signin explains that Intra sign-in is **coming later**. /quit exits.
 
 Notifications run on the recipient's own client using notify-send, if installed;
-otherwise the terminal beeps and the invitation stays in the event log. Desktop
+otherwise the terminal beeps and the notice stays in the event log. Desktop
 notification settings may suppress popups. No unsolicited commands execute on
-other desktops. Recipients must have a client connected to their running server to see a
-desktop invitation. A running server with zero clients can acknowledge delivery,
-but no desktop is notified; the sender sees the client count.
+other desktops. Recipients need an open client to see desktop notifications. Direct seat invitations\nacknowledge the receiving server's connected-client count. Mesh invitations reach\nlinked peers on the next exchange; they never auto-launch or switch a game.
 
 ### Co-op Tetris
 
@@ -130,8 +147,7 @@ palette for future Verified status; nobody receives it in this release.
 
 42 API lookup is optional and never blocks lobby/game startup. On a trusted host,
 set INTRA_CLIENT_ID and INTRA_CLIENT_SECRET in its environment before starting.
-The host uses client credentials and GET /v2/users/:login to fetch the location
-of connected guest names every two minutes. Unknown/unavailable seats are labelled;
+The host uses client credentials and GET /v2/users/:login to fetch the location\nof connected guest names every two minutes. Mesh presence uses the address-based\nseat mapping; the optional API remains a separate fallback for legacy local clients.\nUnknown/unavailable seats are labelled;
 a guest claiming a name is not proof that the API seat belongs to that connection.
 It does not list the whole campus. No API credentials go to clients or Git.
 Do not distribute the host secret to friends. Real API credentials have not been
@@ -181,8 +197,7 @@ Plain sh setup.sh checks prerequisites and prepares launch.sh inside the clone,\
 This is a trusted-friends LAN prototype: plaintext TCP, guests, no persistent
 chat/account database, no internet discovery or NAT traversal. Game rooms share
 the lobby server process/port to keep setup small. The lobby coordinates rooms
-without needing a separate process per minigame. Closing the host client leaves the background server running.
-A room creator disconnecting transfers room control to another member.
+without needing a separate process per minigame. A room creator leaving a room\ntransfers room control; the hosting node quitting ends that node's games. Other\nnodes and their games keep running.
 
 Campus firewall/client isolation may prevent peer connections. Test on campus
 rather than changing firewall settings blindly. macOS can run the prototype,

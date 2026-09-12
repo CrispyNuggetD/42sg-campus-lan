@@ -1,41 +1,45 @@
-# v1 wire protocol
+# Protocol 2 — v0.2.0
 
-TCP 31416 by default. One JSON object per newline, UTF-8. Handshake within 10 seconds:
+One UTF-8 JSON object per newline, TCP 31416 by default. Ordinary client commands
+remain command/text and move/action. Hello includes protocol:2, name and hostname.
+Game rules and game payloads are unchanged; bluff identities stay hidden until reveal.
 
-    {"type":"hello","protocol":1,"name":"hnah","hostname":"cluster-host"}
+## Peer exchange
 
-Names and hostnames are guest claims, not authenticated identity.
-The server ignores any client-provided verified flag.
+A mesh handshake exchanges the node's owner presence, local rooms, known live
+peer endpoints, and recent event IDs/text. TCP source address is authoritative
+for that connection's node address; supplied guest names are not authenticated.
+Only literal private/loopback IP peers are accepted. No wildcard scanning.
+Each node polls known peers concurrently every five seconds; after about 16 seconds
+without a successful exchange, presence and advertisements expire.
+Graceful shutdown sends a final empty-owner/empty-room snapshot.
 
-Client messages:
+Known endpoints are exchanged so a bootstrap peer is not a single point of failure.
+There are at most 16 peers per node, 32 owners in a snapshot, 10 rooms per node,
+32 recent events per exchange and a 64 KiB snapshot limit. Event IDs suppress
+forwarding loops; creation timestamps expire events after 45 seconds. Hosts need
+reasonably synchronized clocks for ephemeral chat forwarding. History is not durable.
 
-    {"type":"command","text":"/host tetris"}
-    {"type":"move","action":"left"}
+Online notices are generated only when a direct peer snapshot adds an owner.
+Seat text uses 10.11.row.seat / 10.12.row.seat, with cluster hostname fallback.
+Client notify controls apply to online notices and invitations.
 
-Movement actions: left, right, rotate, down, drop. Only room members control
-that room's board. Commands are parsed as strings, never shell-evaluated.
-Commands and hello are bounded by an 8192-byte stream limit; clients are capped
-at 32, rooms at 10. Each client is limited to 30 messages/second.
+## App lifetime
 
-Server messages: welcome, state (players/rooms/API status), event, invite, game,
-error. The game payload contains only the visible board or bluff phase/options.
-Bluff author IDs are omitted until results; submission text goes only to the host
-until voting. A malicious host still sees everything — this is a friends' game.
-Client messages cannot claim room IDs for movement; membership is server-owned.
+A loopback-only owner control connection registers the local student and sends
+five-second heartbeats. Its loss (or 16-second timeout) removes that owner.
+When the last owner leaves, the node announces departure and shuts down.
+The main app retains this connection while its UI visits another node's games.
+A separately launched foreground server without an owner waits for explicit stop.
 
-No compatibility guarantees before v1.0. Update all friends when protocol changes.
+Loopback connect_peer control performs the handshake before a UI switches server.
+Game rooms stay hosted on their original node; game advertisements include IP,
+port and room number. /home returns to the client's own node. Loss of a remote
+game connection falls back home. No host migration, authentication or encryption.
 
-## Seat addressing and persistent hosts (0.1.1)
+The older direct peer_invite request remains supported with protocol 2.
+Its receiving node returns a client count and sends a local notice. The mesh
+also forwards normal room invitations, so direct seat invitations are optional.
 
-c1r2s3 maps to 10.11.2.3; c2r4s9 maps to 10.12.4.9. Client seat prompts
-resolve exactly one target. Room joins still use numeric IDs on the current server.
-
-A ping handshake returns pong with protocol and loaded server version, allowing
-the launcher to reuse a running compatible background server. Normal client exit
-does not terminate the server. A per-user, per-port advisory lock prevents duplicate
-local processes. No restart happens during repository updates.
-
-A peer_invite handshake includes name, game, room and sender port. The recipient
-uses the TCP peer address (not a supplied address) when constructing the invitation.
-It broadcasts an ordinary invitation to connected clients and acknowledges with
-their count. Guest names remain unverified. Recipients explicitly choose to connect.
+All users must update together. v0.1 servers use protocol 1 and must be stopped
+deliberately before starting v0.2 on the same port.

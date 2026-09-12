@@ -6,6 +6,8 @@ import time
 from . import VERSION, PROTOCOL
 from .games import Tetris, Bluff
 from .network import seat_address
+from .mesh import Mesh
+import ipaddress
 
 def clean(value, limit=400):
     return ''.join(c for c in str(value) if c.isprintable())[:limit]
@@ -19,6 +21,10 @@ class Lobby:
         self.api_status = 'API disabled; seats unknown'
         self.port = 31416
         self.peer_invites = {}
+        self.owners = {}
+        self.shutdown = asyncio.Event()
+        self.owner_started = asyncio.Event()
+        self.mesh = Mesh(self)
 
     async def send(self, client, data):
         if client['writer'].is_closing():
@@ -38,11 +44,10 @@ class Lobby:
 
     async def state(self):
         await self.broadcast(dict(type='state',version=VERSION,api=self.api_status,
-            players=[dict(id=p,name=c['name'],hostname=c['hostname'],verified=False,
+            nodes=len(self.mesh.peers)+1,
+            players=self.mesh.players() or [dict(id=p,name=c['name'],hostname=c['hostname'],verified=False,
                           seat=self.seats.get(c['name'],'unknown')) for p,c in self.clients.items()],
-            rooms=[dict(id=r,name=x['game'],host=self.clients[x['host']]['name'],
-                        members=len(x['members'])) for r,x in self.rooms.items()
-                   if x['host'] in self.clients]))
+            rooms=self.mesh.rooms()))
 
     async def room_state(self, rid):
         if rid not in self.rooms:
@@ -79,7 +84,7 @@ class Lobby:
         if not text:
             return
         if not text.startswith('/'):
-            await self.event(f"{c['name']} [Guest]: {text}")
+            await self.mesh.publish('event',f"{c['name']} [Guest]: {text}")
             return
         cmd,_,arg = text.partition(' ')
         arg = arg.strip()
@@ -196,13 +201,40 @@ class Lobby:
         if now-c.get('invite',-100)<10:
             raise ValueError('Wait 10 seconds between invitations.')
         c['invite'] = now
-        await self.broadcast(dict(type='invite',text=f"{c['name']} invites you to {self.rooms[rid]['game']}; /join {rid}"))
+        await self.mesh.publish('invite',f"{c['name']} invites you to {self.rooms[rid]['game']}; server {self.mesh.host}:{self.port}, /join {rid}. Use /connect {self.mesh.host} {self.port} if on another node.")
 
     async def handle(self,reader,writer):
         pid = None
+        owner_key = None
         try:
             line = await asyncio.wait_for(reader.readline(),10)
+            if len(line)>65536:
+                raise ValueError('Handshake too large.')
             hello = json.loads(line)
+            source = writer.get_extra_info('peername')[0]
+            if isinstance(hello,dict) and hello.get('protocol')==PROTOCOL:
+                if hello.get('type')=='mesh':
+                    self.mesh.host = writer.get_extra_info('sockname')[0]
+                    await self.mesh.merge(source,hello)
+                    await self.send(dict(writer=writer),self.mesh.snapshot())
+                    await self.state()
+                    return
+                if hello.get('type') in ('owner','connect_peer'):
+                    if not ipaddress.ip_address(source).is_loopback:
+                        raise ValueError('Local control only.')
+                    if hello['type']=='connect_peer':
+                        await self.mesh.connect(hello.get('host'),hello.get('port'))
+                        await self.send(dict(writer=writer),dict(type='peer_connected'))
+                        return
+                    owner_key = str(id(writer))
+                    self.owners[owner_key] = dict(name=clean(hello.get('name','guest'),24),
+                                                  hostname=clean(hello.get('hostname','unknown'),50))
+                    self.owner_started.set()
+                    await self.send(dict(writer=writer),dict(type='owner_ready'))
+                    await self.state()
+                    while await asyncio.wait_for(reader.readline(),16):
+                        pass
+                    return
             if isinstance(hello,dict) and hello.get('protocol')==PROTOCOL:
                 if hello.get('type')=='ping':
                     await self.send(dict(writer=writer),dict(type='pong',protocol=PROTOCOL,version=VERSION))
@@ -241,6 +273,8 @@ class Lobby:
                 line = await reader.readline()
                 if not line:
                     break
+                if len(line)>8192:
+                    raise ValueError('Message too large.')
                 msg = json.loads(line)
                 if not isinstance(msg,dict):
                     raise ValueError('Expected an object.')
@@ -260,9 +294,13 @@ class Lobby:
                             await self.room_state(rid)
                 except ValueError as e:
                     await self.send(c,dict(type='event',text=str(e)))
-        except (ValueError,ConnectionError,asyncio.TimeoutError,OSError) as e:
+        except (ValueError,TypeError,ConnectionError,asyncio.TimeoutError,OSError) as e:
             await self.send(dict(writer=writer),dict(type='error',text=clean(e)))
         finally:
+            if owner_key is not None:
+                self.owners.pop(owner_key,None)
+                if not self.owners:
+                    self.shutdown.set()
             if pid is not None:
                 name = self.clients[pid]['name']
                 await self.leave(pid)
@@ -292,19 +330,31 @@ class Lobby:
                     if old!=engine.phase:
                         await self.room_state(rid)
 
-async def serve(host,port,ready=None):
+async def serve(host,port,ready=None,managed=False):
     lobby = Lobby()
     lobby.port = port
-    server = await asyncio.start_server(lobby.handle,host,port,limit=8192)
+    server = await asyncio.start_server(lobby.handle,host,port,limit=131072)
     print(f'42SG LAN {VERSION} listening on {host}:{port} — guest mode',flush=True)
     ticker = asyncio.create_task(lobby.tick())
+    mesh_task = asyncio.create_task(lobby.mesh.loop())
     from .presence import refresh
     presence = asyncio.create_task(refresh(lobby))
     if ready:
         ready.set()
     try:
         async with server:
-            await server.serve_forever()
+            if managed:
+                try:
+                    await asyncio.wait_for(lobby.owner_started.wait(),30)
+                except asyncio.TimeoutError:
+                    return
+            await lobby.shutdown.wait()
     finally:
         ticker.cancel()
         presence.cancel()
+        mesh_task.cancel()
+        await asyncio.gather(ticker,presence,mesh_task,return_exceptions=True)
+        lobby.rooms.clear()
+        await lobby.mesh.goodbye()
+        for client in list(lobby.clients.values()):
+            client['writer'].close()

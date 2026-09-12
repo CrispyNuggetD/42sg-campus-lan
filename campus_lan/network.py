@@ -30,3 +30,12 @@ def ask_seat():
             continue
         print(f'Connecting to c{cluster}r{row}s{seat} at {result}')
         return result
+
+def seat_label(host, hostname=''):
+    match = re.fullmatch(r'10\.1([12])\.(\d+)\.(\d+)',host)
+    if not match:
+        match = re.fullmatch(r'c([12])r(\d+)s(\d+)(?:\..*)?',hostname.lower())
+    if match:
+        c,r,s = match.groups()
+        return f'Cluster {c}, row {r}, seat {s}'
+    return 'Seat unknown'
