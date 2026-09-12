@@ -91,9 +91,9 @@ class Network(unittest.IsolatedAsyncioTestCase):
         remote = await asyncio.open_connection('127.0.0.1',self.port)
         self.sockets.append(remote)
         await self.send(remote,type='peer_invite',protocol=PROTOCOL,name='host',
-                        game='tetris',room='7',port=31416)
+                        game='tetris',room='7',port=31415)
         notice = await self.receive(p,lambda m:m['type']=='invite')
-        self.assertIn('/connect 127.0.0.1 31416',notice['text'])
+        self.assertIn('/connect 127.0.0.1 31415',notice['text'])
         self.assertIn('/join 7',notice['text'])
         ack = await self.receive(remote,lambda m:m['type']=='invite_ack')
         self.assertEqual(ack['clients'],1)

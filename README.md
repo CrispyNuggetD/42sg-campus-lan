@@ -35,11 +35,11 @@ nothing in `/bin` or `~/.local/bin`.
 ## Find your friends
 
 Everyone starts the same way: run `lan42` (or `lan42.sh`). Your HQ starts on
-TCP **31416** and shows **1 online: you** once it connects to its local node.
+TCP **31415** and shows **1 online: you** once it connects to its local node.
 There is no choice between hosting and joining a lobby.
 
 In HQ, type `/join` for seat questions, `/join c1r2s3` for a known seat, or
-`/join 192.168.1.50 31416` for a custom address and port. That links the nodes
+`/join 192.168.1.50 31415` for a custom address and port. That links the nodes
 and shares known peers while your HQ stays in its own terminal.
 
 The campus address mapping is:
@@ -234,9 +234,9 @@ verified identities: a modified client could impersonate someone. This version
 is meant for a few friends who trust each other. Green is reserved for future
 verified users; nobody gets verified status yet.
 
-The registered callback, `http://localhost:31415/callback`, is an unused
+The planned callback, `http://localhost:31416/callback`, is an unused
 placeholder for future OAuth sign-in. There is no callback web server in this
-version. The lobby uses a separate TCP port, **31416**.
+version. The lobby uses a separate TCP port, **31415**.
 
 <details>
 <summary>Optional 42 API lookup</summary>
@@ -274,7 +274,7 @@ servers automatically.
 
 Logs and PID files are in `~/.local/state/42sg-campus-lan/`, or under
 `$XDG_STATE_HOME/42sg-campus-lan` if configured. For the default port, look for
-`server-31416.log` and `server-31416.pid`.
+`server-31415.log` and `server-31415.pid`.
 
 To test multiple nodes on one computer, use `lan42 --port 32101 --guest-name hnah`
 and `lan42 --port 32102 --guest-name thtay` in separate terminals, then type

@@ -19,7 +19,7 @@ class Lobby:
         self.round_seconds = round_seconds
         self.seats = {}
         self.api_status = 'API disabled; seats unknown'
-        self.port = 31416
+        self.port = 31415
         self.peer_invites = {}
         self.owners = {}
         self.shutdown = asyncio.Event()
@@ -250,7 +250,7 @@ class Lobby:
                     return
                 if hello.get('type')=='peer_invite':
                     source = writer.get_extra_info('peername')[0]
-                    port = hello.get('port',31416)
+                    port = hello.get('port',31415)
                     if not isinstance(port,int) or not 1<=port<=65535:
                         raise ValueError('Invalid invitation port.')
                     now = time.monotonic()

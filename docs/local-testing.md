@@ -70,7 +70,7 @@ To join a game on B from C, `/join 127.0.0.1 32102` then `/join NUMBER`.
 
 ## Separate computers
 
-Each person runs `lan42` using the default port 31416. Inside HQ, join a friend's
+Each person runs `lan42` using the default port 31415. Inside HQ, join a friend's
 private IPv4 address with `/join 192.168.1.50`, or a campus seat with
 `/join c1r2s3`. Add the port if they use a different one.
 

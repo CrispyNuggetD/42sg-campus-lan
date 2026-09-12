@@ -1,6 +1,6 @@
 # Protocol 2 — v0.2.0
 
-One UTF-8 JSON object per newline, TCP 31416 by default. Ordinary client commands
+One UTF-8 JSON object per newline, TCP 31415 by default. Ordinary client commands
 remain command/text and move/action. Hello includes protocol:3, name, hostname and role (lobby or game).
 Game rules and game payloads are unchanged; bluff identities stay hidden until reveal.
 
