@@ -13,8 +13,10 @@ import time
 import textwrap
 from . import VERSION, PROTOCOL
 from .network import seat_address, address
+from .lobby_view import lobby_lines, guest_style
 
 HELP = [
+    '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
     '/who /rooms /games | /host tetris | /host bluff free | /host bluff prompt',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
@@ -35,6 +37,9 @@ class Client:
         self.state, self.game = {}, {}
         self.input, self.scroll = '', 0
         self.play = False
+        self.lobby_view, self.cluster, self.lobby_page = 'roster', 1, 0
+        self.show_lobby = False
+        self.colors = False
         self.connected = True
         self.notify_enabled, self.last_notice = notify, 0
         self.id = None
@@ -111,6 +116,8 @@ class Client:
 
             elif kind=='game':
                 new = msg.get('room') != self.game.get('room')
+                if new:
+                    self.show_lobby = False
                 self.game = msg
                 if not msg.get('game'):
                     self.play = False
@@ -134,6 +141,45 @@ class Client:
             except curses.error:
                 pass
 
+    def lobby_command(self, text):
+        if text in ('/lobby','/who','/roster'):
+            self.lobby_view, self.lobby_page = 'roster', 0
+            self.show_lobby, self.play = True, False
+        elif text in ('/map','/map 1','/map 2'):
+            self.lobby_view, self.lobby_page = 'map', 0
+            if text != '/map':
+                self.cluster = int(text[-1])
+            self.show_lobby, self.play = True, False
+        elif text in ('/next','/prev'):
+            self.lobby_page = max(0,getattr(self,'lobby_page',0)+(1 if text=='/next' else -1))
+        elif text == '/game':
+            self.show_lobby = False
+            self.play = self.game.get('game')=='tetris' and 'board' in self.game
+        else:
+            return False
+        return True
+
+    def draw_lobby(self, screen, players):
+        h,w = screen.getmaxyx()
+        content = lobby_lines(players,getattr(self,'lobby_view','roster'),getattr(self,'cluster',1))
+        capacity = min(max(1,h-13),max(10,len(content)))
+        pages = max(1,(len(content)+capacity-1)//capacity)
+        self.lobby_page = min(getattr(self,'lobby_page',0),pages-1)
+        self.line(screen,3,f'CURRENTLY ONLINE: {len(players)} | Guest names are unverified',curses.A_BOLD)
+        self.line(screen,4,f'/roster | /map 1 | /map 2 | /next /prev (page {self.lobby_page+1}/{pages})')
+        for y,segments in enumerate(content[self.lobby_page*capacity:(self.lobby_page+1)*capacity],5):
+            x = 0
+            for text,style in segments:
+                attr = curses.A_BOLD if style else 0
+                if style and getattr(self,'colors',False):
+                    attr |= curses.color_pair(style)
+                self.line(screen,y,text,attr,x)
+                x += len(text)
+        bottom = 5+capacity
+        self.line(screen,bottom,'-'*(w-1),curses.A_DIM)
+        self.line(screen,bottom+1,'CHAT & INVITATIONS  | /host tetris | /host bluff free | /rooms',curses.A_BOLD)
+        return bottom+2
+
     def draw(self,screen):
         screen.erase()
         h,w = screen.getmaxyx()
@@ -143,15 +189,15 @@ class Client:
             screen.refresh()
             return
         self.line(screen,0,f" RYKER'S 42SG LAN  v{VERSION} | {self.name} [Guest] | "+('ONLINE' if self.connected else 'DISCONNECTED'),curses.A_BOLD)
-        self.line(screen,1,'Guest mode | /signin: Sign in with Intra (coming later) | /help')
+        self.line(screen,1,'LOBBY /who | SEATS /map 1 /map 2 | /game: return to game | /help')
         players = self.state.get('players',[])
-        self.line(screen,2,'Peers: '+' | '.join(f"{p['name']}@{p['hostname']} [{p['seat']}]" for p in players))
-        self.line(screen,3,self.state.get('api','Waiting for lobby...'))
-        rooms = self.state.get('rooms',[])
-        self.line(screen,4,'Rooms: '+' | '.join(f"{r['id']}:{r['name']} ({r['members']}) host:{r['host']}" for r in rooms))
+        self.line(screen,2,f"{len(players)} online across {self.state.get('nodes',1)} nodes | refresh ~5s | "+
+                  str(getattr(self,'current', 'Connecting...')),curses.A_BOLD)
         game = self.game
         logs_x,logs_y = 0,6
-        if game.get('game')=='tetris' and 'board' in game:
+        if not game.get('game') or getattr(self,'show_lobby',False):
+            logs_y = self.draw_lobby(screen,players)
+        elif game.get('game')=='tetris' and 'board' in game:
             self.line(screen,6,f"CO-OP TETRIS  {game['score']} pts")
             for y,row in enumerate(game['board']):
                 self.line(screen,7+y,'|' + ''.join('[]' if c else ' .' for c in row)+'|')
@@ -175,7 +221,7 @@ class Client:
         shown = lines[max(0,end-log_h):end]
         for y,line in enumerate(shown,logs_y):
             self.line(screen,y,line,x=logs_x)
-        self.line(screen,h-2,'Tab: play/chat | PgUp/PgDn: history | /leave: lobby | /quit',curses.A_DIM)
+        self.line(screen,h-2,'Tab: roster/map (game: play/chat) | PgUp/PgDn: chat | /quit',curses.A_DIM)
         self.line(screen,h-1,('PLAY > ' if self.play else '> ')+self.input[-(w-10):])
         screen.refresh()
 
@@ -218,8 +264,11 @@ class Client:
             pass
         if curses.has_colors():
             curses.start_color()
-            # Reserved only: no guest is displayed with this verified style.
             curses.init_pair(1,curses.COLOR_GREEN,curses.COLOR_BLACK)
+            for pair,color in enumerate((curses.COLOR_CYAN,curses.COLOR_YELLOW,curses.COLOR_MAGENTA,
+                                         curses.COLOR_BLUE,curses.COLOR_RED,curses.COLOR_WHITE),2):
+                curses.init_pair(pair,color,curses.COLOR_BLACK)
+            self.colors = True
         while True:
             self.consume()
             if not self.connected and self.home != self.current:
@@ -232,6 +281,9 @@ class Client:
                 self.scroll += 8
             elif key==curses.KEY_NPAGE:
                 self.scroll = max(0,self.scroll-8)
+            elif key==9 and (not self.game.get('game') or self.show_lobby):
+                self.lobby_view = 'map' if self.lobby_view=='roster' else 'roster'
+                self.lobby_page = 0
             elif key==9 and self.game.get('game')=='tetris':
                 self.play = not self.play
             elif self.play:
@@ -250,6 +302,8 @@ class Client:
                     self.wizard_answer(text)
                     if self.next_server:
                         return self.next_server
+                elif self.lobby_command(text):
+                    pass
                 elif text in ('/join','/connect'):
                     self.seat_question('join')
                 elif text=='/invite':

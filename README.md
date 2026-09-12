@@ -4,7 +4,7 @@ A terminal hangout for a few friends at 42 Singapore. See who's online and where
 they're sitting, chat, and invite each other to co-op Tetris or a round of
 **Who Said That?**
 
-This is version **0.2.2**, a small LAN prototype. Everyone joins as a guest;
+This is version **0.3.0**, a small LAN prototype. Everyone joins as a guest;
 Intra sign-in is planned for later.
 
 ## Get started
@@ -94,6 +94,24 @@ Public internet IPs are currently rejected. Outside campus, seats show as unknow
 See [the local test walkthrough](docs/local-testing.md) for exact commands to run
 two or three players in separate terminals on one Mac or Ubuntu computer.
 
+## The lobby: who's online?
+
+The main screen shows a numbered roster grouped into **Cluster 1**, **Cluster 2**
+and **off campus / seat unknown**. Guests get consistent colours, while the
+Guest label stays visible: colour isn't verification. Presence refreshes about
+every five seconds. The list covers connected LAN42 users, not everyone on Intra.
+
+Press **Tab** to switch between the roster and an ASCII seat map. `/map 1` and
+`/map 2` select a cluster; `/roster` or `/who` returns to the list. The maps follow
+the supplied floor plans, with higher rows at the top and staggered even/odd
+seat boxes. Coloured boxes refer to the numbered roster below the map. Unmarked
+desks don't prove vacancy; they simply have no reported LAN42 peer.
+
+Use `/next` and `/prev` to page through longer rosters or maps in a small terminal.
+Chat and invitations stay in their own panel below. During a game, `/lobby`
+opens the roster without leaving the room, and `/game` returns to play. Tab
+retains its play/chat function when you're viewing Tetris.
+
 ## Chat, invitations and commands
 
 Type a message and press **Enter** to chat. **Page Up/Down** scrolls through the
@@ -101,7 +119,10 @@ last 500 event lines. Text input currently supports ASCII.
 
 | Command | What it does |
 | --- | --- |
-| `/who` | Show online players. |
+| `/who` or `/lobby` | Open the grouped online roster. |
+| `/map 1` or `/map 2` | Show a cluster seat map. |
+| `/next` or `/prev` | Page through the lobby panel. |
+| `/game` | Return from the lobby panel to your game. |
 | `/rooms` | Show game rooms. |
 | `/games` | List the available games. |
 | `/join` | Ask for a friend's cluster, row and seat. |
