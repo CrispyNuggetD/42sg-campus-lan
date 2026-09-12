@@ -5,8 +5,10 @@ On the owner's enrolled campus device:
 1. Clone https://github.com/CrispyNuggetD/42sg-campus-lan.git into
    ~/Documents/42sg-campus-lan, or git pull --ff-only an existing clean clone.
    Preserve local edits; do not reset or overwrite another repository.
-2. Run sh setup.sh and ensure ~/.local/bin is on PATH, adding a small idempotent
-   block to ~/.zshrc only if needed. Do not replace the user's shell configuration.
+2. Run sh setup.sh. Launch directly from ~/Documents/42sg-campus-lan/launch.sh.
+   Do not install anything into /bin or ~/.local/bin or add a bin path to PATH.
+   For the optional lan42 zsh function, use sh setup.sh --zsh; it preserves the
+   user's existing shell configuration and sources the file inside this clone.
 3. Inspect the active dailylogin/syncdocs functions. The current public SUTD
    additions already scan Documents when pullotherrepos=1. Verify the LAN clone
    is included. If the active functions are older, add a minimal fast-forward-only

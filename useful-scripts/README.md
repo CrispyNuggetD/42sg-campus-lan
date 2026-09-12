@@ -14,8 +14,8 @@ From your clone:
 
     sh setup.sh --zsh
 
-This attempts a fast-forward pull for the latest version, installs the lan42 command,
-backs up your existing .zshrc, and adds one marked source block. It honours ZDOTDIR.
+This attempts a fast-forward pull for the latest version, prepares the launcher inside your clone,
+backs up your existing .zshrc, and adds one marked source block. The lan42 shortcut is a zsh function pointing to\nlaunch.sh in this clone; nothing is installed into a bin directory. It honours ZDOTDIR.
 It never replaces your shell configuration or executes it during installation.
 Open a new terminal afterward, or source your .zshrc yourself.
 

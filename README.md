@@ -14,22 +14,22 @@ Clone once on each computer:
     cd 42sg-campus-lan
     sh setup.sh
 
-Run the installed command (or add ~/.local/bin to PATH):
+Run the launcher directly from your Documents clone:
 
-    ~/.local/bin/lan42
+    ~/Documents/42sg-campus-lan/launch.sh
 
-With no arguments, lan42 opens your guest lobby and starts its host server.
-The explicit equivalent is lan42 host.
+With no arguments, launch.sh opens your guest lobby and starts its host server.
+The explicit equivalent is ./launch.sh host. The optional zsh setup below provides\nthe lan42 shortcut; otherwise use the full launcher path for the lan42 commands\nin this guide. Setup writes nothing to /bin or ~/.local/bin and needs no PATH edit.
 
 Friends connect to that computer's LAN address:
 
-    ~/.local/bin/lan42 join
+    ~/Documents/42sg-campus-lan/launch.sh join
 
 It asks for the friend server's **cluster, row and seat**, then attempts that
 one address. Your friend must already have lan42 running. You can also use:
 
-    ~/.local/bin/lan42 join c1r2s3
-    ~/.local/bin/lan42 join 10.11.2.3
+    ~/Documents/42sg-campus-lan/launch.sh join c1r2s3
+    ~/Documents/42sg-campus-lan/launch.sh join 10.11.2.3
 
 Campus address layout (provided by the project owner):
 
@@ -164,7 +164,7 @@ repos is an opt-in setting. It does not open the lobby or launch other applicati
 
 See [the zsh helper guide](useful-scripts/README.md) for manual installation,
 your own project paths, optional Documents syncing, and compile/run helpers.
-Plain sh setup.sh still installs only lan42, without editing shell configuration.
+Plain sh setup.sh checks prerequisites and prepares launch.sh inside the clone,\nwithout editing shell configuration or installing a command elsewhere.
 
 ### Repository layout
 
