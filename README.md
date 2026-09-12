@@ -4,7 +4,7 @@ A terminal hangout for a few friends at 42 Singapore. See who's online and where
 they're sitting, chat, and invite each other to co-op Tetris or a round of
 **Who Said That?**
 
-This is version **0.4.0**, a small LAN prototype. Everyone joins as a guest;
+This is version **0.4.1**, a small LAN prototype. Everyone joins as a guest;
 Intra sign-in is planned for later.
 
 ## Get started
@@ -78,7 +78,11 @@ to one another directly. When the first quits, the remaining nodes keep the
 shared lobby alive without electing a replacement. When everyone quits, it ends.
 A crashed or unreachable peer drops out after roughly 16 seconds.
 
-**HQ and games have separate terminal windows.** `/host tetris` or `/host bluff
+**HQ and games have separate terminal windows.** HQ has a cyan banner; game
+windows have a magenta banner naming the game and room. Window/tab titles also
+show `HQ LOBBY` or, for example, `GAME | TETRIS | ROOM 1`. This uses standard
+terminal title sequences; terminal settings may override the displayed title.
+ `/host tetris` or `/host bluff
 free` opens a game window on your node; `/join NUMBER` opens a game on the peer
 you last linked. `/home` resets that game target to your own node. Closing a
 game window leaves HQ and your presence running. Closing HQ stops your node.

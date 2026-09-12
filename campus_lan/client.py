@@ -221,6 +221,25 @@ class Client:
         self.line(screen,bottom+1,'CHAT & INVITATIONS  | /host tetris | /host bluff free | /rooms',curses.A_BOLD)
         return bottom+2
 
+    def window_label(self):
+        if getattr(self,'role','lobby')!='game':
+            return 'HQ LOBBY'
+        names = {'tetris':'TETRIS', 'bluff':'WHO SAID THAT?'}
+        game = self.game
+        if game.get('game'):
+            return f"GAME | {names.get(game['game'],safe(game['game']).upper())} | ROOM {safe(game.get('room','?'))}"
+        return 'GAME WINDOW | NO ROOM'
+
+    def terminal_title(self):
+        return safe(f'LAN42 | {self.window_label()} | {self.name}')
+
+    def update_title(self):
+        title = self.terminal_title()
+        if title!=getattr(self,'last_title',None) and sys.stdout.isatty():
+            sys.stdout.write('\033]0;'+title+'\007')
+            sys.stdout.flush()
+            self.last_title = title
+
     def draw(self,screen):
         screen.erase()
         h,w = screen.getmaxyx()
@@ -229,8 +248,15 @@ class Client:
             self.line(screen,1,'Ctrl-C exits.')
             screen.refresh()
             return
-        self.line(screen,0,f" RYKER'S 42SG LAN  v{VERSION} | {self.name} [Guest] | "+('ONLINE' if self.connected else 'DISCONNECTED'),curses.A_BOLD)
-        self.line(screen,1,'LOBBY /who | SEATS /map 1 /map 2 | /game: return to game | /help')
+        game_window = getattr(self,'role','lobby')=='game'
+        banner = curses.A_BOLD | curses.A_REVERSE
+        if getattr(self,'colors',False):
+            banner |= curses.color_pair(4 if game_window else 2)
+        label = f" LAN42 | {self.window_label()} | {self.name} [Guest] | "+('ONLINE' if self.connected else 'DISCONNECTED')
+        self.line(screen,0,label.ljust(w-1),banner)
+        hint = ('GAME CONTROLS: /start /leave /quit | /lobby /game | HQ stays in its other window'
+                if game_window else 'HQ: /join IP [PORT] | /host tetris /host bluff free: new game window | /who /map 1')
+        self.line(screen,1,hint)
         players = self.state.get('players',[])
         if not self.state:
             self.line(screen,2,'Connecting; waiting for presence...')
@@ -317,6 +343,7 @@ class Client:
             self.colors = True
         while True:
             self.consume()
+            self.update_title()
             if not self.connected and self.home != self.current:
                 return self.home
             self.draw(screen)
@@ -425,7 +452,17 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
             client.port = port
             client.home = home or (host,port)
             client.current = (host,port)
-            destination = curses.wrapper(client.run)
+            # xterm-style title stack: restore the shell title when supported.
+            title_terminal = sys.stdout.isatty()
+            if title_terminal:
+                sys.stdout.write('\033[22;0t')
+                sys.stdout.flush()
+            try:
+                destination = curses.wrapper(client.run)
+            finally:
+                if title_terminal:
+                    sys.stdout.write('\033[23;0t')
+                    sys.stdout.flush()
             # Explicitly shutdown: the receive thread's file object also owns the socket.
             try:
                 sock.shutdown(socket.SHUT_RDWR)
