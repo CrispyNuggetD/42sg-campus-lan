@@ -19,8 +19,8 @@ repo = Path(sys.argv[1])
 launcher = repo / 'lan42.sh'
 launcher.chmod(launcher.stat().st_mode | 0o100)
 print(f'Ready: {launcher}')
-print(f'Host: "{launcher}"')
-print(f'Join: "{launcher}" join')
+print(f'Lobby: "{launcher}"')
+print('Inside your lobby, /join links a friend and exchanges peers.')
 print('Everything stays in this clone. No bin directory or PATH changes.')
 
 PYSETUP

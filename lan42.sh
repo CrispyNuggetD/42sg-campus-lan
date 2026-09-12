@@ -13,6 +13,6 @@ fi
 echo "[lan42] Version $(python3 -c 'from campus_lan import VERSION; print(VERSION)') | commit $(git rev-parse --short HEAD) | $(git log -1 --format=%cs)"
 echo "[lan42] Guest mode. Intra sign-in is not implemented."
 if [ "$#" -eq 0 ]; then
-    set -- host
+    set -- lobby
 fi
 exec python3 -m campus_lan "$@"

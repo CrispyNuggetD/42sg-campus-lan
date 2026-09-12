@@ -97,7 +97,6 @@ class Owner:
                 result = json.loads(stream.readline(4096))
             if result.get('type')!='peer_connected':
                 raise RuntimeError(result.get('text','Peer handshake failed.'))
-        print(f'Nodes linked with {host}:{port}; presence refreshes every 5 seconds.')
 
     def close(self):
         self.stop.set()
@@ -112,9 +111,15 @@ def main():
     parser = argparse.ArgumentParser(description='42SG guest LAN lobby — Python 3.9+, no pip packages')
     parser.add_argument('--version',action='version',version=VERSION)
     sub = parser.add_subparsers(dest='mode',required=True)
-    for name in ('host','server','join'):
+    for name in ('lobby','host','server','join','game'):
         p = sub.add_parser(name)
-        if name=='join':
+        if name=='game':
+            p.add_argument('address')
+            action = p.add_mutually_exclusive_group(required=True)
+            action.add_argument('--room')
+            action.add_argument('--create',choices=('tetris','bluff'))
+            p.add_argument('--game-mode',choices=('free','prompt'),default='free')
+        elif name=='join':
             p.add_argument('address',nargs='?',help='IP, hostname, or c1r2s3; omit for seat questions')
             p.add_argument('--local-port',type=int,default=31416,help='Your own node port')
         else:
@@ -125,7 +130,10 @@ def main():
         if name!='server':
             p.add_argument('--guest-name',help='Unverified testing nickname; default OS username')
             p.add_argument('--no-notify',action='store_true')
-    args = parser.parse_args()
+    argv = sys.argv[1:]
+    if not argv or (argv[0].startswith('-') and argv[0] not in ('--version','--help','-h')):
+        argv = ['lobby',*argv]
+    args = parser.parse_args(argv)
     if not 1<=args.port<=65535:
         parser.error('Port must be between 1 and 65535')
     if args.mode=='server':
@@ -145,7 +153,11 @@ def main():
             lock.close()
         return
     username = args.guest_name or pwd.getpwuid(os.getuid()).pw_name
-    if args.mode=='host':
+    if args.mode=='game':
+        command = '/join '+args.room if args.room else '/host '+args.create+' '+args.game_mode
+        connect(address(args.address),args.port,username,not args.no_notify,role='game',initial_command=command)
+        return
+    if args.mode in ('lobby','host'):
         local_port = args.port
         local = start_background(args.bind,local_port)
         target = local
@@ -160,8 +172,8 @@ def main():
     owner = Owner(local,local_port,username)
     try:
         owner.peer(target,args.port)
-        connect(target,args.port,username,not args.no_notify,peer_callback=owner.peer,
-                home=(local,local_port))
+        connect(local,local_port,username,not args.no_notify,peer_callback=owner.peer,
+                home=(local,local_port),game_target=(target,args.port))
     finally:
         owner.close()
 

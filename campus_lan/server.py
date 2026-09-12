@@ -89,6 +89,13 @@ class Lobby:
         cmd,_,arg = text.partition(' ')
         arg = arg.strip()
         rid, room = self.room_for(pid)
+        if not room and cmd in ('/invite','/invite-room','/invite-seat'):
+            for other,peer in self.clients.items():
+                if peer['name']==c['name'] and peer.get('role')=='game':
+                    candidate,active = self.room_for(other)
+                    if active:
+                        pid,rid,room = other,candidate,active
+                        break
         if cmd == '/games':
             await self.send(c,dict(type='event',text='Games: tetris (shared-board co-op), bluff (free or prompt). /host tetris | /host bluff prompt | /join ROOM'))
         elif cmd == '/signin':
@@ -261,15 +268,19 @@ class Lobby:
             name = clean(hello.get('name','guest'),24)
             if not re.fullmatch(r'[A-Za-z0-9_.-]{1,24}',name):
                 raise ValueError('Invalid guest username.')
-            if len(self.clients)>=32 or any(c['name']==name for c in self.clients.values()):
+            role = hello.get('role','lobby')
+            if role not in ('lobby','game'):
+                raise ValueError('Unknown client role.')
+            if len(self.clients)>=32 or any(c['name']==name and c.get('role','lobby')==role for c in self.clients.values()):
                 raise ValueError('Lobby full or this guest name is already connected.')
             self.sequence += 1
             pid = str(self.sequence)
-            c = dict(writer=writer,name=name,hostname=clean(hello.get('hostname','unknown'),50),
+            c = dict(writer=writer,name=name,role=role,hostname=clean(hello.get('hostname','unknown'),50),
                      window=time.monotonic(),count=0)
             self.clients[pid] = c
             await self.send(c,dict(type='welcome',id=pid,version=VERSION,verified=False))
-            await self.event(f'{name} joined as Guest.')
+            if role=='lobby':
+                await self.event(f'{name} joined as Guest.')
             await self.state()
             while True:
                 line = await reader.readline()
@@ -305,10 +316,12 @@ class Lobby:
                     self.shutdown.set()
             if pid is not None:
                 name = self.clients[pid]['name']
+                role = self.clients[pid].get('role','lobby')
                 await self.leave(pid)
                 del self.clients[pid]
                 await self.state()
-                await self.event(f'{name} disconnected.')
+                if role=='lobby':
+                    await self.event(f'{name} disconnected.')
             writer.close()
             try:
                 await writer.wait_closed()

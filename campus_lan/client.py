@@ -11,6 +11,9 @@ import subprocess
 import threading
 import time
 import textwrap
+import shlex
+import sys
+from pathlib import Path
 from . import VERSION, PROTOCOL
 from .network import seat_address, address
 from .lobby_view import lobby_lines, guest_style
@@ -30,8 +33,9 @@ def safe(value):
     return ''.join(c for c in str(value) if c.isprintable())
 
 class Client:
-    def __init__(self, sock, name, hostname, notify=True):
+    def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None):
         self.sock, self.name = sock, name
+        self.role, self.initial_command = role, initial_command
         self.inbox = queue.Queue(maxsize=256)
         self.lines = collections.deque(HELP,maxlen=500)
         self.state, self.game = {}, {}
@@ -45,7 +49,7 @@ class Client:
         self.id = None
         self.wizard = None
         self.next_server = None
-        self.send(dict(type='hello',protocol=PROTOCOL,name=name,hostname=hostname))
+        self.send(dict(type='hello',protocol=PROTOCOL,name=name,hostname=hostname,role=role))
         threading.Thread(target=self.receive,daemon=True).start()
 
     def send(self,data):
@@ -106,6 +110,9 @@ class Client:
                     self.notify(msg.get('text',''))
             elif kind=='welcome':
                 self.id = msg['id']
+                if getattr(self,'initial_command',None):
+                    self.send(dict(type='command',text=self.initial_command))
+                    self.initial_command = None
                 self.lines.append(f"Connected. Server {msg['version']}; Guest (unverified).")
             elif kind=='state':
                 old_rooms = {(r.get('address'),r.get('port'),r['id']) for r in self.state.get('rooms',[])}
@@ -140,6 +147,40 @@ class Client:
                 screen.addnstr(y,x,safe(text),w-x-1,attr)
             except curses.error:
                 pass
+
+    def link_friend(self, target, port):
+        try:
+            if self.peer_callback:
+                self.peer_callback(target,port)
+            self.game_target = (target,port)
+            self.lines.append(f'Linked {target}:{port}. HQ stays here; /join NUMBER opens their game in another window.')
+        except (OSError,RuntimeError,ValueError) as exc:
+            self.lines.append('Could not link friend: '+str(exc))
+
+    def open_game(self, text):
+        parts = text.split()
+        if parts[0]=='/host':
+            if len(parts) not in (2,3) or parts[1] not in ('tetris','bluff') or (len(parts)==3 and parts[2] not in ('free','prompt')):
+                self.lines.append('Use /host tetris or /host bluff free|prompt.')
+                return
+            target,port = self.home
+            action = ['--create',parts[1],'--game-mode',parts[2] if len(parts)==3 else 'free']
+        else:
+            if len(parts)!=2 or not parts[1].isdigit():
+                self.lines.append('Use /join ROOM_NUMBER.')
+                return
+            target,port = self.game_target
+            action = ['--room',parts[1]]
+        args = ['game',target,'--port',str(port),'--guest-name',self.name,*action]
+        opener = Path(__file__).resolve().parents[1]/'useful-scripts/open_terminal.py'
+        try:
+            result = subprocess.run([sys.executable,str(opener),*args],capture_output=True,text=True,timeout=10)
+            if result.returncode:
+                raise RuntimeError(result.stderr.strip() or result.stdout.strip())
+            self.lines.append('Requested a game terminal. Your HQ stays online here.')
+        except (OSError,RuntimeError,subprocess.TimeoutExpired) as exc:
+            self.lines.append('Could not open game window: '+str(exc))
+            self.lines.append('Open another terminal and run: '+shlex.join(['sh',str(opener.parents[1]/'lan42.sh'),*args]))
 
     def lobby_command(self, text):
         if text in ('/lobby','/who','/roster'):
@@ -191,6 +232,11 @@ class Client:
         self.line(screen,0,f" RYKER'S 42SG LAN  v{VERSION} | {self.name} [Guest] | "+('ONLINE' if self.connected else 'DISCONNECTED'),curses.A_BOLD)
         self.line(screen,1,'LOBBY /who | SEATS /map 1 /map 2 | /game: return to game | /help')
         players = self.state.get('players',[])
+        if not self.state:
+            self.line(screen,2,'Connecting; waiting for presence...')
+            self.line(screen,3,'Loading online roster...')
+            screen.refresh()
+            return
         self.line(screen,2,f"{len(players)} online across {self.state.get('nodes',1)} nodes | refresh ~5s | "+
                   str(getattr(self,'current', 'Connecting...')),curses.A_BOLD)
         game = self.game
@@ -301,7 +347,21 @@ class Client:
                 if self.wizard:
                     self.wizard_answer(text)
                     if self.next_server:
-                        return self.next_server
+                        if self.role=='lobby':
+                            self.link_friend(*self.next_server)
+                            self.next_server = None
+                        else:
+                            return self.next_server
+                elif self.role=='lobby' and text.startswith('/join ') and not text.split()[1].isdigit():
+                    parts = text.split()
+                    try:
+                        if len(parts) not in (2,3):
+                            raise ValueError('Use /join IP_OR_SEAT [PORT].')
+                        self.link_friend(address(parts[1]),int(parts[2]) if len(parts)==3 else self.port)
+                    except ValueError as exc:
+                        self.lines.append(str(exc))
+                elif getattr(self,'role','lobby')=='lobby' and (text.startswith('/host ') or text.startswith('/join ')):
+                    self.open_game(text)
                 elif self.lobby_command(text):
                     pass
                 elif text in ('/join','/connect'):
@@ -315,11 +375,19 @@ class Client:
                         port = int(parts[2]) if len(parts)==3 else self.port
                         if len(parts)>3 or not 1<=port<=65535:
                             raise ValueError()
-                        return target,port
+                        if self.role=='lobby':
+                            self.link_friend(target,port)
+                        else:
+                            return target,port
                     except ValueError:
                         self.lines.append('Use /connect IP_OR_SEAT [PORT].')
                 elif text=='/home':
-                    return self.home
+                    if self.role=='lobby':
+                        self.game_target = self.home
+                        self.lobby_command('/lobby')
+                        self.lines.append('Game target reset to your own node.')
+                    else:
+                        break
                 elif text=='/quit':
                     break
                 elif text=='/help':
@@ -337,7 +405,7 @@ class Client:
             elif 32<=key<=126 and len(self.input)<400:
                 self.input += chr(key)
 
-def connect(host,port,name=None,notify=True,peer_callback=None,home=None):
+def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='lobby',initial_command=None,game_target=None):
     username = name or pwd.getpwuid(os.getuid()).pw_name
     while True:
         print(f'Connecting to {host}:{port} as Guest...')
@@ -351,7 +419,9 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None):
             raise OSError(f'Cannot connect to {host}:{port}. Friend must run lan42; check seat/network. {e}')
         with sock:
             sock.settimeout(None)
-            client = Client(sock,username,socket.gethostname(),notify)
+            client = Client(sock,username,socket.gethostname(),notify,role,initial_command)
+            client.peer_callback = peer_callback
+            client.game_target = game_target or (host,port)
             client.port = port
             client.home = home or (host,port)
             client.current = (host,port)

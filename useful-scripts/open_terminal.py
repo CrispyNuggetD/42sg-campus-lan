@@ -8,8 +8,11 @@ import sys
 REPO = Path(__file__).resolve().parents[1]
 
 
-def terminal_command(repo, platform=sys.platform, which=shutil.which):
+def terminal_command(repo, platform=sys.platform, which=shutil.which, args=()):
     launcher = str(repo / 'lan42.sh')
+    invocation = ['sh', launcher, *args]
+    if args:
+        invocation = ['env', 'LAN42_NO_UPDATE=1', *invocation]
     if platform == 'darwin':
         script = '''on run argv
     tell application "Terminal"
@@ -17,7 +20,7 @@ def terminal_command(repo, platform=sys.platform, which=shutil.which):
         activate
     end tell
 end run'''
-        return ['osascript', '-e', script, 'sh ' + shlex.quote(launcher)]
+        return ['osascript', '-e', script, shlex.join(invocation)]
     for name, flags in (
         ('gnome-terminal', ['--window', '--title=LAN42', '--']),
         ('konsole', ['--separate', '-e']),
@@ -26,16 +29,17 @@ end run'''
     ):
         program = which(name)
         if program:
-            return [program, *flags, 'sh', launcher]
+            return [program, *flags, *invocation]
     raise RuntimeError('No supported desktop terminal found. Open a terminal and run lan42.')
 
 
 def main():
-    command = terminal_command(REPO)
+    command = terminal_command(REPO, args=sys.argv[1:])
     if sys.platform == 'darwin':
         subprocess.run(command, check=True)
     else:
-        subprocess.Popen(command, stdin=subprocess.DEVNULL, start_new_session=True)
+        subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True)
     print('Requested a LAN42 terminal window. Leave it open while playing.')
 
 

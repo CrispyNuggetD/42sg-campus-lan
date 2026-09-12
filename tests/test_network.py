@@ -37,10 +37,10 @@ class Network(unittest.IsolatedAsyncioTestCase):
                     return msg
         return await asyncio.wait_for(wait(),3)
 
-    async def connect(self,name):
+    async def connect(self,name,role='lobby'):
         p = await asyncio.open_connection('127.0.0.1',self.port)
         self.sockets.append(p)
-        await self.send(p,type='hello',name=name,hostname='test',protocol=PROTOCOL,verified=True)
+        await self.send(p,type='hello',name=name,hostname='test',protocol=PROTOCOL,verified=True,role=role)
         welcome = await self.receive(p,lambda m:m['type'] in ('welcome','error'))
         return p,welcome
 
@@ -131,6 +131,26 @@ class Network(unittest.IsolatedAsyncioTestCase):
         with patch('campus_lan.server.seat_address',return_value='127.0.0.1'):
             await self.cmd(p,f'/invite-seat c1r2s3 {self.port}')
             await self.receive(p,lambda m:m['type']=='event' and 'Invitation delivered' in m['text'])
+
+    async def test_game_window_keeps_hq_and_single_presence(self):
+        self.lobby.owners['local'] = dict(name='alice',hostname='test')
+        hq,_ = await self.connect('alice')
+        initial = await self.receive(hq,lambda m:m['type']=='state')
+        self.assertEqual([p['name'] for p in initial['players']],['alice'])
+        game,welcome = await self.connect('alice','game')
+        self.assertEqual(welcome['type'],'welcome')
+        await self.cmd(game,'/host tetris')
+        await self.receive(game,lambda m:m.get('phase')=='waiting')
+        self.assertEqual(self.lobby.room_for('1'),(None,None))
+        self.assertEqual(len(self.lobby.mesh.players()),1)
+        await self.cmd(game,'/start')
+        await self.receive(game,lambda m:'board' in m)
+        game[1].close()
+        await game[1].wait_closed()
+        await asyncio.sleep(.1)
+        await self.cmd(hq,'still in HQ')
+        await self.receive(hq,lambda m:m['type']=='event' and 'still in HQ' in m['text'])
+        self.assertFalse(self.lobby.shutdown.is_set())
 
     async def test_duplicate_and_signin(self):
         p,_ = await self.connect('alice')

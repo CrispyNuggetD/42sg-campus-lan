@@ -4,7 +4,7 @@ A terminal hangout for a few friends at 42 Singapore. See who's online and where
 they're sitting, chat, and invite each other to co-op Tetris or a round of
 **Who Said That?**
 
-This is version **0.3.0**, a small LAN prototype. Everyone joins as a guest;
+This is version **0.4.0**, a small LAN prototype. Everyone joins as a guest;
 Intra sign-in is planned for later.
 
 ## Get started
@@ -34,14 +34,13 @@ nothing in `/bin` or `~/.local/bin`.
 
 ## Find your friends
 
-Ask a friend to open their lobby. In yours, type `/join` and answer the questions
-about their **cluster, row and seat**. You can also connect when launching:
+Everyone starts the same way: run `lan42` (or `lan42.sh`). Your HQ starts on
+TCP **31416** and shows **1 online: you** once it connects to its local node.
+There is no choice between hosting and joining a lobby.
 
-```sh
-~/Documents/42sg-campus-lan/lan42.sh join
-# Or, if you already know their seat:
-~/Documents/42sg-campus-lan/lan42.sh join c1r2s3
-```
+In HQ, type `/join` for seat questions, `/join c1r2s3` for a known seat, or
+`/join 192.168.1.50 31416` for a custom address and port. That links the nodes
+and shares known peers while your HQ stays in its own terminal.
 
 The campus address mapping is:
 
@@ -56,7 +55,7 @@ where people are sitting. You'll need to sign in to Intra to view it.
 
 Joining tries that one address. Your friend must have the app running, and the
 network must allow the connection. You can also enter an IP address directly,
-such as `./lan42.sh join 10.11.2.3`.
+such as `/join 10.11.2.3` inside HQ.
 
 ### How the lobbies stay connected
 
@@ -74,15 +73,20 @@ Seats come from the LAN address or a matching cluster hostname. This does not
 poll the 42 API every five seconds. If a seat can't be determined, it is shown
 as unknown.
 
-Your own node keeps running while you visit a friend's lobby or game. Use
-`/home` to return to it. **Quitting the app or closing its terminal stops your
-node.** Everyone else's nodes keep going; when everyone quits, the network is
-gone. A crashed or unreachable peer drops out of the online list after roughly
-16 seconds.
+The first node is only the initial meeting point. After discovery, nodes talk
+to one another directly. When the first quits, the remaining nodes keep the
+shared lobby alive without electing a replacement. When everyone quits, it ends.
+A crashed or unreachable peer drops out after roughly 16 seconds.
 
-Games live on the node hosting them. If that node quits, its games end and
-visiting clients return to their own nodes. Leaving just a game room transfers
-room control to another player; it doesn't stop the server.
+**HQ and games have separate terminal windows.** `/host tetris` or `/host bluff
+free` opens a game window on your node; `/join NUMBER` opens a game on the peer
+you last linked. `/home` resets that game target to your own node. Closing a
+game window leaves HQ and your presence running. Closing HQ stops your node.
+
+Each game still runs on one node. If that node quits, its games end; other nodes
+and their games continue. Migrating a running game's state is not implemented.
+Keep HQ open while playing. One guest can have one HQ connection and one game
+connection on each server, without appearing twice in the mesh roster.
 
 ## Testing on a Mac or another LAN
 
@@ -126,12 +130,12 @@ last 500 event lines. Text input currently supports ASCII.
 | `/rooms` | Show game rooms. |
 | `/games` | List the available games. |
 | `/join` | Ask for a friend's cluster, row and seat. |
-| `/connect c1r2s3` | Go straight to that friend's server. `/connect IP PORT` also works. |
-| `/home` | Return to your own lobby. |
-| `/host tetris` | Create a co-op Tetris room and send an invitation. |
-| `/host bluff free` | Create a Who Said That? room without a prompt. |
-| `/host bluff prompt` | Create a Who Said That? room with a random prompt. |
-| `/join NUMBER` | Join a room on the server you're currently visiting. |
+| `/connect c1r2s3` | Alias for linking a peer; HQ stays local. |
+| `/home` | Select your own node for the next game join. |
+| `/host tetris` | Open a Tetris terminal and advertise its room. |
+| `/host bluff free` | Open a bluff terminal without a prompt. |
+| `/host bluff prompt` | Open a bluff terminal with a random prompt. |
+| `/join NUMBER` | Open a game terminal on the last linked peer. |
 | `/start` | Start your room's game, or play another round. |
 | `/leave` | Leave the game room. |
 | `/invite` | Ask for a friend's seat and invite their running lobby to your room. |
@@ -259,7 +263,11 @@ The launcher uses `git pull --ff-only`. If you have local edits, it skips the
 update; if pulling fails, it warns you and runs the existing copy. Set
 `LAN42_NO_UPDATE=1` to skip updating deliberately.
 
-**Moving from v0.1?** Everyone needs v0.2.0 (protocol 2). The old version left a
+**Updating?** Everyone needs v0.4.0 (protocol 3); quit existing apps and restart.
+The legacy `host` and `join` startup commands remain as compatibility aliases.
+Normal startup is simply `lan42`, with `/join` inside HQ.
+
+**Moving from v0.1?** The old version left a
 background server running after you quit. Check its PID and process, stop that
 old server, then reopen the app. Updating the source doesn't kill existing
 servers automatically.
@@ -268,9 +276,9 @@ Logs and PID files are in `~/.local/state/42sg-campus-lan/`, or under
 `$XDG_STATE_HOME/42sg-campus-lan` if configured. For the default port, look for
 `server-31416.log` and `server-31416.pid`.
 
-To test multiple nodes on one computer, give each a different port. `--port`
-sets the host port, or the friend's port when joining; `join --local-port`
-sets your own node's port. An explicitly started `./lan42.sh server` runs in
+To test multiple nodes on one computer, use `lan42 --port 32101 --guest-name hnah`
+and `lan42 --port 32102 --guest-name thtay` in separate terminals, then type
+`/join 127.0.0.1 32101` in the second HQ. An explicitly started `./lan42.sh server` runs in
 the foreground until you stop it.
 
 With five nodes, the mesh makes about **20 small exchanges every five seconds

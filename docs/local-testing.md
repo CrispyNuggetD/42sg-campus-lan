@@ -1,117 +1,80 @@
-# Try the games on one Mac or Ubuntu computer
+# Test HQ and games on one Mac or Ubuntu computer
 
-Use a normal terminal with Python 3.9+ and curses support. Resize each window to
-at least 76 columns by 28 rows. These commands use three different local ports
-and guest names to simulate separate computers. No Intra account is needed.
+Update your Documents clone with `git pull --ff-only` and run `sh setup.sh`.
+Quit old LAN42 apps before testing v0.4.0 (protocol 3). Resize each terminal to
+at least 76 columns by 28 rows. Guest names below simulate different students.
 
-## Prepare the repo
+## Two equal HQ nodes
 
-If you haven't cloned it to Documents yet:
-
-```sh
-mkdir -p ~/Documents
-git clone https://github.com/CrispyNuggetD/42sg-campus-lan.git ~/Documents/42sg-campus-lan
-```
-
-Then update and prepare it:
+Terminal A:
 
 ```sh
-cd ~/Documents/42sg-campus-lan
-git pull --ff-only
-sh setup.sh
+~/Documents/42sg-campus-lan/lan42.sh --port 32101 --guest-name hnah
 ```
 
-Quit any running test apps before testing a new version, so their servers restart
-with the updated code. Version 0.2.1 allows two-player bluff rounds.
-
-## Open two terminal windows
-
-In terminal A:
+Terminal B:
 
 ```sh
-~/Documents/42sg-campus-lan/lan42.sh host --port 32101 --guest-name hnah
+~/Documents/42sg-campus-lan/lan42.sh --port 32102 --guest-name thtay
 ```
 
-In terminal B:
+Each starts with itself online. In B, type:
+
+```text
+/join 127.0.0.1 32101
+```
+
+Both HQs stay in their own windows. Within about five seconds they should show
+both players. Try chat, `/who`, and `/map 1`. Home computers usually have unknown
+campus seats. No API sign-in is needed.
+
+## Co-op Tetris opens separate game windows
+
+1. In A's HQ, type `/host tetris`. A new terminal opens, creates the room and
+   advertises it. HQ remains online.
+2. In B's HQ, type `/join 1` (use the invitation's actual room number).
+   Another game terminal opens and joins A's room.
+3. In A's **game terminal**, type `/start`.
+4. Use arrows/WASD and Space in either game terminal to control the shared piece.
+   Tab switches between play and chat.
+5. `/quit` or close each game window. Both HQ windows should remain connected,
+   with two online users. Use `/leave` if you want to leave the room but keep
+   that game terminal open; close it before opening another game on that node.
+
+## Two-player bluff
+
+1. In A's HQ, type `/host bluff free`.
+2. In B's HQ, `/join NUMBER` using the new room number.
+3. In A's game window, `/start`.
+4. In A's game window, `/answer wow I blackholed!`.
+5. In B's game window, `/answer fishy`.
+6. When shuffled entries appear, both vote using `/vote hnah thtay` or
+   `/vote thtay hnah`, matching guesses for entries 1 and 2.
+
+Both phases time out after 45 seconds. Results reveal authors and scores.
+Two players are allowed, though three makes guessing less obvious.
+For prompts, create a new room using `/host bluff prompt`.
+
+## Third node and survival after the first quits
+
+Terminal C:
 
 ```sh
-~/Documents/42sg-campus-lan/lan42.sh join 127.0.0.1 --port 32101 --local-port 32102 --guest-name thtay
+~/Documents/42sg-campus-lan/lan42.sh --port 32103 --guest-name dthoo
 ```
 
-Both clients are now visiting A's server, while each has its own local node.
-B's `--port` is the server it visits; `--local-port` is its own server.
-Type a chat message in either window and check it appears in the other.
-Use `/who` to see both guest names. Allow about five seconds for peer updates.
-Seats will usually be unknown on a home computer.
+In C, `/join 127.0.0.1 32101`. Wait for all three HQ rosters to agree.
+Quit A's HQ. B and C should remain online and able to chat. No replacement-host
+command is needed. Games hosted on A end, but games on B or C can continue.
+To join a game on B from C, `/join 127.0.0.1 32102` then `/join NUMBER`.
 
-## Test co-op Tetris
+## Separate computers
 
-1. In A, type `/host tetris`.
-2. In B, type `/join 1` (or use the room number shown in the invitation).
-3. In A, type `/start`.
-4. Use arrows or WASD in either window. Both should control the same piece.
-   Space drops it; Tab switches between play and chat.
-5. Type `/leave` in each window when done. Press Tab first if needed.
+Each person runs `lan42` using the default port 31416. Inside HQ, join a friend's
+private IPv4 address with `/join 192.168.1.50`, or a campus seat with
+`/join c1r2s3`. Add the port if they use a different one.
 
-## Test Who Said That?
-
-1. In A, type `/host bluff free`.
-2. In B, join the new room with `/join NUMBER`, using the actual room number.
-3. In A, type `/start`. With two players, a recommendation for 3+ appears,
-   but the round starts anyway.
-4. In A, type `/answer wow I blackholed!`; in B, type `/answer fishy`.
-5. When the shuffled entries appear, use `/vote hnah thtay` or
-   `/vote thtay hnah` in each window, matching your guess for entry 1 then entry 2.
-6. Check that the authors and scores appear after both votes. You have 45 seconds
-   for answers and another 45 for votes. `/start` plays another round.
-
-With two players you can deduce the other author from your own entry. It's useful
-for testing, but adding a third makes the guessing game more interesting.
-To test prompts, leave the room and create one with `/host bluff prompt`.
-
-## Add an optional third player
-
-In terminal C:
-
-```sh
-~/Documents/42sg-campus-lan/lan42.sh join 127.0.0.1 --port 32101 --local-port 32103 --guest-name dthoo
-```
-
-Use `/join NUMBER` before the next round starts. Votes now need three names,
-one for each entry—for example, `/vote hnah dthoo thtay`.
-
-## Test independent nodes and invitations
-
-After leaving the games, type `/home` in B and C to visit their own nodes.
-Chat should still reach the other windows through the mesh. In A, create a game
-room and use `/invite-room` to advertise it. The invitation gives the address,
-port and room number; visitors connect and join explicitly.
-
-Use `/quit` in A. B and C should keep running and chatting after their initial
-peer discovery has completed. If either was still visiting A, it should return
-home. Quitting each remaining app should stop its own node.
-
-On macOS, expect a terminal beep and log entry instead of a Linux desktop popup.
-On Ubuntu, desktop popups use `notify-send` when installed and permitted by the
-desktop notification settings. Keep the receiving client open.
-
-## Use separate computers on a home LAN
-
-On the host:
-
-```sh
-~/Documents/42sg-campus-lan/lan42.sh host --port 32101
-```
-
-On a friend’s computer, substitute the host's actual private IPv4 address:
-
-```sh
-~/Documents/42sg-campus-lan/lan42.sh join 192.168.1.50 --port 32101
-```
-
-Different computers can use the same local port. The `--local-port` distinction
-above is needed because the simulated players share one Mac. Choose unused,
-unprivileged ports; there is no requirement to use 31416 or a campus address.
-Public internet addresses are currently rejected, and router/firewall isolation
-can prevent LAN connections. IPv6 and native Windows are not covered by this
-walkthrough: the current launcher uses IPv4 resolution and Unix modules.
+Linux supports GNOME Terminal, Konsole, Xfce Terminal and xterm; macOS uses
+Terminal. If a new window cannot open, HQ prints a command you can run in a
+second terminal manually. macOS notifications fall back to a terminal beep/log;
+Ubuntu uses `notify-send` when available. Public internet IPs are rejected.
