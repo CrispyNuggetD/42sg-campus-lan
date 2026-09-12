@@ -8,6 +8,6 @@ co-op Tetris; bundled prompts; round-local bluff scoring; seat-based LAN address
 no authentication or persistent database. Intra sign-in remains a coming-later
 placeholder; a green palette entry is reserved for verified identity.
 
-The existing SUTD syncdocs integration already covers a clone under Documents.
+Optional public zsh helpers now provide dailylogin; existing personal functions are preserved.
 Campus deployment and desktop notification verification are delegated separately
 through the enrolled mac-remote device, not inferred from localhost tests.

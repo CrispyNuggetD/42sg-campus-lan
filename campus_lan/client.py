@@ -204,7 +204,7 @@ class Client:
         else:
             self.send(dict(type='command',text='/invite-seat '+seat))
             self.lines.append(f'Trying friend server at {seat} = {target}...')
-        
+
     def run(self,screen):
         screen.timeout(80)
         try:

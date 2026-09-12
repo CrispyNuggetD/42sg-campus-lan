@@ -2,7 +2,7 @@
 
 A small **guest-mode terminal lobby for friends on the same LAN**, with chat,
 desktop invitations, co-op Tetris and an anonymous-message bluffing game.
-Version **0.1.1**. Python 3.9+ standard library, Git, and a terminal with curses.
+Version **0.1.2**. Python 3.9+ standard library, Git, and a terminal with curses.
 No pip dependencies, sudo, external prompt service, or account setup.
 
 ## Install and play
@@ -142,19 +142,37 @@ placeholder**, separate from LAN TCP port 31416. It starts no HTTP server.
 See [42's client-credentials guide](https://api.intra.42.fr/apidoc/guides/getting_started)
 and [user endpoint](https://api.intra.42.fr/apidoc/2.0/users/show.html).
 
-## Daily login and repository layout
+## Optional zsh helpers and daily login
 
-Your SUTD dailylogin already calls syncdocs when pullotherrepos=1.
-Its recursive Documents scan will pull this normal clone at
-~/Documents/42sg-campus-lan; no second updater needs to be added.
-Run setup once for the lan42 command. Daily login updates source; it does not
-automatically host a lobby or notify friends.
+The dailylogin command is **not a standard campus command**. It originally came
+from Ryker's personal [SUTD zsh additions](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29).
+A public-friendly adaptation is now included in this repository.
+
+To get the latest copy and install it without replacing your .zshrc:
+
+    cd ~/Documents/42sg-campus-lan
+    sh setup.sh --zsh
+
+Then open a new terminal (or source your .zshrc). Setup backs up the file and
+adds a source line pointing to this clone, so future Git pulls update the helpers.
+Existing personal functions and aliases are preserved.
+
+Run **lan42_dailylogin** to update this repo and reload its helpers in your
+current shell. If you do not already define dailylogin, that shorter name is
+provided too. By default it only pulls the LAN repo; pulling all your Documents
+repos is an opt-in setting. It does not open the lobby or launch other applications.
+
+See [the zsh helper guide](useful-scripts/README.md) for manual installation,
+your own project paths, optional Documents syncing, and compile/run helpers.
+Plain sh setup.sh still installs only lan42, without editing shell configuration.
+
+### Repository layout
 
 - campus_lan/: client, host, game rules and optional API adapter.
 - minigames/: game directory/guide.
-- useful-scripts/: intentionally empty apart from Git's tracking placeholder.
+- useful-scripts/: public zsh helpers, installer and configuration guide.
 - docs/: protocol and campus deployment task.
-- tests/: deterministic rules and real localhost multi-client tests.
+- tests/: rules, networking, lifecycle and helper installation checks.
 
 ## Scope and checks
 
