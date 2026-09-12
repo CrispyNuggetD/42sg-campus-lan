@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import json
 import unittest
+from unittest.mock import patch
 from campus_lan.server import Lobby
 from campus_lan import PROTOCOL
 
@@ -97,6 +98,39 @@ class Network(unittest.IsolatedAsyncioTestCase):
         ack = await self.receive(remote,lambda m:m['type']=='invite_ack')
         self.assertEqual(ack['clients'],1)
         self.assertEqual(len(self.lobby.clients),1)
+
+    async def test_two_player_bluff_round(self):
+        self.lobby.round_seconds = 30
+        a,_ = await self.connect('alice')
+        b,_ = await self.connect('bob')
+        await self.cmd(a,'/host bluff free')
+        await self.receive(a,lambda m:m.get('phase')=='waiting')
+        await self.cmd(a,'/start')
+        await self.receive(a,lambda m:m['type']=='event' and 'at least 2' in m['text'])
+        await self.cmd(b,'/join 1')
+        await self.receive(b,lambda m:m.get('phase')=='waiting')
+        await self.cmd(a,'/start')
+        await self.receive(b,lambda m:m['type']=='event' and 'best with 3+' in m['text'])
+        await self.receive(a,lambda m:m.get('phase')=='writing')
+        await self.cmd(a,'/answer apples')
+        await self.cmd(b,'/answer bananas')
+        voting = await self.receive(a,lambda m:m.get('phase')=='voting')
+        self.assertEqual(len(voting['options']),2)
+        self.assertTrue(all(x['author'] is None for x in voting['options']))
+        guesses = ' '.join('alice' if x['text']=='apples' else 'bob' for x in voting['options'])
+        for peer in (a,b):
+            await self.cmd(peer,'/vote '+guesses)
+        result = await self.receive(a,lambda m:m.get('phase')=='results')
+        self.assertIn('alice: 2 points',result['result'])
+        self.assertIn('bob: 2 points',result['result'])
+
+    async def test_outbound_seat_invitation_is_delimited(self):
+        p,_ = await self.connect('host')
+        await self.cmd(p,'/host tetris')
+        await self.receive(p,lambda m:m.get('phase')=='waiting')
+        with patch('campus_lan.server.seat_address',return_value='127.0.0.1'):
+            await self.cmd(p,f'/invite-seat c1r2s3 {self.port}')
+            await self.receive(p,lambda m:m['type']=='event' and 'Invitation delivered' in m['text'])
 
     async def test_duplicate_and_signin(self):
         p,_ = await self.connect('alice')

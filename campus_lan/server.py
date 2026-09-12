@@ -146,7 +146,7 @@ class Lobby:
                 reader,writer = await asyncio.wait_for(asyncio.open_connection(target,port),3)
                 try:
                     writer.write((json.dumps(dict(type='peer_invite',protocol=PROTOCOL,
-                        name=c['name'],game=room['game'],room=rid,port=self.port))+'\\n').encode())
+                        name=c['name'],game=room['game'],room=rid,port=self.port))+'\n').encode())
                     await writer.drain()
                     reply = json.loads(await asyncio.wait_for(reader.readline(),3))
                     if reply.get('type')!='invite_ack':
@@ -170,8 +170,10 @@ class Lobby:
             if room['game']=='tetris':
                 room['engine'] = Tetris()
             else:
-                if len(room['members'])<3:
-                    raise ValueError('Bluff needs at least 3 players.')
+                if len(room['members'])<2:
+                    raise ValueError('Bluff needs at least 2 players.')
+                if len(room['members'])==2:
+                    await self.event('Bluff works with two, but is best with 3+ players: with two, the other author is easy to deduce.',room['members'])
                 names = {p:self.clients[p]['name'] for p in sorted(room['members'])}
                 turn = room.get('turn',0)
                 leader = list(names)[turn%len(names)]

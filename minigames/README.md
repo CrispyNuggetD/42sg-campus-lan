@@ -1,4 +1,4 @@
-# 42SG LAN minigames — v0.1.0
+# 42SG LAN minigames — v0.2.1
 
 Implemented in campus_lan/games.py, coordinated by campus_lan/server.py.
 
@@ -6,7 +6,7 @@ Implemented in campus_lan/games.py, coordinated by campus_lan/server.py.
   rotation, line clearing and scoring. /host tetris, friends /join NUMBER,
   room host /start.
 - **Who Said That?:** timed anonymous-message guessing. /host bluff free or
-  /host bluff prompt. Three players minimum. /answer TEXT, then
+  /host bluff prompt. Two players minimum; three or more recommended. /answer TEXT, then
   /vote USER1 USER2 ... assigns an author to each shuffled entry.
   Reveal authors and round scores after voting. Built-in prompts; no external AI.
 

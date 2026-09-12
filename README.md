@@ -4,7 +4,7 @@ A terminal hangout for a few friends at 42 Singapore. See who's online and where
 they're sitting, chat, and invite each other to co-op Tetris or a round of
 **Who Said That?**
 
-This is version **0.2.0**, a small LAN prototype. Everyone joins as a guest;
+This is version **0.2.1**, a small LAN prototype. Everyone joins as a guest;
 Intra sign-in is planned for later.
 
 ## Get started
@@ -84,6 +84,16 @@ Games live on the node hosting them. If that node quits, its games end and
 visiting clients return to their own nodes. Leaving just a game room transfers
 room control to another player; it doesn't stop the server.
 
+## Testing on a Mac or another LAN
+
+Campus seat shortcuts are optional. You can connect using a private IPv4 address
+(such as `192.168.1.50` or `10.0.0.20`), a hostname resolving to one, or localhost.
+Choose any available TCP port with `--port`; no campus-specific port is required.
+Public internet IPs are currently rejected. Outside campus, seats show as unknown.
+
+See [the local test walkthrough](docs/local-testing.md) for exact commands to run
+two or three players in separate terminals on one Mac or Ubuntu computer.
+
 ## Chat, invitations and commands
 
 Type a message and press **Enter** to chat. **Page Up/Down** scrolls through the
@@ -132,7 +142,9 @@ the room host can type `/start` to try again.
 
 ### Who Said That?
 
-For three or more players. Write a message that your friends won't recognise as
+For **two or more players**, though three or more makes guessing much more fun.
+With two, recognising your own message gives away the other author.
+Write a message that your friends won't recognise as
 yours, using `/answer YOUR TEXT`.
 
 **Free mode** lets you write anything. **Prompt mode** gives everyone a random
