@@ -134,7 +134,7 @@ class Client:
             screen.refresh()
             return
         self.line(screen,0,f" RYKER'S 42SG LAN  v{VERSION} | {self.name} [Guest] | "+('ONLINE' if self.connected else 'DISCONNECTED'),curses.A_BOLD)
-        self.line(screen,1,'Intra sign-in: coming later | Verified colour reserved: green | /help')
+        self.line(screen,1,'Guest mode | /signin: Sign in with Intra (coming later) | /help')
         players = self.state.get('players',[])
         self.line(screen,2,'Peers: '+' | '.join(f"{p['name']}@{p['hostname']} [{p['seat']}]" for p in players))
         self.line(screen,3,self.state.get('api','Waiting for lobby...'))

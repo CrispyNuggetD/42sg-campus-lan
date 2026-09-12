@@ -16,7 +16,10 @@ Clone once on each computer:
 
 Run the installed command (or add ~/.local/bin to PATH):
 
-    ~/.local/bin/lan42 host
+    ~/.local/bin/lan42
+
+With no arguments, lan42 opens your guest lobby and starts its host server.
+The explicit equivalent is lan42 host.
 
 Friends connect to that computer's LAN address:
 
