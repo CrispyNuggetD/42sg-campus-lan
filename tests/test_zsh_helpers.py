@@ -24,13 +24,16 @@ class Installer(unittest.TestCase):
             self.assertEqual(len(backups),1)
             self.assertEqual(backups[0].read_text(),original)
 
-    def test_rejects_broken_markers(self):
+    def test_appends_after_old_or_broken_blocks(self):
         with tempfile.TemporaryDirectory() as tmp:
             rc = Path(tmp)/'.zshrc'
-            rc.write_text(module.START)
-            with self.assertRaises(ValueError):
-                module.install(ROOT,rc)
-            self.assertEqual(rc.read_text(),module.START)
+            original = module.START + '\n# My unfinished edits'
+            rc.write_text(original)
+            self.assertTrue(module.install(ROOT,rc))
+            self.assertTrue(rc.read_text().startswith(original))
+            self.assertFalse(module.install(ROOT,rc))
+            self.assertTrue(module.install(Path(tmp)/'another clone',rc))
+            self.assertTrue(rc.read_text().startswith(original))
 
 @unittest.skipUnless(shutil.which('zsh'),'zsh unavailable')
 class Helpers(unittest.TestCase):
@@ -53,6 +56,7 @@ whence lan42_dailylogin
 
     def test_default_and_reload(self):
         result = self.run_zsh("""
+LAN42_OPEN_ON_LOGIN=0
 source "$1"
 print "$LAN42_PULL_OTHER_REPOS"
 lan42_pull() { print MOCK_PULL; }

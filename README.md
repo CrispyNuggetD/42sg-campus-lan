@@ -4,7 +4,7 @@ A terminal hangout for a few friends at 42 Singapore. See who's online and where
 they're sitting, chat, and invite each other to co-op Tetris or a round of
 **Who Said That?**
 
-This is version **0.2.1**, a small LAN prototype. Everyone joins as a guest;
+This is version **0.2.2**, a small LAN prototype. Everyone joins as a guest;
 Intra sign-in is planned for later.
 
 ## Get started
@@ -166,33 +166,41 @@ Voting lasts up to 45 seconds, then the real authors and scores are revealed.
 The host can `/start` another round. Scores reset each round. A round is
 cancelled if the leader doesn't submit or fewer than two answers arrive.
 
-## Optional zsh helpers
+## Zsh commands and daily login
 
-Want a shorter command? This repo includes a public adaptation of
-[Ryker's SUTD zsh helpers](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29),
-including `lan42`, project helpers, and a daily update command.
+`sh setup.sh` includes the zsh helpers by default. It backs up your `.zshrc` and
+**appends** a guarded source block pointing to this clone. It never truncates or
+rewrites your existing settings. Rerunning setup skips an identical block; if
+you move the clone, a new block is appended and the old one is left alone.
+
+To skip shell setup:
 
 ```sh
-cd ~/Documents/42sg-campus-lan
-sh setup.sh --zsh
+sh setup.sh --no-zsh
 ```
 
-Open a new terminal, or source your `.zshrc`, and run `lan42` to open the lobby.
-The function has the same name as `lan42.sh`, without the extension, and passes
-arguments through—for example, `lan42 join c1r2s3`.
-The installer backs up your `.zshrc` and adds a line that loads the helpers from
-this clone. It preserves existing personal functions and aliases. Future Git
-pulls update the helper file too.
+After setup, open a new zsh terminal or run `source "${ZDOTDIR:-$HOME}/.zshrc"`.
+You can then use:
 
-`dailylogin` started as Ryker's personal command; it isn't something other
-students already have. This version provides `lan42_dailylogin` to pull the
-latest LAN repo and reload its helpers. It also provides the shorter
-`dailylogin` name if you don't already use it. Updating other Documents repos is
-optional, and running it doesn't open the lobby or other apps.
+- `lan42` to open the lobby in your current terminal. It passes arguments through,
+  so `lan42 join c1r2s3` works too.
+- `dailylogin` to update the repo, reload its helpers and open LAN42 in another
+  terminal window, leaving your current shell free.
+- `lan42_window` to open that separate window directly.
+
+`dailylogin` is a helper from this project, adapted from
+[Ryker's SUTD zsh additions](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29).
+If you already have your own `dailylogin`, it is preserved; use
+`lan42_dailylogin` for this repo's version. Ryker's personal version also opens
+LAN42 alongside his existing tasks.
+
+Future Git pulls update the sourced helpers. To make `dailylogin` update without
+opening a window, set `LAN42_OPEN_ON_LOGIN=0` before the source block in your
+`.zshrc`. Sourcing the file alone never launches anything. If zsh isn't installed,
+setup prepares the launcher and explains how to enable the helpers later.
 
 See [the zsh helper guide](useful-scripts/README.md) for manual setup, project
-paths, compile/run helpers and optional Documents syncing. Running plain
-`sh setup.sh` leaves your shell configuration alone.
+paths, compile/run helpers and optional Documents syncing.
 
 ## Guest names and future Intra sign-in
 

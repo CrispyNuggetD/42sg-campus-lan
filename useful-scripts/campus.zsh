@@ -5,10 +5,12 @@
 typeset -g LAN42_REPO_ROOT="${${(%):-%N}:A:h:h}"
 : ${LAN42_DOCUMENTS_ROOT:=$HOME/Documents}
 : ${LAN42_PULL_OTHER_REPOS:=0}
+: ${LAN42_OPEN_ON_LOGIN:=1}
 : ${LAN42_MAIN_REPO_ROOT:=}
 : ${LAN42_PROJECT_PATH:=}
 
 lan42() { command sh "$LAN42_REPO_ROOT/lan42.sh" "$@"; }
+lan42_window() { command python3 "$LAN42_REPO_ROOT/useful-scripts/open_terminal.py"; }
 lan42_compile() { command cc -Wall -Wextra -Werror "$@"; }
 lan42_run() { command valgrind --leak-check=full --show-leak-kinds=all "$@"; }
 
@@ -82,7 +84,10 @@ lan42_dailylogin() {
     lan42_pull "$LAN42_REPO_ROOT" || result=1
   fi
   source "$LAN42_REPO_ROOT/useful-scripts/campus.zsh"
-  print -- 'Campus helpers reloaded. Run lan42 to open your lobby.'
+  print -- 'Campus helpers reloaded.'
+  if [[ "$LAN42_OPEN_ON_LOGIN" == 1 ]]; then
+    lan42_window || result=1
+  fi
   return $result
 }
 

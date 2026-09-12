@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-command -v zsh >/dev/null || { echo 'zsh is required for these optional helpers.'; exit 1; }
+command -v zsh >/dev/null || { echo 'zsh is required for these helpers.'; exit 1; }
 if [ "${LAN42_NO_UPDATE:-0}" != 1 ]; then
     if [ -n "$(git -C "$repo_dir" status --porcelain)" ]; then
         echo 'Local edits found. Installing the current helper copy without pulling.'
@@ -12,5 +12,5 @@ if [ "${LAN42_NO_UPDATE:-0}" != 1 ]; then
         }
     fi
 fi
-sh "$repo_dir/setup.sh"
+sh "$repo_dir/setup.sh" --no-zsh
 python3 "$repo_dir/useful-scripts/install_zsh.py" "$repo_dir"

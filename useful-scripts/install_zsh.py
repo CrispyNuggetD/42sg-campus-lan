@@ -11,22 +11,18 @@ END = '# <<< 42sg-campus-lan helpers <<<'
 
 def install(repo, rc):
     old = rc.read_text() if rc.exists() else ''
-    block = START + '\nsource ' + shlex.quote(str(repo / 'useful-scripts/campus.zsh')) + '\n' + END
-    if START in old or END in old:
-        if old.count(START) != 1 or old.count(END) != 1 or old.index(START) > old.index(END):
-            raise ValueError('Malformed helper markers; fix them before rerunning setup.')
-        first, last = old.index(START), old.index(END) + len(END)
-        new = old[:first] + block + old[last:]
-    else:
-        new = old + ('\n' if old and not old.endswith('\n') else '') + '\n' + block + '\n'
-    if new == old:
+    source = shlex.quote(str(repo / 'useful-scripts/campus.zsh'))
+    block = START + '\n[ ! -f ' + source + ' ] || source ' + source + '\n' + END
+    if block in old:
         return False
+    addition = ('\n' if old and not old.endswith('\n') else '') + '\n' + block + '\n'
     rc.parent.mkdir(parents=True, exist_ok=True)
     if rc.exists():
         backup = rc.with_name(rc.name + '.lan42-backup-' + str(time.time_ns()))
         shutil.copy2(rc, backup)
         print('Backup:', backup)
-    rc.write_text(new)
+    with rc.open('a') as output:
+        output.write(addition)
     return True
 
 if __name__ == '__main__':

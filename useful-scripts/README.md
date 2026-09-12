@@ -8,27 +8,33 @@ dailylogin ideas. It does not copy his email, project selection, brightness chan
 attendance scripts, mailbox/stayon startup, application launches or automatic cleanup.
 Public syncproj pulls only; commit and push your own work explicitly.
 
-## Recommended setup
+## Setup (included by default)
 
-From your clone:
+From your clone, run:
 
-    sh setup.sh --zsh
+```sh
+sh setup.sh
+```
 
-This attempts a fast-forward pull for the latest version, prepares the launcher inside your clone,
-backs up your existing .zshrc, and adds one marked source block. The lan42 shortcut is a zsh function pointing to
-`lan42.sh` in this clone; nothing is installed into a bin directory. It honours ZDOTDIR.
-It never replaces your shell configuration or executes it during installation.
-Open a new terminal afterward, or source your .zshrc yourself.
+Setup prepares `lan42.sh`, backs up your `.zshrc`, and appends a guarded source
+block. Existing text is never truncated or rewritten. It honours `ZDOTDIR`.
+An identical block is skipped on repeat installs. A changed clone path adds a
+new block at the end; old blocks remain, and missing helper files are skipped
+by the new guarded blocks. You can remove stale blocks manually later.
 
-The block loads campus.zsh directly from this clone. You do not have to copy the
-functions again after a Git update. Run lan42_dailylogin to pull and reload them
-in your current shell, or open a new shell after another command pulls the repo.
-Rerunning setup updates the managed block without duplicating it.
+Use `sh setup.sh --no-zsh` to opt out. The older `--zsh` flag still works.
+Open a new zsh terminal afterward, or run `source "${ZDOTDIR:-$HOME}/.zshrc"`.
+A setup subprocess cannot define functions in the shell that launched it.
 
-If the clone has local edits, setup installs that local version and says so.
-If a clean clone cannot pull, setup stops; retry or explicitly use:
+The block loads `campus.zsh` directly from this clone, so Git updates also update
+the helpers. `dailylogin` (or `lan42_dailylogin` if you already have a personal
+command) pulls the repo, reloads the helpers and opens LAN42 in a separate
+terminal window. `lan42` opens it in the current terminal instead.
 
-    LAN42_NO_UPDATE=1 sh setup.sh --zsh
+macOS uses Terminal; Linux supports GNOME Terminal, Konsole, Xfce Terminal and
+xterm. Without a supported desktop terminal, run `lan42` yourself. Repeating
+`dailylogin` requests another window, so close an existing LAN42 window first
+if you want to restart it. Other personal daily-login tasks are not installed.
 
 ## Manual installation
 
@@ -42,17 +48,21 @@ Settings go **before** the source line. For example, using your own paths:
     export LAN42_PROJECT_PATH="Core Curriculum/Projects/my-project"
     export LAN42_DOCUMENTS_ROOT="$HOME/Documents"
     export LAN42_PULL_OTHER_REPOS=0
+    export LAN42_OPEN_ON_LOGIN=1
 
 Set LAN42_PULL_OTHER_REPOS=1 if you want dailylogin to pull **all** working Git
 repositories beneath that directory. This is optional; the default only updates
 the campus LAN clone. It preserves dirty worktrees and reports failures.
+
+Set `LAN42_OPEN_ON_LOGIN=0` to update without opening a lobby window.
 
 ## Commands
 
 | Command | Behaviour |
 | --- | --- |
 | lan42 | Launch the lobby; launcher checks for updates |
-| lan42_dailylogin | Pull and reload helpers; no lobby or other apps launched |
+| lan42_dailylogin | Pull, reload helpers and open LAN42 in another window |
+| lan42_window | Open LAN42 in another terminal window |
 | lan42_syncdocs | Explicitly pull working repositories beneath Documents |
 | lan42_syncproj | Pull your configured main repository |
 | lan42_cdmain | Change into your configured main repository |
