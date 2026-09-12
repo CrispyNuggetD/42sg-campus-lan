@@ -1,204 +1,257 @@
 # Ryker's 42SG Campus LAN Server
 
-A small **guest-mode terminal lobby for friends on the same LAN**, with chat,
-desktop invitations, co-op Tetris and an anonymous-message bluffing game.
-Version **0.2.0**. Python 3.9+ standard library, Git, and a terminal with curses.
-No pip dependencies, sudo, external prompt service, or account setup.
+A terminal hangout for a few friends at 42 Singapore. See who's online and where
+they're sitting, chat, and invite each other to co-op Tetris or a round of
+**Who Said That?**
 
-## Install and play
+This is version **0.2.0**, a small LAN prototype. Everyone joins as a guest;
+Intra sign-in is planned for later.
 
-Clone once on each computer:
+## Get started
 
-    cd ~/Documents
-    git clone https://github.com/CrispyNuggetD/42sg-campus-lan.git
-    cd 42sg-campus-lan
-    sh setup.sh
+You'll need Git, Python 3.9 or newer with curses support, and a terminal at least
+**76 columns × 28 rows**. There are no pip packages to install.
 
-Run the launcher directly from your Documents clone:
+Each person clones the repo into their Documents folder:
 
-    ~/Documents/42sg-campus-lan/launch.sh
+```sh
+mkdir -p ~/Documents
+cd ~/Documents
+git clone https://github.com/CrispyNuggetD/42sg-campus-lan.git
+cd 42sg-campus-lan
+sh setup.sh
+```
 
-With no arguments, launch.sh opens your guest lobby and starts its host server.
-The explicit equivalent is ./launch.sh host. The optional zsh setup below provides\nthe lan42 shortcut; otherwise use the full launcher path for the lan42 commands\nin this guide. Setup writes nothing to /bin or ~/.local/bin and needs no PATH edit.
+Then open the lobby:
 
-Friends connect to that computer's LAN address:
+```sh
+~/Documents/42sg-campus-lan/launch.sh
+```
 
-    ~/Documents/42sg-campus-lan/launch.sh join
+The launcher checks for updates and prints the version, commit and date before
+starting. Everything runs from this clone; setup needs no sudo and installs
+nothing in `/bin` or `~/.local/bin`.
 
-It asks for the friend server's **cluster, row and seat**, then attempts that
-one address. Your friend must already have lan42 running. You can also use:
+## Find your friends
 
-    ~/Documents/42sg-campus-lan/launch.sh join c1r2s3
-    ~/Documents/42sg-campus-lan/launch.sh join 10.11.2.3
+Ask a friend to open their lobby. In yours, type `/join` and answer the questions
+about their **cluster, row and seat**. You can also connect when launching:
 
-Campus address layout (provided by the project owner):
+```sh
+~/Documents/42sg-campus-lan/launch.sh join
+# Or, if you already know their seat:
+~/Documents/42sg-campus-lan/launch.sh join c1r2s3
+```
 
-| Seat | Address |
+The campus address mapping is:
+
+| Seat | IP address |
 | --- | --- |
-| c1r2s3 | 10.11.2.3 |
-| c2r4s9 | 10.12.4.9 |
+| Cluster 1, row 2, seat 3 (`c1r2s3`) | `10.11.2.3` |
+| Cluster 2, row 4, seat 9 (`c2r4s9`) | `10.12.4.9` |
 
-Cluster 1 uses 10.11.row.seat; cluster 2 uses 10.12.row.seat.
-See [the Intra cluster map](https://meta.intra.42.fr/clusters) to find where
-people are seated (Intra login required). A seat's address is not proof that a
-lobby is running there. No wildcard scan is performed; an unreachable server
-produces a connection error. TCP **31416** is the default; --port overrides it.
+In general, cluster 1 uses `10.11.row.seat` and cluster 2 uses `10.12.row.seat`.
+You can check [the Intra cluster map](https://meta.intra.42.fr/clusters) to see
+where people are sitting. You'll need to sign in to Intra to view it.
 
-### Peer nodes: no central lobby
+Joining tries that one address. Your friend must have the app running, and the
+network must allow the connection. You can also enter an IP address directly,
+such as `./launch.sh join 10.11.2.3`.
 
-Each running app owns a local node. Entering one friend's seat performs a
-handshake and exchanges known peer addresses. Nodes then contact known peers
-directly every **5 seconds**. There is no campus scan or central directory.
-Online students, chat, game advertisements and invitations spread across these
-linked nodes. A new isolated node needs one live friend's address to join them.
+### How the lobbies stay connected
 
-Peers receive notices such as **“thtay came online! Cluster 1, row 2, seat 3.
-Go say hi!”** The seat comes from the LAN address (or a matching cluster hostname),
-not a five-second API query. Unknown seats are labelled rather than invented.
-All identities remain Guest. /notify off disables your desktop notices.
+Each app runs its own local server, or **node**. Connecting to one friend
+exchanges the addresses of other known nodes. From there, the nodes check in
+with each other every **5 seconds**, sharing who's online, chat, rooms and
+invitations. There's no central server or campus-wide scan: you need one live
+friend's address to join an existing group.
 
-Your local node stays alive while you visit another node's game; /home returns
-to your own lobby. **Quitting the app or closing its terminal ends your local
-node**, announces your departure, and leaves other nodes running independently.
-Unexpected failures expire from peer presence after approximately 16 seconds.
-A game ends if its hosting node quits. If you were visiting that node, your client
-returns to your own node. No game-state migration is attempted.
+When someone comes online, you can get a notification like:
 
-This replaces the old v0.1 behaviour where a background host remained after quit.
-There is still a helper server process, but its lifetime now follows the app's
-local control connection. Heartbeats cover crashes and lost control connections.
-With normal app usage, when everyone quits, no network remains. An explicitly
-started foreground launch.sh server remains until its operator stops it.
+> thtay came online! Cluster 1, row 2, seat 3. Go say hi! [Guest]
 
-Logs and PID files remain under ~/.local/state/42sg-campus-lan/
-(or XDG_STATE_HOME/42sg-campus-lan), named server-31416.log and server-31416.pid
-for the default port. No executable is installed there.
-Updating source does not forcibly terminate an existing server. **All friends
-must update to v0.2.0 (protocol 2)**. Stop any old v0.1 server deliberately after
-checking its PID/process, then reopen the app; old servers are not auto-killed.
-For multiple test nodes on one computer, choose distinct ports; join supports
---local-port for your own node separately from the friend's --port.
+Seats come from the LAN address or a matching cluster hostname. This does not
+poll the 42 API every five seconds. If a seat can't be determined, it is shown
+as unknown.
 
-For five nodes, the full mesh makes roughly **20 small exchanges every five
-seconds across the group** while healthy (plus client/game traffic).
-Peers are capped at 16 per node. This is modest traffic, but campus policy and
-network isolation still determine whether it is permitted and reachable.
+Your own node keeps running while you visit a friend's lobby or game. Use
+`/home` to return to it. **Quitting the app or closing its terminal stops your
+node.** Everyone else's nodes keep going; when everyone quits, the network is
+gone. A crashed or unreachable peer drops out of the online list after roughly
+16 seconds.
 
-Every launch attempts git pull --ff-only, then prints version, commit and date.
-Local edits skip updating; failed updates use the local version with a warning.
-LAN42_NO_UPDATE=1 explicitly skips the pull.
-Use a terminal at least **76 columns × 28 rows**. ASCII text input in this version.
+Games live on the node hosting them. If that node quits, its games end and
+visiting clients return to their own nodes. Leaving just a game room transfers
+room control to another player; it doesn't stop the server.
 
-## Lobby
+## Chat, invitations and commands
 
-- Plain text + Enter sends chat. Page Up/Down scrolls the last 500 event lines.
-- /who, /rooms, /games show current peers, rooms and games.
-- /host tetris, /host bluff free, or /host bluff prompt opens a room and invites connected clients.
-- /join with no argument asks which cluster/row/seat server to connect to.
-- /join NUMBER joins a game room on the current server; /start starts the room
-  host's game; /leave leaves that game.
-- /connect c1r2s3 (or /connect IP PORT) switches directly to a friend server.
-- /invite asks for a friend's cluster/row/seat and sends a server-to-server
-  invitation to their running lobby. First host or join a game room.
-- The friend sees the source address, then uses /connect IP PORT and /join NUMBER.
-  An invitation never automatically moves a player or runs a game.
-- /invite-room shares the invitation across linked nodes. Invitations have a
-  10-second cooldown. /notify off mutes your desktop notices.
-- /signin explains that Intra sign-in is **coming later**. /quit exits.
+Type a message and press **Enter** to chat. **Page Up/Down** scrolls through the
+last 500 event lines. Text input currently supports ASCII.
 
-Notifications run on the recipient's own client using notify-send, if installed;
-otherwise the terminal beeps and the notice stays in the event log. Desktop
-notification settings may suppress popups. No unsolicited commands execute on
-other desktops. Recipients need an open client to see desktop notifications. Direct seat invitations\nacknowledge the receiving server's connected-client count. Mesh invitations reach\nlinked peers on the next exchange; they never auto-launch or switch a game.
+| Command | What it does |
+| --- | --- |
+| `/who` | Show online players. |
+| `/rooms` | Show game rooms. |
+| `/games` | List the available games. |
+| `/join` | Ask for a friend's cluster, row and seat. |
+| `/connect c1r2s3` | Go straight to that friend's server. `/connect IP PORT` also works. |
+| `/home` | Return to your own lobby. |
+| `/host tetris` | Create a co-op Tetris room and send an invitation. |
+| `/host bluff free` | Create a Who Said That? room without a prompt. |
+| `/host bluff prompt` | Create a Who Said That? room with a random prompt. |
+| `/join NUMBER` | Join a room on the server you're currently visiting. |
+| `/start` | Start your room's game, or play another round. |
+| `/leave` | Leave the game room. |
+| `/invite` | Ask for a friend's seat and invite their running lobby to your room. |
+| `/invite-room` | Share your room invitation across the connected nodes. |
+| `/notify off` | Mute your desktop notifications. |
+| `/signin` | Show the placeholder for future Intra sign-in. |
+| `/quit` | Close the app and stop your node. |
+
+To invite someone, first create or join a room. They receive its server address
+and room number, then use `/connect IP PORT` followed by `/join NUMBER` to join.
+Invitations don't move anyone automatically.
+
+Desktop notifications use `notify-send` on the recipient's computer, so they
+need their client open. If notifications aren't available, the terminal beeps
+and the message stays in the log. Invitations have a 10-second cooldown; those
+sent across the mesh arrive on the next exchange.
+
+## The games
 
 ### Co-op Tetris
 
-All room members control **the same falling piece and shared board**. Clear lines
-together; score 100/300/500/800 for 1/2/3/4 lines. Gravity runs on the server.
-Arrow keys or WASD move/rotate, Space hard-drops. Tab switches between play and
-chat/commands. After game over, the room host can /start again.
+Everyone controls **the same falling piece on the same board**. Coordinate your
+moves—or enjoy the chaos. Use the arrow keys or WASD to move and rotate, and
+**Space** to hard-drop. **Tab** switches between playing and typing chat or
+commands.
+
+Clearing 1, 2, 3 or 4 lines scores 100, 300, 500 or 800 points. After game over,
+the room host can type `/start` to try again.
 
 ### Who Said That?
 
-Three or more players. Everyone writes a message with /answer YOUR TEXT.
-Free mode has no prompt; prompt mode asks everyone to respond as the current
-leader. The leader rotates each round. Prompts are bundled and randomly selected.
+For three or more players. Write a message that your friends won't recognise as
+yours, using `/answer YOUR TEXT`.
 
-After all submissions (or 45 seconds), entries are shuffled and **all display
-the leader's name**. Guess the real author of every numbered entry, in order:
+**Free mode** lets you write anything. **Prompt mode** gives everyone a random
+prompt and asks them to respond as the current leader. The leader rotates each
+round, and prompts are bundled with the game—no external service is needed.
 
-    /vote hnah thtay dthoo
+Once everyone submits, or after 45 seconds, the messages are shuffled and all
+appear under the leader's name. Guess who really wrote each numbered message:
 
-Use each entry's actual suspected author, not the displayed leader label.
-Your own entry is ignored for scoring. Earn 2 points for each correct guess;
-authors earn 1 per opponent fooled. Voting ends after everyone votes or 45 seconds,
-then real authors and round scores appear in the event log. /start plays again.
-If the leader times out without an answer or fewer than two submit, cancel the
-round. Leaving players can delay completion until timeout, but cannot hang it.
-Scores are per round, not persisted.
+```text
+/vote hnah thtay dthoo
+```
 
-## Guest identity and optional campus seats
+That guesses hnah for message 1, thtay for message 2 and dthoo for message 3.
+Your own message is ignored when scoring your guesses. You earn **2 points per
+correct guess** and **1 point for each opponent your message fools**.
 
-By default, identity is the OS account name plus hostname. Both are **unverified**.
-Duplicate connected usernames are rejected, but this is not authentication:
-a modified client can impersonate a friend. --guest-name NAME supports local
-multi-client testing and remains explicitly Guest. Green is reserved in the UI
-palette for future Verified status; nobody receives it in this release.
+Voting lasts up to 45 seconds, then the real authors and scores are revealed.
+The host can `/start` another round. Scores reset each round. A round is
+cancelled if the leader doesn't submit or fewer than two answers arrive.
 
-42 API lookup is optional and never blocks lobby/game startup. On a trusted host,
-set INTRA_CLIENT_ID and INTRA_CLIENT_SECRET in its environment before starting.
-The host uses client credentials and GET /v2/users/:login to fetch the location\nof connected guest names every two minutes. Mesh presence uses the address-based\nseat mapping; the optional API remains a separate fallback for legacy local clients.\nUnknown/unavailable seats are labelled;
-a guest claiming a name is not proof that the API seat belongs to that connection.
-It does not list the whole campus. No API credentials go to clients or Git.
-Do not distribute the host secret to friends. Real API credentials have not been
-used in automated tests; permissions and campus data need a live check.
+## Optional zsh helpers
 
-The registered http://localhost:31415/callback is an **unused future OAuth
-placeholder**, separate from LAN TCP port 31416. It starts no HTTP server.
-See [42's client-credentials guide](https://api.intra.42.fr/apidoc/guides/getting_started)
-and [user endpoint](https://api.intra.42.fr/apidoc/2.0/users/show.html).
+Want a shorter command? This repo includes a public adaptation of
+[Ryker's SUTD zsh helpers](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29),
+including `lan42`, project helpers, and a daily update command.
 
-## Optional zsh helpers and daily login
+```sh
+cd ~/Documents/42sg-campus-lan
+sh setup.sh --zsh
+```
 
-The dailylogin command is **not a standard campus command**. It originally came
-from Ryker's personal [SUTD zsh additions](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29).
-A public-friendly adaptation is now included in this repository.
+Open a new terminal, or source your `.zshrc`, and run `lan42` to open the lobby.
+The installer backs up your `.zshrc` and adds a line that loads the helpers from
+this clone. It preserves existing personal functions and aliases. Future Git
+pulls update the helper file too.
 
-To get the latest copy and install it without replacing your .zshrc:
+`dailylogin` started as Ryker's personal command; it isn't something other
+students already have. This version provides `lan42_dailylogin` to pull the
+latest LAN repo and reload its helpers. It also provides the shorter
+`dailylogin` name if you don't already use it. Updating other Documents repos is
+optional, and running it doesn't open the lobby or other apps.
 
-    cd ~/Documents/42sg-campus-lan
-    sh setup.sh --zsh
+See [the zsh helper guide](useful-scripts/README.md) for manual setup, project
+paths, compile/run helpers and optional Documents syncing. Running plain
+`sh setup.sh` leaves your shell configuration alone.
 
-Then open a new terminal (or source your .zshrc). Setup backs up the file and
-adds a source line pointing to this clone, so future Git pulls update the helpers.
-Existing personal functions and aliases are preserved.
+## Guest names and future Intra sign-in
 
-Run **lan42_dailylogin** to update this repo and reload its helpers in your
-current shell. If you do not already define dailylogin, that shorter name is
-provided too. By default it only pulls the LAN repo; pulling all your Documents
-repos is an opt-in setting. It does not open the lobby or launch other applications.
+The app uses your OS username and hostname, both marked **Guest**. These aren't
+verified identities: a modified client could impersonate someone. This version
+is meant for a few friends who trust each other. Green is reserved for future
+verified users; nobody gets verified status yet.
 
-See [the zsh helper guide](useful-scripts/README.md) for manual installation,
-your own project paths, optional Documents syncing, and compile/run helpers.
-Plain sh setup.sh checks prerequisites and prepares launch.sh inside the clone,\nwithout editing shell configuration or installing a command elsewhere.
+The registered callback, `http://localhost:31415/callback`, is an unused
+placeholder for future OAuth sign-in. There is no callback web server in this
+version. The lobby uses a separate TCP port, **31416**.
 
-### Repository layout
+<details>
+<summary>Optional 42 API lookup</summary>
 
-- campus_lan/: client, host, game rules and optional API adapter.
-- minigames/: game directory/guide.
-- useful-scripts/: public zsh helpers, installer and configuration guide.
-- docs/: protocol and campus deployment task.
-- tests/: rules, networking, lifecycle and helper installation checks.
+The API adapter is optional and doesn't block startup. A trusted host can set
+`INTRA_CLIENT_ID` and `INTRA_CLIENT_SECRET` in its environment. The adapter uses
+client credentials and `GET /v2/users/:login` to look up connected guest names
+every two minutes.
 
-## Scope and checks
+The current mesh uses address-based seats. The API adapter remains a separate
+fallback for legacy local clients; it doesn't list the whole campus or verify
+that someone owns the username they supplied. Keep the secret on the trusted
+host, out of Git and other clients.
 
-    python3 -m unittest discover -s tests -v
+Live API permissions and campus data still need testing. See
+[42's getting-started guide](https://api.intra.42.fr/apidoc/guides/getting_started)
+and [the user endpoint](https://api.intra.42.fr/apidoc/2.0/users/show.html).
 
-This is a trusted-friends LAN prototype: plaintext TCP, guests, no persistent
-chat/account database, no internet discovery or NAT traversal. Game rooms share
-the lobby server process/port to keep setup small. The lobby coordinates rooms
-without needing a separate process per minigame. A room creator leaving a room\ntransfers room control; the hosting node quitting ends that node's games. Other\nnodes and their games keep running.
+</details>
 
-Campus firewall/client isolation may prevent peer connections. Test on campus
-rather than changing firewall settings blindly. macOS can run the prototype,
-but desktop popups target Linux notify-send (terminal fallback elsewhere).
+## Updates and troubleshooting
+
+The launcher uses `git pull --ff-only`. If you have local edits, it skips the
+update; if pulling fails, it warns you and runs the existing copy. Set
+`LAN42_NO_UPDATE=1` to skip updating deliberately.
+
+**Moving from v0.1?** Everyone needs v0.2.0 (protocol 2). The old version left a
+background server running after you quit. Check its PID and process, stop that
+old server, then reopen the app. Updating the source doesn't kill existing
+servers automatically.
+
+Logs and PID files are in `~/.local/state/42sg-campus-lan/`, or under
+`$XDG_STATE_HOME/42sg-campus-lan` if configured. For the default port, look for
+`server-31416.log` and `server-31416.pid`.
+
+To test multiple nodes on one computer, give each a different port. `--port`
+sets the host port, or the friend's port when joining; `join --local-port`
+sets your own node's port. An explicitly started `./launch.sh server` runs in
+the foreground until you stop it.
+
+With five nodes, the mesh makes about **20 small exchanges every five seconds
+across the group**, plus chat and game traffic. Each node is capped at 16 peers.
+Campus network rules and client isolation still determine whether connections
+are allowed and can reach each other; this needs testing on campus.
+
+This prototype uses plaintext TCP and keeps no persistent chat or account
+database. It has no internet discovery or NAT traversal. Games share their
+hosting node's process and port. macOS can run it, with terminal notifications
+as the fallback when Linux `notify-send` isn't available.
+
+## What's in the repo?
+
+| Directory | Contents |
+| --- | --- |
+| [`campus_lan/`](campus_lan/) | Terminal client, servers, game rules and optional API adapter. |
+| [`minigames/`](minigames/) | Game directory and guide. |
+| [`useful-scripts/`](useful-scripts/) | Zsh helpers, installer and setup guide. |
+| [`docs/`](docs/) | Protocol notes and campus deployment task. |
+| [`tests/`](tests/) | Game rules, networking, server lifecycle and helper installation checks. |
+
+To run the tests:
+
+```sh
+python3 -m unittest discover -s tests -v
+```
