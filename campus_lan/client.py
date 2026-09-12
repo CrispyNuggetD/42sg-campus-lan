@@ -1,0 +1,228 @@
+"""Curses frontend. All invites execute notifications on this client only."""
+import collections
+import curses
+import json
+import os
+import pwd
+import queue
+import shutil
+import socket
+import subprocess
+import threading
+import time
+import textwrap
+from . import VERSION, PROTOCOL
+
+HELP = [
+    '/who /rooms /games | /host tetris | /host bluff free | /host bluff prompt',
+    '/join ROOM /invite /start /leave | /answer TEXT | /vote USER1 USER2 ...',
+    '/signin (coming later) | /notify on|off | /help | /quit',
+    'Chat: type and Enter. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
+    'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
+    'Bluff: identify each entry author in order; own entry is ignored in scoring.',
+]
+
+def safe(value):
+    return ''.join(c for c in str(value) if c.isprintable())
+
+class Client:
+    def __init__(self, sock, name, hostname, notify=True):
+        self.sock, self.name = sock, name
+        self.inbox = queue.Queue(maxsize=256)
+        self.lines = collections.deque(HELP,maxlen=500)
+        self.state, self.game = {}, {}
+        self.input, self.scroll = '', 0
+        self.play = False
+        self.connected = True
+        self.notify_enabled, self.last_notice = notify, 0
+        self.id = None
+        self.send(dict(type='hello',protocol=PROTOCOL,name=name,hostname=hostname))
+        threading.Thread(target=self.receive,daemon=True).start()
+
+    def send(self,data):
+        try:
+            self.sock.sendall((json.dumps(data)+'\n').encode())
+        except OSError:
+            self.connected = False
+
+    def receive(self):
+        try:
+            with self.sock.makefile('rb') as stream:
+                while True:
+                    line = stream.readline(65537)
+                    if not line:
+                        break
+                    if len(line)>65536:
+                        raise ValueError('Oversized server response')
+                    msg = json.loads(line)
+                    if not isinstance(msg,dict):
+                        raise ValueError('Invalid response')
+                    self.inbox.put(msg,timeout=2)
+        except (OSError,ValueError,queue.Full):
+            pass
+        finally:
+            self.connected = False
+
+    def notify(self,text):
+        now = time.monotonic()
+        if not self.notify_enabled or now-self.last_notice<3:
+            return
+        self.last_notice = now
+        if shutil.which('notify-send'):
+            # Positional args only, never invoke a shell with received text.
+            def show():
+                try:
+                    subprocess.run(['notify-send','--app-name=42SG LAN','--expire-time=7000',
+                                    '--','42SG LAN invitation',safe(text)],
+                                   stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3)
+                except (OSError,subprocess.TimeoutExpired):
+                    pass
+            threading.Thread(target=show,daemon=True).start()
+        else:
+            try:
+                curses.beep()
+            except curses.error:
+                pass
+
+    def consume(self):
+        while True:
+            try:
+                msg = self.inbox.get_nowait()
+            except queue.Empty:
+                break
+            kind = msg.get('type')
+            if kind in ('event','error','invite'):
+                self.lines.append(safe(msg.get('text','')))
+                if kind=='invite':
+                    self.notify(msg.get('text',''))
+            elif kind=='welcome':
+                self.id = msg['id']
+                self.lines.append(f"Connected. Server {msg['version']}; Guest (unverified).")
+            elif kind=='state':
+                self.state = msg
+            elif kind=='game':
+                new = msg.get('room') != self.game.get('room')
+                self.game = msg
+                if not msg.get('game'):
+                    self.play = False
+                elif msg.get('game')=='tetris' and 'board' in msg and (new or 'board' not in getattr(self,'previous_game',{})):
+                    self.play = True
+                self.previous_game = msg
+                signature = (msg.get('room'),msg.get('phase'))
+                if msg.get('game')=='bluff' and signature!=getattr(self,'round_signature',None):
+                    self.lines.append('BLUFF '+msg.get('phase','')+': '+msg.get('prompt',''))
+                    for option in msg.get('options',[]):
+                        self.lines.append(f"{option['number']}. {msg.get('leader')} (author: {option.get('author') or 'hidden'}): {option['text']}")
+                    if msg.get('result'):
+                        self.lines.append(msg['result'])
+                    self.round_signature = signature
+
+    def line(self,screen,y,text,attr=0,x=0):
+        h,w = screen.getmaxyx()
+        if 0<=y<h and x<w-1:
+            try:
+                screen.addnstr(y,x,safe(text),w-x-1,attr)
+            except curses.error:
+                pass
+
+    def draw(self,screen):
+        screen.erase()
+        h,w = screen.getmaxyx()
+        if h<28 or w<76:
+            self.line(screen,0,'Please resize terminal to at least 76 columns x 28 rows.')
+            self.line(screen,1,'Ctrl-C exits.')
+            screen.refresh()
+            return
+        self.line(screen,0,f" RYKER'S 42SG LAN  v{VERSION} | {self.name} [Guest] | "+('ONLINE' if self.connected else 'DISCONNECTED'),curses.A_BOLD)
+        self.line(screen,1,'Intra sign-in: coming later | Verified colour reserved: green | /help')
+        players = self.state.get('players',[])
+        self.line(screen,2,'Peers: '+' | '.join(f"{p['name']}@{p['hostname']} [{p['seat']}]" for p in players))
+        self.line(screen,3,self.state.get('api','Waiting for lobby...'))
+        rooms = self.state.get('rooms',[])
+        self.line(screen,4,'Rooms: '+' | '.join(f"{r['id']}:{r['name']} ({r['members']}) host:{r['host']}" for r in rooms))
+        game = self.game
+        logs_x,logs_y = 0,6
+        if game.get('game')=='tetris' and 'board' in game:
+            self.line(screen,6,f"CO-OP TETRIS  {game['score']} pts")
+            for y,row in enumerate(game['board']):
+                self.line(screen,7+y,'|' + ''.join('[]' if c else ' .' for c in row)+'|')
+            self.line(screen,25,'GAME OVER /start' if game['over'] else ('PLAY: arrows/space' if self.play else 'CHAT: Tab to play'))
+            logs_x = 25
+        elif game.get('game')=='bluff' and game.get('phase')!='waiting':
+            phase = game['phase']
+            self.line(screen,6,f"WHO SAID THAT? {phase.upper()} | leader: {game['leader']} | {max(0,int(game['deadline']-time.time()))}s")
+            self.line(screen,7,game['prompt'])
+            self.line(screen,8,f"Answers {game['submitted']}/{game['total']}; votes {game['voted']}/{game['total']}")
+            self.line(screen,9,'/answer TEXT' if phase=='writing' else '/vote USER1 USER2 ... (one per entry; see history)')
+            self.line(screen,10,'Players: '+', '.join(game.get('players',[])))
+            logs_y = 12
+        elif game.get('game'):
+            self.line(screen,6,f"Room {game['room']} {game['game']} | waiting; host uses /start")
+            logs_y = 8
+        log_h = max(1,h-logs_y-3)
+        lines = [part for line in self.lines for part in (textwrap.wrap(line,max(10,w-logs_x-2)) or [''])]
+        self.scroll = min(self.scroll,max(0,len(lines)-log_h))
+        end = len(lines)-self.scroll
+        shown = lines[max(0,end-log_h):end]
+        for y,line in enumerate(shown,logs_y):
+            self.line(screen,y,line,x=logs_x)
+        self.line(screen,h-2,'Tab: play/chat | PgUp/PgDn: history | /leave: lobby | /quit',curses.A_DIM)
+        self.line(screen,h-1,('PLAY > ' if self.play else '> ')+self.input[-(w-10):])
+        screen.refresh()
+
+    def run(self,screen):
+        screen.timeout(80)
+        try:
+            curses.curs_set(1)
+        except curses.error:
+            pass
+        if curses.has_colors():
+            curses.start_color()
+            # Reserved only: no guest is displayed with this verified style.
+            curses.init_pair(1,curses.COLOR_GREEN,curses.COLOR_BLACK)
+        while True:
+            self.consume()
+            self.draw(screen)
+            key = screen.getch()
+            if key in (3,4):
+                break
+            if key==curses.KEY_PPAGE:
+                self.scroll += 8
+            elif key==curses.KEY_NPAGE:
+                self.scroll = max(0,self.scroll-8)
+            elif key==9 and self.game.get('game')=='tetris':
+                self.play = not self.play
+            elif self.play:
+                action = {curses.KEY_LEFT:'left',ord('a'):'left',
+                          curses.KEY_RIGHT:'right',ord('d'):'right',
+                          curses.KEY_UP:'rotate',ord('w'):'rotate',
+                          curses.KEY_DOWN:'down',ord('s'):'down',32:'drop'}.get(key)
+                if action:
+                    self.send(dict(type='move',action=action))
+                elif key==ord('/'):
+                    self.play,self.input = False,'/'
+            elif key in (10,13):
+                text,self.input = self.input.strip(),''
+                self.scroll = 0
+                if text=='/quit':
+                    break
+                elif text=='/help':
+                    self.lines.extend(HELP)
+                elif text.startswith('/notify'):
+                    self.notify_enabled = text=='/notify on'
+                    self.lines.append('Notifications '+('on' if self.notify_enabled else 'off'))
+                elif text:
+                    if self.connected:
+                        self.send(dict(type='command',text=text))
+                    else:
+                        self.lines.append('Disconnected. /quit and reconnect using lan42 join HOST.')
+            elif key in (127,8,curses.KEY_BACKSPACE):
+                self.input = self.input[:-1]
+            elif 32<=key<=126 and len(self.input)<400:
+                self.input += chr(key)
+
+def connect(host,port,name=None,notify=True):
+    username = name or pwd.getpwuid(os.getuid()).pw_name
+    with socket.create_connection((host,port),timeout=5) as sock:
+        sock.settimeout(None)
+        curses.wrapper(Client(sock,username,socket.gethostname(),notify).run)

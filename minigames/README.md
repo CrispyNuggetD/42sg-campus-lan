@@ -1,8 +1,13 @@
-# 42SG LAN minigames
+# 42SG LAN minigames — v0.1.0
 
-Planned proof of concept; games are not implemented yet.
+Implemented in campus_lan/games.py, coordinated by campus_lan/server.py.
 
-- **Tetris:** minimal terminal falling-block game with a host lobby and join invitations.
-- **Who Said That?:** anonymous authorship bluffing game. Players submit a short message, vote for the real author, then see the reveal and scores. Two modes: free-form messages and built-in random prompts asking everyone to respond as the current leader. Display the leader's name during the round while retaining authenticated authors privately. Include submission/voting timeouts.
+- **Co-op Tetris:** one shared board and falling piece; host-authoritative gravity,
+  rotation, line clearing and scoring. /host tetris, friends /join NUMBER,
+  room host /start.
+- **Who Said That?:** timed anonymous-message guessing. /host bluff free or
+  /host bluff prompt. Three players minimum. /answer TEXT, then
+  /vote USER1 USER2 ... assigns an author to each shuffled entry.
+  Reveal authors and round scores after voting. Built-in prompts; no external AI.
 
-The terminal lobby will list available games with `/games` and coordinate connections to a host's game server. Invitations reach connected clients, which show local desktop notifications when supported.
+See the main README for controls and limitations.
