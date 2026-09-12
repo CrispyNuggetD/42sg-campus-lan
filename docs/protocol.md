@@ -24,3 +24,18 @@ until voting. A malicious host still sees everything — this is a friends' game
 Client messages cannot claim room IDs for movement; membership is server-owned.
 
 No compatibility guarantees before v1.0. Update all friends when protocol changes.
+
+## Seat addressing and persistent hosts (0.1.1)
+
+c1r2s3 maps to 10.11.2.3; c2r4s9 maps to 10.12.4.9. Client seat prompts
+resolve exactly one target. Room joins still use numeric IDs on the current server.
+
+A ping handshake returns pong with protocol and loaded server version, allowing
+the launcher to reuse a running compatible background server. Normal client exit
+does not terminate the server. A per-user, per-port advisory lock prevents duplicate
+local processes. No restart happens during repository updates.
+
+A peer_invite handshake includes name, game, room and sender port. The recipient
+uses the TCP peer address (not a supplied address) when constructing the invitation.
+It broadcasts an ordinary invitation to connected clients and acknowledges with
+their count. Guest names remain unverified. Recipients explicitly choose to connect.

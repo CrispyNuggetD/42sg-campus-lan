@@ -14,7 +14,11 @@ On the owner's enrolled campus device:
    the whole dailylogin workflow just to test this (it opens other applications).
 4. Run tests and lan42 --version. Verify Python/curses and whether notify-send is
    available; do not install system packages or change firewall settings.
-5. Report the LAN address and exact host/join commands. If a graphical session is
+5. Verify version 0.1.1 or newer. Check seat-based joining: c1r2s3 maps to
+   10.11.2.3; c2r4s9 maps to 10.12.4.9. Plain lan42 join asks seat questions.
+   Check that closing the client leaves its background server alive and reopening
+   lan42 reuses it. Do not stop any pre-existing server for an update.
+   Report the LAN address and exact host/join commands. If a graphical session is
    available, perform a local notification test and terminal smoke test, closing
    only processes created for the test. Do not message/invite other students.
 6. Leave Intra sign-in as the guest-mode placeholder. Do not copy API secrets,

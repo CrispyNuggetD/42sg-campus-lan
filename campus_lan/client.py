@@ -12,10 +12,12 @@ import threading
 import time
 import textwrap
 from . import VERSION, PROTOCOL
+from .network import seat_address, address
 
 HELP = [
     '/who /rooms /games | /host tetris | /host bluff free | /host bluff prompt',
-    '/join ROOM /invite /start /leave | /answer TEXT | /vote USER1 USER2 ...',
+    '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
+    '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
     '/signin (coming later) | /notify on|off | /help | /quit',
     'Chat: type and Enter. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
@@ -36,6 +38,8 @@ class Client:
         self.connected = True
         self.notify_enabled, self.last_notice = notify, 0
         self.id = None
+        self.wizard = None
+        self.next_server = None
         self.send(dict(type='hello',protocol=PROTOCOL,name=name,hostname=hostname))
         threading.Thread(target=self.receive,daemon=True).start()
 
@@ -170,6 +174,37 @@ class Client:
         self.line(screen,h-1,('PLAY > ' if self.play else '> ')+self.input[-(w-10):])
         screen.refresh()
 
+    def seat_question(self, intent):
+        self.wizard = (intent, [])
+        self.lines.append('Find seats: https://meta.intra.42.fr/clusters')
+        self.lines.append('Friend server cluster (1 or 2)? /cancel to cancel.')
+
+    def wizard_answer(self, text):
+        intent, values = self.wizard
+        if text=='/cancel':
+            self.wizard = None
+            self.lines.append('Cancelled.')
+            return
+        try:
+            value = int(text)
+            if (not values and value not in (1,2)) or not 1<=value<=254:
+                raise ValueError()
+        except ValueError:
+            self.lines.append('Enter 1 or 2.' if not values else 'Enter a number from 1 to 254.')
+            return
+        values.append(value)
+        if len(values)<3:
+            self.lines.append('Row number?' if len(values)==1 else 'Seat number?')
+            return
+        self.wizard = None
+        seat = f'c{values[0]}r{values[1]}s{values[2]}'
+        target = seat_address(seat)
+        if intent=='join':
+            self.next_server = (target,self.port)
+        else:
+            self.send(dict(type='command',text='/invite-seat '+seat))
+            self.lines.append(f'Trying friend server at {seat} = {target}...')
+        
     def run(self,screen):
         screen.timeout(80)
         try:
@@ -204,7 +239,25 @@ class Client:
             elif key in (10,13):
                 text,self.input = self.input.strip(),''
                 self.scroll = 0
-                if text=='/quit':
+                if self.wizard:
+                    self.wizard_answer(text)
+                    if self.next_server:
+                        return self.next_server
+                elif text in ('/join','/connect'):
+                    self.seat_question('join')
+                elif text=='/invite':
+                    self.seat_question('invite')
+                elif text.startswith('/connect '):
+                    parts = text.split()
+                    try:
+                        target = address(parts[1])
+                        port = int(parts[2]) if len(parts)==3 else self.port
+                        if len(parts)>3 or not 1<=port<=65535:
+                            raise ValueError()
+                        return target,port
+                    except ValueError:
+                        self.lines.append('Use /connect IP_OR_SEAT [PORT].')
+                elif text=='/quit':
                     break
                 elif text=='/help':
                     self.lines.extend(HELP)
@@ -223,6 +276,22 @@ class Client:
 
 def connect(host,port,name=None,notify=True):
     username = name or pwd.getpwuid(os.getuid()).pw_name
-    with socket.create_connection((host,port),timeout=5) as sock:
-        sock.settimeout(None)
-        curses.wrapper(Client(sock,username,socket.gethostname(),notify).run)
+    while True:
+        print(f'Connecting to {host}:{port} as Guest...')
+        try:
+            sock = socket.create_connection((host,port),timeout=5)
+        except OSError as e:
+            raise OSError(f'Cannot connect to {host}:{port}. Friend must run lan42; check seat/network. {e}')
+        with sock:
+            sock.settimeout(None)
+            client = Client(sock,username,socket.gethostname(),notify)
+            client.port = port
+            destination = curses.wrapper(client.run)
+            # Explicitly shutdown: the receive thread's file object also owns the socket.
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+        if not destination:
+            return
+        host,port = destination

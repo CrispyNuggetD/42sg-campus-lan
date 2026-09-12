@@ -85,6 +85,19 @@ class Network(unittest.IsolatedAsyncioTestCase):
         result = await self.receive(peers[2],lambda m:m.get('phase')=='results')
         self.assertTrue(all(x['author'] for x in result['options']))
 
+    async def test_peer_server_invitation(self):
+        p,_ = await self.connect('friend')
+        remote = await asyncio.open_connection('127.0.0.1',self.port)
+        self.sockets.append(remote)
+        await self.send(remote,type='peer_invite',protocol=PROTOCOL,name='host',
+                        game='tetris',room='7',port=31416)
+        notice = await self.receive(p,lambda m:m['type']=='invite')
+        self.assertIn('/connect 127.0.0.1 31416',notice['text'])
+        self.assertIn('/join 7',notice['text'])
+        ack = await self.receive(remote,lambda m:m['type']=='invite_ack')
+        self.assertEqual(ack['clients'],1)
+        self.assertEqual(len(self.lobby.clients),1)
+
     async def test_duplicate_and_signin(self):
         p,_ = await self.connect('alice')
         _,denied = await self.connect('alice')

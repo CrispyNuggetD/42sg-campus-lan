@@ -5,6 +5,7 @@ import re
 import time
 from . import VERSION, PROTOCOL
 from .games import Tetris, Bluff
+from .network import seat_address
 
 def clean(value, limit=400):
     return ''.join(c for c in str(value) if c.isprintable())[:limit]
@@ -16,6 +17,8 @@ class Lobby:
         self.round_seconds = round_seconds
         self.seats = {}
         self.api_status = 'API disabled; seats unknown'
+        self.port = 31416
+        self.peer_invites = {}
 
     async def send(self, client, data):
         if client['writer'].is_closing():
@@ -121,7 +124,35 @@ class Lobby:
         elif cmd == '/leave':
             await self.leave(pid)
             await self.state()
-        elif cmd == '/invite':
+        elif cmd == '/invite-seat':
+            if not room:
+                raise ValueError('Host or join a game room first.')
+            bits = arg.split()
+            if len(bits) not in (1,2):
+                raise ValueError('Use /invite-seat c1r2s3 [port].')
+            target = seat_address(bits[0])
+            port = int(bits[1]) if len(bits)==2 else self.port
+            if not 1<=port<=65535:
+                raise ValueError('Invalid port.')
+            if time.monotonic()-c.get('peer_invite',-100)<10:
+                raise ValueError('Wait 10 seconds between seat invitations.')
+            c['peer_invite'] = time.monotonic()
+            try:
+                reader,writer = await asyncio.wait_for(asyncio.open_connection(target,port),3)
+                try:
+                    writer.write((json.dumps(dict(type='peer_invite',protocol=PROTOCOL,
+                        name=c['name'],game=room['game'],room=rid,port=self.port))+'\\n').encode())
+                    await writer.drain()
+                    reply = json.loads(await asyncio.wait_for(reader.readline(),3))
+                    if reply.get('type')!='invite_ack':
+                        raise ValueError('Friend server did not accept the invitation; update it.')
+                    await self.send(c,dict(type='event',text=f"Invitation delivered to {bits[0]} ({target}); {reply['clients']} connected clients."))
+                finally:
+                    writer.close()
+                    await writer.wait_closed()
+            except (OSError,asyncio.TimeoutError):
+                raise ValueError(f'Cannot reach {target}:{port}. Friend must run lan42 first; check seat and network.')
+        elif cmd in ('/invite','/invite-room'):
             if not room:
                 raise ValueError('Host or join a room first.')
             await self.invite(pid,rid)
@@ -172,6 +203,25 @@ class Lobby:
         try:
             line = await asyncio.wait_for(reader.readline(),10)
             hello = json.loads(line)
+            if isinstance(hello,dict) and hello.get('protocol')==PROTOCOL:
+                if hello.get('type')=='ping':
+                    await self.send(dict(writer=writer),dict(type='pong',protocol=PROTOCOL,version=VERSION))
+                    return
+                if hello.get('type')=='peer_invite':
+                    source = writer.get_extra_info('peername')[0]
+                    port = hello.get('port',31416)
+                    if not isinstance(port,int) or not 1<=port<=65535:
+                        raise ValueError('Invalid invitation port.')
+                    now = time.monotonic()
+                    self.peer_invites = {ip:t for ip,t in self.peer_invites.items() if now-t<10}
+                    if source in self.peer_invites:
+                        raise ValueError('Invitation cooldown.')
+                    self.peer_invites[source] = now
+                    name,game,room = (clean(hello.get(k,''),32) for k in ('name','game','room'))
+                    await self.broadcast(dict(type='invite',text=
+                        f'{name} [Guest] invites you to {game} at {source}:{port}. Use /connect {source} {port}, then /join {room}.'))
+                    await self.send(dict(writer=writer),dict(type='invite_ack',clients=len(self.clients)))
+                    return
             if not isinstance(hello,dict) or hello.get('type')!='hello' or hello.get('protocol')!=PROTOCOL:
                 raise ValueError('Protocol mismatch; update your client.')
             name = clean(hello.get('name','guest'),24)
@@ -244,6 +294,7 @@ class Lobby:
 
 async def serve(host,port,ready=None):
     lobby = Lobby()
+    lobby.port = port
     server = await asyncio.start_server(lobby.handle,host,port,limit=8192)
     print(f'42SG LAN {VERSION} listening on {host}:{port} — guest mode',flush=True)
     ticker = asyncio.create_task(lobby.tick())

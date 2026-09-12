@@ -2,7 +2,7 @@
 
 A small **guest-mode terminal lobby for friends on the same LAN**, with chat,
 desktop invitations, co-op Tetris and an anonymous-message bluffing game.
-Version **0.1.0**. Python 3.9+ standard library, Git, and a terminal with curses.
+Version **0.1.1**. Python 3.9+ standard library, Git, and a terminal with curses.
 No pip dependencies, sudo, external prompt service, or account setup.
 
 ## Install and play
@@ -23,13 +23,47 @@ The explicit equivalent is lan42 host.
 
 Friends connect to that computer's LAN address:
 
-    ~/.local/bin/lan42 join HOST_IP
+    ~/.local/bin/lan42 join
 
-On Linux, hostname -I shows candidate addresses; use the campus LAN address
-reachable by your friends. TCP port **31416** is configurable with --port.
-A lobby host listens until its terminal closes. Everyone else disconnects then.
-To keep the lobby independently running, use lan42 server in one terminal
-and lan42 join 127.0.0.1 in another.
+It asks for the friend server's **cluster, row and seat**, then attempts that
+one address. Your friend must already have lan42 running. You can also use:
+
+    ~/.local/bin/lan42 join c1r2s3
+    ~/.local/bin/lan42 join 10.11.2.3
+
+Campus address layout (provided by the project owner):
+
+| Seat | Address |
+| --- | --- |
+| c1r2s3 | 10.11.2.3 |
+| c2r4s9 | 10.12.4.9 |
+
+Cluster 1 uses 10.11.row.seat; cluster 2 uses 10.12.row.seat.
+See [the Intra cluster map](https://meta.intra.42.fr/clusters) to find where
+people are seated (Intra login required). A seat's address is not proof that a
+lobby is running there. No wildcard scan is performed; an unreachable server
+produces a connection error. TCP **31416** is the default; --port overrides it.
+
+### The server stays running
+
+Launching lan42 starts a detached background server, or reconnects to the
+existing compatible server. **Closing the client window, /quit, or joining a
+friend's server does not stop your own server or disconnect its other players.**
+There is no need to keep an extra terminal window open for the server.
+
+The log and PID file are under ~/.local/state/42sg-campus-lan/
+(or XDG_STATE_HOME/42sg-campus-lan). For port 31416 they are named
+server-31416.log and server-31416.pid. The PID file may remain after exit.
+If you deliberately want to stop the server, check the recorded PID and process
+with ps first, then terminate that process. Stopping it disconnects its clients.
+Logout, reboot, OS process cleanup and crashes can still stop a background
+process; this is not an always-on system service.
+
+Running servers are reused, never automatically killed or restarted for updates.
+Their loaded version may be older than an updated client; startup prints the
+server version. A deliberate restart applies server code updates.
+Advanced use: lan42 server runs in the foreground and ends if that process is
+stopped. The normal lan42 / lan42 host command uses the persistent background mode.
 
 Every launch attempts git pull --ff-only, then prints version, commit and date.
 Local edits skip updating; failed updates use the local version with a warning.
@@ -41,14 +75,24 @@ Use a terminal at least **76 columns × 28 rows**. ASCII text input in this vers
 - Plain text + Enter sends chat. Page Up/Down scrolls the last 500 event lines.
 - /who, /rooms, /games show current peers, rooms and games.
 - /host tetris, /host bluff free, or /host bluff prompt opens a room and invites connected clients.
-- /join NUMBER joins; /start starts the room host's game; /leave returns.
-- /invite repeats an invitation (10-second cooldown). /notify off mutes yours.
+- /join with no argument asks which cluster/row/seat server to connect to.
+- /join NUMBER joins a game room on the current server; /start starts the room
+  host's game; /leave leaves that game.
+- /connect c1r2s3 (or /connect IP PORT) switches directly to a friend server.
+- /invite asks for a friend's cluster/row/seat and sends a server-to-server
+  invitation to their running lobby. First host or join a game room.
+- The friend sees the source address, then uses /connect IP PORT and /join NUMBER.
+  An invitation never automatically moves a player or runs a game.
+- /invite-room notifies peers already on your current server. Invitations have a
+  10-second cooldown. /notify off mutes your desktop notices.
 - /signin explains that Intra sign-in is **coming later**. /quit exits.
 
 Notifications run on the recipient's own client using notify-send, if installed;
 otherwise the terminal beeps and the invitation stays in the event log. Desktop
 notification settings may suppress popups. No unsolicited commands execute on
-other desktops. Clients must already be connected to receive invitations.
+other desktops. Recipients must have a client connected to their running server to see a
+desktop invitation. A running server with zero clients can acknowledge delivery,
+but no desktop is notified; the sender sees the client count.
 
 ### Co-op Tetris
 
@@ -119,8 +163,8 @@ automatically host a lobby or notify friends.
 This is a trusted-friends LAN prototype: plaintext TCP, guests, no persistent
 chat/account database, no internet discovery or NAT traversal. Game rooms share
 the lobby server process/port to keep setup small. The lobby coordinates rooms
-without needing a separate process per minigame. Host departure ends its server;
-a room creator disconnecting transfers room control to another member.
+without needing a separate process per minigame. Closing the host client leaves the background server running.
+A room creator disconnecting transfers room control to another member.
 
 Campus firewall/client isolation may prevent peer connections. Test on campus
 rather than changing firewall settings blindly. macOS can run the prototype,
