@@ -16,7 +16,7 @@ from pathlib import Path
 if sys.version_info < (3,9):
     raise SystemExit('Python 3.9+ is required; no packages will be installed.')
 repo = Path(sys.argv[1])
-launcher = repo / 'launch.sh'
+launcher = repo / 'lan42.sh'
 launcher.chmod(launcher.stat().st_mode | 0o100)
 print(f'Ready: {launcher}')
 print(f'Host: "{launcher}"')

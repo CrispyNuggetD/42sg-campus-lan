@@ -25,7 +25,7 @@ sh setup.sh
 Then open the lobby:
 
 ```sh
-~/Documents/42sg-campus-lan/launch.sh
+~/Documents/42sg-campus-lan/lan42.sh
 ```
 
 The launcher checks for updates and prints the version, commit and date before
@@ -38,9 +38,9 @@ Ask a friend to open their lobby. In yours, type `/join` and answer the question
 about their **cluster, row and seat**. You can also connect when launching:
 
 ```sh
-~/Documents/42sg-campus-lan/launch.sh join
+~/Documents/42sg-campus-lan/lan42.sh join
 # Or, if you already know their seat:
-~/Documents/42sg-campus-lan/launch.sh join c1r2s3
+~/Documents/42sg-campus-lan/lan42.sh join c1r2s3
 ```
 
 The campus address mapping is:
@@ -56,7 +56,7 @@ where people are sitting. You'll need to sign in to Intra to view it.
 
 Joining tries that one address. Your friend must have the app running, and the
 network must allow the connection. You can also enter an IP address directly,
-such as `./launch.sh join 10.11.2.3`.
+such as `./lan42.sh join 10.11.2.3`.
 
 ### How the lobbies stay connected
 
@@ -166,6 +166,8 @@ sh setup.sh --zsh
 ```
 
 Open a new terminal, or source your `.zshrc`, and run `lan42` to open the lobby.
+The function has the same name as `lan42.sh`, without the extension, and passes
+arguments through—for example, `lan42 join c1r2s3`.
 The installer backs up your `.zshrc` and adds a line that loads the helpers from
 this clone. It preserves existing personal functions and aliases. Future Git
 pulls update the helper file too.
@@ -227,7 +229,7 @@ Logs and PID files are in `~/.local/state/42sg-campus-lan/`, or under
 
 To test multiple nodes on one computer, give each a different port. `--port`
 sets the host port, or the friend's port when joining; `join --local-port`
-sets your own node's port. An explicitly started `./launch.sh server` runs in
+sets your own node's port. An explicitly started `./lan42.sh server` runs in
 the foreground until you stop it.
 
 With five nodes, the mesh makes about **20 small exchanges every five seconds

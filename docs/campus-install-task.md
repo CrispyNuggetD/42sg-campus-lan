@@ -5,7 +5,7 @@ On the owner's enrolled campus device:
 1. Clone https://github.com/CrispyNuggetD/42sg-campus-lan.git into
    ~/Documents/42sg-campus-lan, or git pull --ff-only an existing clean clone.
    Preserve local edits; do not reset or overwrite another repository.
-2. Run sh setup.sh. Launch directly from ~/Documents/42sg-campus-lan/launch.sh.
+2. Run sh setup.sh. Launch directly from ~/Documents/42sg-campus-lan/lan42.sh.
    Do not install anything into /bin or ~/.local/bin or add a bin path to PATH.
    For the optional lan42 zsh function, use sh setup.sh --zsh; it preserves the
    user's existing shell configuration and sources the file inside this clone.

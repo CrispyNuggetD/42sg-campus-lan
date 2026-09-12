@@ -8,7 +8,7 @@ typeset -g LAN42_REPO_ROOT="${${(%):-%N}:A:h:h}"
 : ${LAN42_MAIN_REPO_ROOT:=}
 : ${LAN42_PROJECT_PATH:=}
 
-lan42() { command sh "$LAN42_REPO_ROOT/launch.sh" "$@"; }
+lan42() { command sh "$LAN42_REPO_ROOT/lan42.sh" "$@"; }
 lan42_compile() { command cc -Wall -Wextra -Werror "$@"; }
 lan42_run() { command valgrind --leak-check=full --show-leak-kinds=all "$@"; }
 
