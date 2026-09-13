@@ -1,7 +1,8 @@
 import queue
+import os
 import unittest
 from unittest.mock import patch
-from campus_lan.client import Client
+from campus_lan.client import Client, request_terminal_resize
 from campus_lan.presence import API
 
 class Screen:
@@ -14,7 +15,33 @@ class Screen:
         self.lines.append(text[:n])
     def refresh(self): pass
 
+class Terminal:
+    def __init__(self, tty=True):
+        self.tty = tty
+        self.output = ''
+        self.flushed = False
+    def isatty(self): return self.tty
+    def write(self, text): self.output += text
+    def flush(self): self.flushed = True
+
 class ClientChecks(unittest.TestCase):
+    def test_terminal_resize_only_grows_undersized_dimensions(self):
+        terminal = Terminal()
+        resized = request_terminal_resize(
+            terminal, lambda fallback: os.terminal_size((90, 20)))
+        self.assertTrue(resized)
+        self.assertEqual(terminal.output, '\033[8;28;90t')
+        self.assertTrue(terminal.flushed)
+
+    def test_terminal_resize_skips_large_or_non_tty_output(self):
+        large = Terminal()
+        self.assertFalse(request_terminal_resize(
+            large, lambda fallback: os.terminal_size((100, 40))))
+        self.assertEqual(large.output, '')
+        redirected = Terminal(False)
+        self.assertFalse(request_terminal_resize(
+            redirected, lambda fallback: os.terminal_size((20, 10))))
+
     def test_render_and_private_results_in_history(self):
         c = Client.__new__(Client)
         c.name,c.connected,c.state = 'hnah',True,{}
