@@ -10,7 +10,9 @@ Intra sign-in is planned for later.
 ## Get started
 
 You'll need Git, Python 3.9 or newer with curses support, and a terminal at least
-**76 columns × 28 rows**. There are no pip packages to install.
+**76 columns × 28 rows**. LAN42 asks compatible terminals to grow to that size
+when needed; terminals that do not support resize requests show a manual resize
+message instead. There are no pip packages to install.
 
 Each person clones the repo into their Documents folder:
 
