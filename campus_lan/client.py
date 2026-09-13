@@ -29,6 +29,23 @@ HELP = [
     'Bluff: identify each entry author in order; own entry is ignored in scoring.',
 ]
 
+MIN_COLUMNS = 76
+MIN_ROWS = 28
+
+
+def request_terminal_resize(stream=sys.stdout, get_size=shutil.get_terminal_size):
+    """Ask compatible terminals to grow to the minimum UI dimensions."""
+    if not stream.isatty():
+        return False
+    size = get_size((MIN_COLUMNS, MIN_ROWS))
+    columns = max(size.columns, MIN_COLUMNS)
+    rows = max(size.lines, MIN_ROWS)
+    if (columns, rows) == (size.columns, size.lines):
+        return False
+    stream.write(f'\033[8;{rows};{columns}t')
+    stream.flush()
+    return True
+
 def safe(value):
     return ''.join(c for c in str(value) if c.isprintable())
 
@@ -434,6 +451,10 @@ class Client:
 
 def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='lobby',initial_command=None,game_target=None):
     username = name or pwd.getpwuid(os.getuid()).pw_name
+    if request_terminal_resize():
+        # Window managers apply the request asynchronously; give curses a moment
+        # to observe the new dimensions. Unsupported terminals safely ignore it.
+        time.sleep(.15)
     while True:
         print(f'Connecting to {host}:{port} as Guest...')
         try:
