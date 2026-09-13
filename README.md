@@ -22,7 +22,23 @@ cd 42sg-campus-lan
 sh setup.sh
 ```
 
-Then open the lobby:
+Setup backs up your existing `.zshrc` and appends the LAN42 shell helper.
+Open a new zsh terminal, then start the lobby at school with:
+
+```sh
+lan42
+```
+
+To use it immediately in the current terminal, reload your shell configuration
+first:
+
+```sh
+source "${ZDOTDIR:-$HOME}/.zshrc"
+lan42
+```
+
+If you skipped the zsh helper with `sh setup.sh --no-zsh`, use the launcher
+directly instead:
 
 ```sh
 ~/Documents/42sg-campus-lan/lan42.sh
