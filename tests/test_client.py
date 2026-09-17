@@ -58,6 +58,41 @@ class ClientChecks(unittest.TestCase):
         c.draw(screen)
         self.assertTrue(any('[Guest]' in text for text in screen.lines))
 
+    def test_lobby_chat_notifies_other_senders_but_not_system_events(self):
+        c = Client.__new__(Client)
+        c.name, c.role = 'hnah', 'lobby'
+        c.lines, c.inbox = [], queue.Queue()
+        for text in ('darren [Guest]: hello', 'darren [Guest]: again',
+                     'hnah [Guest]: my message', 'darren went offline.'):
+            c.inbox.put(dict(type='event', text=text))
+        with patch.object(c, 'notify') as notify:
+            c.consume()
+        self.assertEqual([call.args[0] for call in notify.call_args_list],
+                         ['darren [Guest]: hello', 'darren [Guest]: again'])
+        self.assertTrue(all(call.kwargs == {'throttle': False}
+                            for call in notify.call_args_list))
+        self.assertEqual(len(c.lines), 4)
+        c.role = 'game'
+        c.inbox.put(dict(type='event', text='darren [Guest]: game window'))
+        with patch.object(c, 'notify') as notify:
+            c.consume()
+            notify.assert_not_called()
+
+    def test_chat_notifications_respect_mute_without_dropping_bursts(self):
+        c = Client.__new__(Client)
+        c.notify_enabled, c.last_notice = True, 100
+        with patch('campus_lan.client.time.monotonic', return_value=101), \
+             patch('campus_lan.client.shutil.which', return_value=None), \
+             patch('campus_lan.client.curses.beep') as beep:
+            c.notify('darren [Guest]: first', throttle=False)
+            c.notify('darren [Guest]: second', throttle=False)
+            self.assertEqual(beep.call_count, 2)
+            c.notify('ordinary presence notice')
+            self.assertEqual(beep.call_count, 2)
+            c.notify_enabled = False
+            c.notify('darren [Guest]: muted', throttle=False)
+            self.assertEqual(beep.call_count, 2)
+
     def test_api_location_only(self):
         api = API()
         api.token,api.expires = 'fake-test-token',10**12

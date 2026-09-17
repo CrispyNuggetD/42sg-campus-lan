@@ -170,6 +170,10 @@ To invite someone, first create or join a room. They receive its server address
 and room number, then use `/connect IP PORT` followed by `/join NUMBER` to join.
 Invitations don't move anyone automatically.
 
+Lobby windows also notify for each chat message from another sender, including
+messages received across the mesh. Your own messages and game windows do not
+produce chat notifications. Use `/notify off` to mute them.
+
 Desktop notifications use `notify-send` on the recipient's computer, so they
 need their client open. If notifications aren't available, the terminal beeps
 and the message stays in the log. Invitations have a 10-second cooldown; those

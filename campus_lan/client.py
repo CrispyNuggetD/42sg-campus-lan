@@ -1,4 +1,4 @@
-"""Curses frontend. All invites execute notifications on this client only."""
+"""Curses frontend. Desktop notifications execute on this client only."""
 import collections
 import curses
 import json
@@ -93,9 +93,9 @@ class Client:
         finally:
             self.connected = False
 
-    def notify(self,text):
+    def notify(self,text,throttle=True):
         now = time.monotonic()
-        if not self.notify_enabled or now-self.last_notice<3:
+        if not self.notify_enabled or (throttle and now-self.last_notice<3):
             return
         self.last_notice = now
         if shutil.which('notify-send'):
@@ -125,6 +125,11 @@ class Client:
                 self.lines.append(safe(msg.get('text','')))
                 if kind in ('invite','online'):
                     self.notify(msg.get('text',''))
+                elif kind=='event' and getattr(self,'role','lobby')=='lobby':
+                    # Existing local and mesh chat events use this wire format.
+                    sender,separator,_ = msg.get('text','').partition(' [Guest]: ')
+                    if separator and sender!=self.name:
+                        self.notify(msg['text'],throttle=False)
             elif kind=='welcome':
                 self.id = msg['id']
                 if getattr(self,'initial_command',None):
