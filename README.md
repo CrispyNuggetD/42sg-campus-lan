@@ -2,9 +2,9 @@
 
 A terminal hangout for a few friends at 42 Singapore. See who's online and where
 they're sitting, chat, and invite each other to co-op Tetris or a round of
-**Who Said That?**
+**Who Said That?**, or program a C army for **Hex Wars**.
 
-This is version **0.4.1**, a small LAN prototype. Everyone joins as a guest;
+This is version **0.5.0**, a small LAN prototype. Everyone joins as a guest;
 Intra sign-in is planned for later.
 
 ## Get started
@@ -154,6 +154,7 @@ last 500 event lines. Text input currently supports ASCII.
 | `/join` | Ask for a friend's cluster, row and seat. |
 | `/connect c1r2s3` | Alias for linking a peer; HQ stays local. |
 | `/home` | Select your own node for the next game join. |
+| `/host hexwars` | Open the C bot arena; `/bot` opens its upload menu. |
 | `/host tetris` | Open a Tetris terminal and advertise its room. |
 | `/host bluff free` | Open a bluff terminal without a prompt. |
 | `/host bluff prompt` | Open a bluff terminal with a random prompt. |
@@ -180,6 +181,26 @@ and the message stays in the log. Invitations have a 10-second cooldown; those
 sent across the mesh arrive on the next exchange.
 
 ## The games
+
+### Hex Wars: code your conquest
+
+Upload your own **C bot** and compete with 2–6 armies on a live 61-cell hex map.
+Program expansion, reinforcement and attacks; allocate nine attribute points
+between growth, attack and armor. Every bot sees the same board each turn,
+and the host resolves all moves simultaneously.
+
+From HQ run `/host hexwars`. In its game window, `/bot` opens a menu to upload
+a C file, create a starter, choose a demo bot, or read the API guide. Friends
+join your room and submit their bots; the host runs `/start`. Try it solo with
+`/bot demo`, `/practice`, `/start`. No compiler is required for demo bots.
+
+Custom C bots require Clang + LLVM wasm-ld on the submitting computer and
+Node.js on the host. Bots execute as bounded, import-free WebAssembly. The
+lobby still uses guest identities; Intra verification is not implemented.
+
+Read the **[C API, structs, exact rules and setup guide](minigames/hexwars/README.md)**.
+Use the [header](minigames/hexwars/hexwars.h) and
+[example strategies](minigames/hexwars/examples/) to build your player.
 
 ### Co-op Tetris
 
@@ -289,7 +310,7 @@ The launcher uses `git pull --ff-only`. If you have local edits, it skips the
 update; if pulling fails, it warns you and runs the existing copy. Set
 `LAN42_NO_UPDATE=1` to skip updating deliberately.
 
-**Updating?** Everyone needs v0.4.0 (protocol 3); quit existing apps and restart.
+**Updating?** Everyone needs v0.5.0 (protocol 4); quit existing apps and restart.
 The legacy `host` and `join` startup commands remain as compatibility aliases.
 Normal startup is simply `lan42`, with `/join` inside HQ.
 

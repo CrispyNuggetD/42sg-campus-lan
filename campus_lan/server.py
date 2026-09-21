@@ -1,10 +1,15 @@
 """Newline-delimited JSON; the lobby host also coordinates lightweight game rooms."""
 import asyncio
+import base64
+import binascii
+import hashlib
 import json
 import re
 import time
 from . import VERSION, PROTOCOL
 from .games import Tetris, Bluff
+from .hexwars import HexWars, demo_action
+from .hexbot import MAX_WASM, inspect_bot, run_bots
 from .network import seat_address
 from .mesh import Mesh
 import ipaddress
@@ -25,6 +30,8 @@ class Lobby:
         self.shutdown = asyncio.Event()
         self.owner_started = asyncio.Event()
         self.mesh = Mesh(self)
+        self.bot_slots = asyncio.Semaphore(2)
+        self.hex_tasks = set()
 
     async def send(self, client, data):
         if client['writer'].is_closing():
@@ -55,6 +62,10 @@ class Lobby:
         room = self.rooms[rid]
         data = dict(type='game',room=rid,game=room['game'],host=room['host'],
                     members=[self.clients[p]['name'] for p in room['members'] if p in self.clients])
+        if room['game'] == 'hexwars':
+            data['bots'] = [dict(name=self.clients[p]['name'], ready=p in room.get('bots', {}))
+                            for p in sorted(room['members']) if p in self.clients]
+            data['practice'] = room.get('practice', False)
         if room['engine']:
             data.update(room['engine'].view())
         else:
@@ -68,6 +79,10 @@ class Lobby:
         rid,room = self.room_for(pid)
         if room:
             room['members'].remove(pid)
+            if room['game'] == 'hexwars':
+                room.get('bots', {}).pop(pid, None)
+                if room['engine'] and not room['engine'].over:
+                    room['engine'].forfeit(pid)
             if not room['members']:
                 del self.rooms[rid]
             else:
@@ -97,13 +112,13 @@ class Lobby:
                         pid,rid,room = other,candidate,active
                         break
         if cmd == '/games':
-            await self.send(c,dict(type='event',text='Games: tetris (shared-board co-op), bluff (free or prompt). /host tetris | /host bluff prompt | /join ROOM'))
+            await self.send(c,dict(type='event',text='Games: tetris, bluff (free|prompt), hexwars (C bot arena). /host hexwars | /join ROOM'))
         elif cmd == '/signin':
             await self.send(c,dict(type='event',text='Sign in with Intra — coming later. You are a Guest (unverified).'))
         elif cmd == '/host':
             bits = arg.split()
-            if not bits or bits[0] not in ('tetris','bluff'):
-                raise ValueError('Use /host tetris or /host bluff [free|prompt].')
+            if not bits or bits[0] not in ('tetris','bluff','hexwars'):
+                raise ValueError('Use /host tetris, /host bluff [free|prompt], or /host hexwars.')
             if len(self.rooms)>=10:
                 raise ValueError('Room limit reached.')
             mode = bits[1] if len(bits)>1 else 'free'
@@ -127,9 +142,14 @@ class Lobby:
             target = self.rooms[arg]
             if target['game']=='bluff' and target['engine'] and target['engine'].phase!='results':
                 raise ValueError('Round running. Join after the reveal.')
+            if target['game'] == 'hexwars':
+                self.hex_joinable(target)
             await self.leave(pid)
             if arg not in self.rooms:
                 raise ValueError('Room closed; try another.')
+            if target['game'] == 'hexwars':
+                # leave() yields to other joins and to the host's /start.
+                self.hex_joinable(target)
             target['members'].add(pid)
             await self.room_state(arg)
             await self.state()
@@ -172,10 +192,20 @@ class Lobby:
             if not room or room['host']!=pid:
                 raise ValueError('Only this room host can start a game.')
             if room['engine'] and ((room['game']=='tetris' and not room['engine'].over) or
-                                   (room['game']=='bluff' and room['engine'].phase!='results')):
+                                   (room['game']=='bluff' and room['engine'].phase!='results') or
+                                   (room['game']=='hexwars' and not room['engine'].over)):
                 raise ValueError('Game already running.')
             if room['game']=='tetris':
                 room['engine'] = Tetris()
+            elif room['game'] == 'hexwars':
+                bots = room.get('bots', {})
+                if any(p not in bots for p in room['members']):
+                    raise ValueError('Every player must upload a bot or choose /bot demo first.')
+                selected = {p: bots[p] for p in sorted(room['members'])}
+                if room.get('practice'):
+                    selected['practice'] = dict(name='Practice bot', attributes=[4, 3, 2], wasm=None)
+                room['engine'] = HexWars(selected)
+                room['match_bots'] = selected
             else:
                 if len(room['members'])<2:
                     raise ValueError('Bluff needs at least 2 players.')
@@ -187,6 +217,20 @@ class Lobby:
                 room['turn'] = turn+1
                 room['engine'] = Bluff(names,leader,room['mode'],time.time(),self.round_seconds)
             room['last'] = time.monotonic()
+            await self.room_state(rid)
+        elif cmd in ('/bot', '/practice'):
+            self.hex_waiting(room)
+            if cmd == '/practice':
+                if room['host'] != pid:
+                    raise ValueError('Only the host can toggle the practice opponent.')
+                if not room.get('practice') and len(room['members']) >= 6:
+                    raise ValueError('Room is full.')
+                room['practice'] = not room.get('practice', False)
+            elif arg == 'demo':
+                room.setdefault('bots', {})[pid] = dict(name=c['name'], attributes=[4, 3, 2], wasm=None)
+                await self.send(c, dict(type='event', text='Built-in Expander selected. Ready for /start.'))
+            else:
+                raise ValueError('Use /bot demo, or /bot upload PATH.c in the game client.')
             await self.room_state(rid)
         elif cmd in ('/answer','/vote'):
             if not room or room['game']!='bluff' or not room['engine']:
@@ -203,6 +247,75 @@ class Lobby:
             await self.state()
         else:
             raise ValueError('Unknown command. /help lists commands locally.')
+
+    @staticmethod
+    def hex_joinable(room):
+        if room['engine'] and not room['engine'].over:
+            raise ValueError('Match running. Join after results.')
+        if len(room['members']) + int(room.get('practice', False)) >= 6:
+            raise ValueError('Hex Wars has at most 6 players, including the practice bot.')
+
+    @staticmethod
+    def hex_waiting(room):
+        if not room or room['game'] != 'hexwars':
+            raise ValueError('Host or join a Hex Wars room first: /host hexwars.')
+        if room['engine'] and not room['engine'].over:
+            raise ValueError('Wait until the match ends before changing bots.')
+
+    async def upload_bot(self, pid, msg):
+        rid, room = self.room_for(pid)
+        self.hex_waiting(room)
+        if msg.get('room') != rid:
+            raise ValueError('Bot upload targets a different room.')
+        client = self.clients[pid]
+        now = time.monotonic()
+        if now - client.get('bot_upload', -100) < 3:
+            raise ValueError('Wait 3 seconds between bot uploads.')
+        client['bot_upload'] = now
+        encoded = msg.get('wasm')
+        if not isinstance(encoded, str) or len(encoded) > 4 * ((MAX_WASM + 2) // 3):
+            raise ValueError('Bot upload exceeds 32 KiB.')
+        try:
+            data = base64.b64decode(encoded, validate=True)
+        except (ValueError, binascii.Error) as exc:
+            raise ValueError('Malformed bot upload.') from exc
+        async with self.bot_slots:
+            attributes = await asyncio.to_thread(inspect_bot, data)
+        # Compilation checks yield: the host may have started or closed the room.
+        if self.rooms.get(rid) is not room or pid not in room['members']:
+            raise ValueError('Room changed during bot validation; upload again.')
+        self.hex_waiting(room)
+        digest = hashlib.sha256(data).hexdigest()[:12]
+        room.setdefault('bots', {})[pid] = dict(name=client['name'], attributes=attributes, wasm=data)
+        await self.send(client, dict(type='event', text=f'Bot ready [{digest}]. Growth/attack/armor: {attributes}.'))
+        await self.room_state(rid)
+
+    async def hex_turn(self, rid, room, engine):
+        try:
+            replies, jobs, ids = {}, [], []
+            for i, player in enumerate(engine.players):
+                if not engine.alive(i):
+                    continue
+                pid = player['pid']
+                bot = room['match_bots'][pid]
+                if bot['wasm'] is None:
+                    replies[pid] = dict(action=demo_action(engine, i))
+                else:
+                    ids.append(pid)
+                    jobs.append((bot['wasm'], engine.snapshot(i)))
+            if jobs:
+                try:
+                    async with self.bot_slots:
+                        results = await asyncio.to_thread(run_bots, jobs)
+                    replies.update(zip(ids, results))
+                except ValueError:
+                    replies.update((pid, dict(error='runtime failed')) for pid in ids)
+            if self.rooms.get(rid) is room and room['engine'] is engine:
+                engine.step(replies)
+                await self.room_state(rid)
+        finally:
+            room['busy'] = False
+            room['last'] = time.monotonic()
 
     async def invite(self,pid,rid):
         now = time.monotonic()
@@ -286,7 +399,7 @@ class Lobby:
                 line = await reader.readline()
                 if not line:
                     break
-                if len(line)>8192:
+                if len(line)>49152:
                     raise ValueError('Message too large.')
                 msg = json.loads(line)
                 if not isinstance(msg,dict):
@@ -300,6 +413,8 @@ class Lobby:
                 try:
                     if msg.get('type')=='command':
                         await self.command(pid,msg.get('text',''))
+                    elif msg.get('type') == 'hex_bot':
+                        await self.upload_bot(pid, msg)
                     elif msg.get('type')=='move':
                         rid,room = self.room_for(pid)
                         if room and room['game']=='tetris' and room['engine']:
@@ -339,6 +454,11 @@ class Lobby:
                     engine.move('down')
                     room['last'] = time.monotonic()
                     await self.room_state(rid)
+                elif room['game'] == 'hexwars' and not engine.over and not room.get('busy') and time.monotonic()-room['last'] >= .65:
+                    room['busy'] = True
+                    task = asyncio.create_task(self.hex_turn(rid, room, engine))
+                    self.hex_tasks.add(task)
+                    task.add_done_callback(self.hex_tasks.discard)
                 elif room['game']=='bluff':
                     old = engine.phase
                     engine.tick(time.time())
@@ -369,6 +489,9 @@ async def serve(host,port,ready=None,managed=False):
         presence.cancel()
         mesh_task.cancel()
         await asyncio.gather(ticker,presence,mesh_task,return_exceptions=True)
+        for task in list(lobby.hex_tasks):
+            task.cancel()
+        await asyncio.gather(*list(lobby.hex_tasks), return_exceptions=True)
         lobby.rooms.clear()
         await lobby.mesh.goodbye()
         for client in list(lobby.clients.values()):

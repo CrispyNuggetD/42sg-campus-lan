@@ -1,5 +1,6 @@
 """Curses frontend. Desktop notifications execute on this client only."""
 import collections
+import base64
 import curses
 import json
 import os
@@ -17,10 +18,12 @@ from pathlib import Path
 from . import VERSION, PROTOCOL
 from .network import seat_address, address
 from .lobby_view import lobby_lines, guest_style
+from .hexbot import SDK, compile_bot
 
 HELP = [
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
-    '/who /rooms /games | /host tetris | /host bluff free | /host bluff prompt',
+    '/who /rooms /games | /host tetris | /host bluff free|prompt | /host hexwars',
+    'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
     '/signin (coming later) | /notify on|off | /home (your node) | /help | /quit',
@@ -121,7 +124,16 @@ class Client:
             except queue.Empty:
                 break
             kind = msg.get('type')
-            if kind in ('event','error','invite','online'):
+            if kind == 'local_bot':
+                self.bot_compiling = False
+                if msg.get('error'):
+                    self.lines.append('Bot compile: ' + safe(msg['error']))
+                elif self.game.get('room') != msg['room'] or self.game.get('game') != 'hexwars':
+                    self.lines.append('Room changed during compilation; upload again.')
+                else:
+                    self.send(dict(type='hex_bot', room=msg['room'], wasm=msg['wasm']))
+                    self.lines.append('Compiled; host is validating your bot...')
+            elif kind in ('event','error','invite','online'):
                 self.lines.append(safe(msg.get('text','')))
                 if kind in ('invite','online'):
                     self.notify(msg.get('text',''))
@@ -153,6 +165,15 @@ class Client:
                 elif msg.get('game')=='tetris' and 'board' in msg and (new or 'board' not in getattr(self,'previous_game',{})):
                     self.play = True
                 self.previous_game = msg
+                if msg.get('game') == 'hexwars' and msg.get('result') and msg.get('result') != getattr(self, 'hex_result', None):
+                    self.lines.append(msg['result'])
+                if msg.get('game') == 'hexwars':
+                    self.hex_result = msg.get('result')
+                    old_faults = getattr(self, 'hex_faults', {}) if not new and msg.get('turn', 0) else {}
+                    for score in msg.get('scores', []):
+                        if score['faults'] > old_faults.get(score['symbol'], 0):
+                            self.lines.append(safe(f"{score['name']}: {score['status']} ({score['faults']}/3 faults)"))
+                    self.hex_faults = {score['symbol']: score['faults'] for score in msg.get('scores', [])}
                 signature = (msg.get('room'),msg.get('phase'))
                 if msg.get('game')=='bluff' and signature!=getattr(self,'round_signature',None):
                     self.lines.append('BLUFF '+msg.get('phase','')+': '+msg.get('prompt',''))
@@ -182,8 +203,8 @@ class Client:
     def open_game(self, text):
         parts = text.split()
         if parts[0]=='/host':
-            if len(parts) not in (2,3) or parts[1] not in ('tetris','bluff') or (len(parts)==3 and parts[2] not in ('free','prompt')):
-                self.lines.append('Use /host tetris or /host bluff free|prompt.')
+            if len(parts) not in (2,3) or parts[1] not in ('tetris','bluff','hexwars') or (len(parts)==3 and parts[2] not in ('free','prompt')):
+                self.lines.append('Use /host tetris, /host bluff free|prompt, or /host hexwars.')
                 return
             target,port = self.home
             action = ['--create',parts[1],'--game-mode',parts[2] if len(parts)==3 else 'free']
@@ -240,13 +261,13 @@ class Client:
                 x += len(text)
         bottom = 5+capacity
         self.line(screen,bottom,'-'*(w-1),curses.A_DIM)
-        self.line(screen,bottom+1,'CHAT & INVITATIONS  | /host tetris | /host bluff free | /rooms',curses.A_BOLD)
+        self.line(screen,bottom+1,'CHAT & INVITATIONS | /host hexwars | /host tetris | /rooms',curses.A_BOLD)
         return bottom+2
 
     def window_label(self):
         if getattr(self,'role','lobby')!='game':
             return 'HQ LOBBY'
-        names = {'tetris':'TETRIS', 'bluff':'WHO SAID THAT?'}
+        names = {'tetris':'TETRIS', 'bluff':'WHO SAID THAT?', 'hexwars':'HEX WARS'}
         game = self.game
         if game.get('game'):
             return f"GAME | {names.get(game['game'],safe(game['game']).upper())} | ROOM {safe(game.get('room','?'))}"
@@ -277,7 +298,7 @@ class Client:
         label = f" LAN42 | {self.window_label()} | {self.name} [Guest] | "+('ONLINE' if self.connected else 'DISCONNECTED')
         self.line(screen,0,label.ljust(w-1),banner)
         hint = ('GAME CONTROLS: /start /leave /quit | /lobby /game | HQ stays in its other window'
-                if game_window else 'HQ: /join IP [PORT] | /host tetris /host bluff free: new game window | /who /map 1')
+                if game_window else 'HQ: /join IP [PORT] | /host hexwars | /host tetris | /games | /who')
         self.line(screen,1,hint)
         players = self.state.get('players',[])
         if not self.state:
@@ -291,6 +312,8 @@ class Client:
         logs_x,logs_y = 0,6
         if not game.get('game') or getattr(self,'show_lobby',False):
             logs_y = self.draw_lobby(screen,players)
+        elif game.get('game') == 'hexwars':
+            logs_y = self.draw_hexwars(screen)
         elif game.get('game')=='tetris' and 'board' in game:
             self.line(screen,6,f"CO-OP TETRIS  {game['score']} pts")
             for y,row in enumerate(game['board']):
@@ -319,6 +342,112 @@ class Client:
         self.line(screen,h-1,('PLAY > ' if self.play else '> ')+self.input[-(w-10):])
         screen.refresh()
 
+    def draw_hexwars(self, screen):
+        game = self.game
+        self.line(screen, 4, 'HEX WARS | CODE YOUR CONQUEST', curses.A_BOLD)
+        if 'cells' not in game:
+            self.line(screen, 6, 'BOT WORKSHOP  /bot opens the upload menu', curses.A_BOLD)
+            self.line(screen, 7, '/bot upload PATH.c | /bot demo | /bot guide | /practice')
+            self.line(screen, 8, 'Write C -> upload -> everyone ready -> host /start')
+            for y, bot in enumerate(game.get('bots', []), 10):
+                self.line(screen, y, ('[READY] ' if bot['ready'] else '[EMPTY] ') + bot['name'])
+            self.line(screen, 17, 'Practice opponent: ' + ('ON' if game.get('practice') else 'OFF') + ' | 2-6 armies')
+            self.line(screen, 18, 'Growth + attack + armor = 9. Capture hexes; eliminate rival armies.')
+            return 20
+        self.line(screen, 5, f"Turn {game['turn']}/{game['max_turns']} | . neutral | letter=army, number=units")
+        for r in range(-4, 5):
+            cells = [c for c in game['cells'] if c['r'] == r]
+            for column, cell in enumerate(cells):
+                owner = cell['owner']
+                symbol = '.' if owner < 0 else chr(65 + owner)
+                attr = curses.A_BOLD if owner >= 0 else curses.A_DIM
+                if owner >= 0 and getattr(self, 'colors', False):
+                    attr |= curses.color_pair(owner + 2)
+                self.line(screen, 7 + r + 4, f"<{symbol}{cell['units']:02}>", attr,
+                          x=2 + abs(r) * 2 + column * 5)
+        self.line(screen, 17, 'ARMY / TILES / UNITS / FAULTS (3 = out)', curses.A_BOLD)
+        for index, score in enumerate(game.get('scores', [])):
+            text = f"{score['symbol']} {score['name'][:12]:12} {score['tiles']:2}h {score['units']:4}u !{score['faults']}"
+            self.line(screen, 18 + index // 2, text, x=(index % 2) * 37)
+        self.line(screen, 21, game.get('result') or 'Bots act simultaneously. /leave forfeits your army.')
+        return 22
+
+    def bot_command(self, text):
+        if self.game.get('game') != 'hexwars':
+            self.lines.append('Open /host hexwars or join a Hex Wars room first.')
+            return
+        if text == '/bot':
+            self.wizard = ('bot_menu', [])
+            self.lines.extend(['BOT MENU: 1 Upload C file | 2 Use demo bot | 3 API guide | 4 Create starter',
+                               'Choose 1-4, or /cancel.'])
+        elif text == '/bot demo':
+            self.send(dict(type='command', text=text))
+        elif text == '/bot guide':
+            self.lines.extend(['C API: bot_config(t_hw_attributes *a); bot_turn(const t_hw_state *s, t_hw_action *a);',
+                               'Attributes: growth/attack/armor each 1..5, total 9. Action: from, to, units.',
+                               'State: me, turn, cells[]. Each cell: owner, units, q/r, neighbors[6].',
+                               'Move to a neighbor; leave one unit behind. units=0 passes. No libc/main().',
+                               'Guide: ' + str(SDK / 'README.md'), 'Header: ' + str(SDK / 'hexwars.h')])
+        elif text.startswith('/bot starter '):
+            try:
+                path = self.bot_path(text[len('/bot starter '):])
+                with path.open('x') as output:
+                    output.write((SDK / 'examples' / 'expander.c').read_text())
+                self.lines.append('Starter saved: ' + str(path) + '. Edit it, then /bot upload PATH.c')
+            except (OSError, ValueError) as exc:
+                self.lines.append('Starter: ' + safe(exc))
+        elif text.startswith('/bot upload '):
+            if self.game.get('phase') == 'running':
+                self.lines.append('Wait until the match ends before uploading.')
+                return
+            if getattr(self, 'bot_compiling', False):
+                self.lines.append('A bot is already compiling.')
+                return
+            try:
+                path = self.bot_path(text[len('/bot upload '):])
+            except ValueError as exc:
+                self.lines.append(str(exc))
+                return
+            self.bot_compiling = True
+            room = self.game.get('room')
+            self.lines.append('Compiling ' + path.name + '...')
+            def compile_upload():
+                try:
+                    data = compile_bot(path)
+                    message = dict(type='local_bot', room=room, wasm=base64.b64encode(data).decode('ascii'))
+                except (ValueError, OSError) as exc:
+                    message = dict(type='local_bot', error=str(exc))
+                try:
+                    self.inbox.put(message, timeout=2)
+                except queue.Full:
+                    self.bot_compiling = False
+            threading.Thread(target=compile_upload, daemon=True).start()
+        else:
+            self.lines.append('/bot | /bot upload PATH.c | /bot starter PATH.c | /bot demo | /bot guide')
+
+    @staticmethod
+    def bot_path(text):
+        parts = shlex.split(text)
+        if len(parts) != 1:
+            raise ValueError('Provide one path; quote it if it contains spaces.')
+        return Path(parts[0]).expanduser().resolve()
+
+    def bot_wizard_answer(self, intent, text):
+        if text == '/cancel':
+            self.wizard = None
+        elif intent == 'bot_menu':
+            if text in ('1', '4'):
+                self.wizard = ('bot_upload' if text == '1' else 'bot_starter', [])
+                self.lines.append('Enter a .c file path (quote spaces), or /cancel:')
+            elif text in ('2', '3'):
+                self.wizard = None
+                self.bot_command('/bot demo' if text == '2' else '/bot guide')
+            else:
+                self.lines.append('Choose 1, 2, 3, or 4; /cancel exits.')
+        else:
+            self.wizard = None
+            self.bot_command('/bot ' + ('upload ' if intent == 'bot_upload' else 'starter ') + text)
+
     def seat_question(self, intent):
         self.wizard = (intent, [])
         self.lines.append('Find seats: https://meta.intra.42.fr/clusters')
@@ -326,6 +455,9 @@ class Client:
 
     def wizard_answer(self, text):
         intent, values = self.wizard
+        if intent.startswith('bot'):
+            self.bot_wizard_answer(intent, text)
+            return
         if text=='/cancel':
             self.wizard = None
             self.lines.append('Cancelled.')
@@ -439,6 +571,8 @@ class Client:
                         break
                 elif text=='/quit':
                     break
+                elif text == '/bot' or text.startswith('/bot '):
+                    self.bot_command(text)
                 elif text=='/help':
                     self.lines.extend(HELP)
                 elif text.startswith('/notify'):

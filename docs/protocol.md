@@ -1,8 +1,10 @@
-# Protocol 2 — v0.2.0
+# Protocol 4 — v0.5.0
 
 One UTF-8 JSON object per newline, TCP 31415 by default. Ordinary client commands
-remain command/text and move/action. Hello includes protocol:3, name, hostname and role (lobby or game).
-Game rules and game payloads are unchanged; bluff identities stay hidden until reveal.
+remain command/text and move/action. Hello includes protocol:4, name, hostname and role (lobby or game).
+Bluff identities stay hidden until reveal. Hex Wars adds the `hex_bot` upload
+message and `hexwars` game snapshots; see the [wire contract and C API](../minigames/hexwars/README.md#execution-and-network-contract).
+Client messages may be up to 48 KiB to carry a base64-encoded 32 KiB bot.
 
 ## Peer exchange
 
@@ -38,9 +40,9 @@ port and room number. HQ stays local while game terminals connect to those addre
 Closing a game leaves HQ online. Duplicate names are allowed across HQ/game roles
 but rejected within a role. The roster comes from node owners, not game sockets. No host migration, authentication or encryption.
 
-The older direct peer_invite request remains supported with protocol 3.
+The older direct peer_invite request remains supported with protocol 4.
 Its receiving node returns a client count and sends a local notice. The mesh
 also forwards normal room invitations, so direct seat invitations are optional.
 
-All users must update together. v0.1 servers use protocol 1 and must be stopped
-deliberately before starting v0.2 on the same port.
+All users must update together. Stop older servers before starting v0.5.0 on
+the same port; protocol 1–3 peers cannot join protocol 4.

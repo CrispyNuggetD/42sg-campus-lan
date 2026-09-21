@@ -117,7 +117,7 @@ def main():
             p.add_argument('address')
             action = p.add_mutually_exclusive_group(required=True)
             action.add_argument('--room')
-            action.add_argument('--create',choices=('tetris','bluff'))
+            action.add_argument('--create',choices=('tetris','bluff','hexwars'))
             p.add_argument('--game-mode',choices=('free','prompt'),default='free')
         elif name=='join':
             p.add_argument('address',nargs='?',help='IP, hostname, or c1r2s3; omit for seat questions')
