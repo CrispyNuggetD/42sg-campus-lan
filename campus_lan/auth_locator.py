@@ -8,7 +8,7 @@ from .auth import AuthError, config_dir, private_read, request_json
 from .auth_client import change_host, fingerprint, load_trust
 from .network import seat_address
 
-REMOTE = 'https://github.com/CrispyNuggetD/42sg-campus-lan.git'
+REMOTE = 'git@github.com:CrispyNuggetD/42sg-campus-lan.git'
 BRANCH = 'auth-seat'
 URL = 'https://raw.githubusercontent.com/CrispyNuggetD/42sg-campus-lan/auth-seat/seat.json'
 
@@ -45,7 +45,8 @@ def publish(host):
     if seat_address(seat) != host or host != trust['lobby_host']:
         raise AuthError('Seat publishing address disagrees with the running host.')
     content = json.dumps(dict(version=1, seat=seat, fingerprint=fingerprint(trust)), indent=2) + '\n'
-    env = dict(os.environ, GIT_TERMINAL_PROMPT='0')
+    env = dict(os.environ, GIT_TERMINAL_PROMPT='0',
+               GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes')
     with tempfile.TemporaryDirectory(prefix='lan42-seat-') as directory:
         def git(*args, allowed=(0,)):
             result = subprocess.run(['git', '-C', directory, *args], env=env,
