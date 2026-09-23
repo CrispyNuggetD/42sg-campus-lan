@@ -86,6 +86,7 @@ lan42_dailylogin() {
   source "$LAN42_REPO_ROOT/useful-scripts/campus.zsh"
   print -- 'Campus helpers reloaded.'
   if [[ "$LAN42_OPEN_ON_LOGIN" == 1 ]]; then
+    (builtin cd -- "$LAN42_REPO_ROOT" && command python3 -m campus_lan.auth_daily) || result=1
     lan42_window || result=1
   fi
   return $result

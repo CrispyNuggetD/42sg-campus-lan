@@ -12,14 +12,17 @@ from .hexwars import HexWars, demo_action
 from .hexbot import MAX_WASM, inspect_bot, run_bots
 from .network import seat_address
 from .mesh import Mesh
+from .auth import CallbackRelay, AuthError
 import ipaddress
 
 def clean(value, limit=400):
     return ''.join(c for c in str(value) if c.isprintable())[:limit]
 
 class Lobby:
-    def __init__(self, round_seconds=45):
+    def __init__(self, round_seconds=45, auth_broker=None):
         self.clients, self.rooms = {}, {}
+        self.auth_broker = auth_broker
+        self.callbacks = CallbackRelay()
         self.sequence = self.room_sequence = 0
         self.round_seconds = round_seconds
         self.seats = {}
@@ -50,11 +53,18 @@ class Lobby:
         await self.broadcast(dict(type='event',text=text), ids)
 
     async def state(self):
+        if self.auth_broker:
+            people = {}
+            for c in self.clients.values():
+                people[c['uid']] = dict(id=str(c['uid']), name=c['name'], hostname=c['hostname'],
+                    verified=True, seat=c.get('seat', 'unknown'))
+            players = list(people.values())
+        else:
+            players = self.mesh.players() or [dict(id=p,name=c['name'],hostname=c['hostname'],verified=False,
+                          seat=self.seats.get(c['name'],'unknown')) for p,c in self.clients.items()]
         await self.broadcast(dict(type='state',version=VERSION,api=self.api_status,
-            nodes=len(self.mesh.peers)+1,
-            players=self.mesh.players() or [dict(id=p,name=c['name'],hostname=c['hostname'],verified=False,
-                          seat=self.seats.get(c['name'],'unknown')) for p,c in self.clients.items()],
-            rooms=self.mesh.rooms()))
+            secure=bool(self.auth_broker), nodes=1 if self.auth_broker else len(self.mesh.peers)+1,
+            players=players, rooms=self.mesh.local_rooms() if self.auth_broker else self.mesh.rooms()))
 
     async def room_state(self, rid):
         if rid not in self.rooms:
@@ -99,7 +109,7 @@ class Lobby:
         if not text:
             return
         if not text.startswith('/'):
-            await self.mesh.publish('event',f"{c['name']} [Guest]: {text}")
+            await self.mesh.publish('event',f"{c['name']} [{'42 Verified' if self.auth_broker else 'Guest'}]: {text}")
             return
         cmd,_,arg = text.partition(' ')
         arg = arg.strip()
@@ -114,7 +124,16 @@ class Lobby:
         if cmd == '/games':
             await self.send(c,dict(type='event',text='Games: tetris, bluff (free|prompt), hexwars (C bot arena). /host hexwars | /join ROOM'))
         elif cmd == '/signin':
-            await self.send(c,dict(type='event',text='Sign in with Intra — coming later. You are a Guest (unverified).'))
+            await self.send(c,dict(type='event',text='Use /signin in your local HQ client to open 42 in your browser.'))
+        elif cmd == '/signout':
+            if not self.auth_broker:
+                raise ValueError('You are using the guest lobby.')
+            key = c['session_key']
+            self.auth_broker.logout(key)
+            for peer in list(self.clients.values()):
+                if peer.get('session_key') == key:
+                    await self.send(peer, dict(type='signed_out'))
+                    peer['writer'].close()
         elif cmd == '/host':
             bits = arg.split()
             if not bits or bits[0] not in ('tetris','bluff','hexwars'):
@@ -157,6 +176,8 @@ class Lobby:
             await self.leave(pid)
             await self.state()
         elif cmd == '/invite-seat':
+            if self.auth_broker:
+                raise ValueError('Verified invitations stay inside this TLS lobby. Use /invite-room.')
             if not room:
                 raise ValueError('Host or join a game room first.')
             bits = arg.split()
@@ -323,6 +344,9 @@ class Lobby:
         if now-c.get('invite',-100)<10:
             raise ValueError('Wait 10 seconds between invitations.')
         c['invite'] = now
+        if self.auth_broker:
+            await self.broadcast(dict(type='invite', text=f"{c['name']} [42 Verified] invites you to {self.rooms[rid]['game']}; /join {rid}."))
+            return
         await self.mesh.publish('invite',f"{c['name']} invites you to {self.rooms[rid]['game']}; server {self.mesh.host}:{self.port}, /join {rid}. Use /connect {self.mesh.host} {self.port} if on another node.")
 
     async def handle(self,reader,writer):
@@ -332,8 +356,20 @@ class Lobby:
             line = await asyncio.wait_for(reader.readline(),10)
             if len(line)>65536:
                 raise ValueError('Handshake too large.')
-            hello = json.loads(line)
             source = writer.get_extra_info('peername')[0]
+            if not self.auth_broker and line.startswith(b'GET '):
+                if not ipaddress.ip_address(source).is_loopback:
+                    raise ValueError('Callback is loopback-only.')
+                await self.callbacks.handle(reader, writer, line)
+                return
+            hello = json.loads(line)
+            if self.auth_broker and (not isinstance(hello, dict) or hello.get('type') not in ('hello', 'ping')):
+                raise ValueError('Guest mesh and local control are not accepted by the secure lobby.')
+            if isinstance(hello, dict) and hello.get('type') == 'oauth_wait' and hello.get('protocol') == PROTOCOL:
+                if self.auth_broker or not ipaddress.ip_address(source).is_loopback:
+                    raise ValueError('Callback registration is loopback-only.')
+                await self.callbacks.wait(hello.get('state'), reader, writer)
+                return
             if isinstance(hello,dict) and hello.get('protocol')==PROTOCOL:
                 if hello.get('type')=='mesh':
                     self.mesh.host = writer.get_extra_info('sockname')[0]
@@ -378,22 +414,31 @@ class Lobby:
                     return
             if not isinstance(hello,dict) or hello.get('type')!='hello' or hello.get('protocol')!=PROTOCOL:
                 raise ValueError('Protocol mismatch; update your client.')
-            name = clean(hello.get('name','guest'),24)
+            identity = None
+            if self.auth_broker:
+                if not writer.get_extra_info('ssl_object'):
+                    raise ValueError('Authentication requires TLS.')
+                identity = self.auth_broker.authenticate(hello.get('session'))
+            name = identity['login'] if identity else clean(hello.get('name','guest'),24)
             if not re.fullmatch(r'[A-Za-z0-9_.-]{1,24}',name):
                 raise ValueError('Invalid guest username.')
             role = hello.get('role','lobby')
             if role not in ('lobby','game'):
                 raise ValueError('Unknown client role.')
-            if len(self.clients)>=32 or any(c['name']==name and c.get('role','lobby')==role for c in self.clients.values()):
+            if len(self.clients)>=32 or any((c['name']==name or (identity and c.get('uid')==identity['uid']))
+                                           and c.get('role','lobby')==role for c in self.clients.values()):
                 raise ValueError('Lobby full or this guest name is already connected.')
             self.sequence += 1
             pid = str(self.sequence)
             c = dict(writer=writer,name=name,role=role,hostname=clean(hello.get('hostname','unknown'),50),
                      window=time.monotonic(),count=0)
+            if identity:
+                from .network import seat_label
+                c.update(uid=identity['uid'], session_key=identity['session_key'], seat=seat_label(source))
             self.clients[pid] = c
-            await self.send(c,dict(type='welcome',id=pid,version=VERSION,verified=False))
+            await self.send(c,dict(type='welcome',id=pid,version=VERSION,name=name,verified=bool(identity)))
             if role=='lobby':
-                await self.event(f'{name} joined as Guest.')
+                await self.event(f"{name} joined as {'42 Verified' if identity else 'Guest'}.")
             await self.state()
             while True:
                 line = await reader.readline()
@@ -404,6 +449,8 @@ class Lobby:
                 msg = json.loads(line)
                 if not isinstance(msg,dict):
                     raise ValueError('Expected an object.')
+                if self.auth_broker and not self.auth_broker.active(c['session_key']):
+                    raise ValueError('Sign-in expired. Use /signin again.')
                 now = time.monotonic()
                 if now-c['window']>=1:
                     c['window'],c['count'] = now,0
@@ -446,6 +493,11 @@ class Lobby:
     async def tick(self):
         while True:
             await asyncio.sleep(.2)
+            if self.auth_broker:
+                for c in list(self.clients.values()):
+                    if not self.auth_broker.active(c['session_key']):
+                        await self.send(c, dict(type='signed_out'))
+                        c['writer'].close()
             for rid,room in list(self.rooms.items()):
                 engine = room['engine']
                 if not engine:

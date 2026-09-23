@@ -82,3 +82,10 @@ Repository updates are fast-forward only: no resets, staging, commits or pushes.
 
 To uninstall the shell helpers, remove the marked 42sg-campus-lan block from
 .zshrc and open a new terminal. The backed-up configuration is also available.
+
+
+When private sign-in-host configuration exists, `lan42_dailylogin` also runs
+`campus_lan.auth_daily` before opening HQ. It detects the current campus seat
+and starts/reuses the owner-only authentication service. Ordinary students
+without that private configuration do not start a service. See
+[the sign-in guide](../docs/sign-in.md) for host moves and `/authhost SEAT`.

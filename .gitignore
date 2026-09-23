@@ -6,3 +6,6 @@ __pycache__/
 *.pyc
 .venv/
 .DS_Store
+auth-server.json
+auth-session.json
+auth-key.pem

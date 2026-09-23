@@ -1,0 +1,3 @@
+# Only the owner's certificate-generation/setup command needs this dependency.
+# Runtime OAuth, TLS and student clients use the Python standard library.
+cryptography>=46.0.0,<52

@@ -19,6 +19,7 @@ from . import VERSION, PROTOCOL
 from .network import seat_address, address
 from .lobby_view import lobby_lines, guest_style
 from .hexbot import SDK, compile_bot
+from . import auth_client
 
 HELP = [
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
@@ -26,7 +27,7 @@ HELP = [
     'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
-    '/signin (coming later) | /notify on|off | /home (your node) | /help | /quit',
+    '/signin /signout | /authhost SEAT | /notify on|off | /home | /help | /quit',
     'Chat: type and Enter. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
     'Bluff: identify each entry author in order; own entry is ignored in scoring.',
@@ -53,7 +54,11 @@ def safe(value):
     return ''.join(c for c in str(value) if c.isprintable())
 
 class Client:
-    def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None):
+    def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
+        self.secure = auth_session is not None
+        self.session_token = auth_session['session'] if auth_session else None
+        self.signing_in = False
+        self.auth_destination = None
         self.sock, self.name = sock, name
         self.role, self.initial_command = role, initial_command
         self.inbox = queue.Queue(maxsize=256)
@@ -69,7 +74,10 @@ class Client:
         self.id = None
         self.wizard = None
         self.next_server = None
-        self.send(dict(type='hello',protocol=PROTOCOL,name=name,hostname=hostname,role=role))
+        hello = dict(type='hello',protocol=PROTOCOL,name=name,hostname=hostname,role=role)
+        if auth_session:
+            hello['session'] = auth_session['session']
+        self.send(hello)
         threading.Thread(target=self.receive,daemon=True).start()
 
     def send(self,data):
@@ -124,7 +132,17 @@ class Client:
             except queue.Empty:
                 break
             kind = msg.get('type')
-            if kind == 'local_bot':
+            if kind == 'local_signin':
+                self.signing_in = False
+                if msg.get('error'):
+                    self.lines.append(safe(msg['error']))
+                else:
+                    self.auth_destination = tuple(msg['destination'])
+            elif kind == 'signed_out':
+                if getattr(self, 'secure', False):
+                    auth_client.clear_session(getattr(self, 'session_token', None))
+                    self.lines.append('Signed out or session expired. Use /signin from local HQ.')
+            elif kind == 'local_bot':
                 self.bot_compiling = False
                 if msg.get('error'):
                     self.lines.append('Bot compile: ' + safe(msg['error']))
@@ -139,17 +157,23 @@ class Client:
                     self.notify(msg.get('text',''))
                 elif kind=='event' and getattr(self,'role','lobby')=='lobby':
                     # Existing local and mesh chat events use this wire format.
-                    sender,separator,_ = msg.get('text','').partition(' [Guest]: ')
+                    delimiter = ' [42 Verified]: ' if getattr(self, 'secure', False) else ' [Guest]: '
+                    sender,separator,_ = msg.get('text','').partition(delimiter)
                     if separator and sender!=self.name:
                         self.notify(msg['text'],throttle=False)
             elif kind=='welcome':
                 self.id = msg['id']
+                if getattr(self, 'secure', False):
+                    self.name = msg['name']
                 if getattr(self,'initial_command',None):
                     self.send(dict(type='command',text=self.initial_command))
                     self.initial_command = None
-                self.lines.append(f"Connected. Server {msg['version']}; Guest (unverified).")
+                self.lines.append(f"Connected. Server {msg['version']}; " + ('42 Verified over TLS.' if getattr(self, 'secure', False) else 'Guest (unverified).'))
             elif kind=='state':
                 old_rooms = {(r.get('address'),r.get('port'),r['id']) for r in self.state.get('rooms',[])}
+                if not getattr(self, 'secure', False):
+                    for player in msg.get('players', []):
+                        player['verified'] = False
                 self.state = msg
                 for room in msg.get('rooms',[]):
                     if (room.get('address'),room.get('port'),room['id']) not in old_rooms:
@@ -192,6 +216,9 @@ class Client:
                 pass
 
     def link_friend(self, target, port):
+        if getattr(self, 'secure', False):
+            self.lines.append('Verified players share this TLS lobby. /signout returns to the guest mesh.')
+            return
         try:
             if self.peer_callback:
                 self.peer_callback(target,port)
@@ -206,7 +233,7 @@ class Client:
             if len(parts) not in (2,3) or parts[1] not in ('tetris','bluff','hexwars') or (len(parts)==3 and parts[2] not in ('free','prompt')):
                 self.lines.append('Use /host tetris, /host bluff free|prompt, or /host hexwars.')
                 return
-            target,port = self.home
+            target,port = self.current if getattr(self, 'secure', False) else self.home
             action = ['--create',parts[1],'--game-mode',parts[2] if len(parts)==3 else 'free']
         else:
             if len(parts)!=2 or not parts[1].isdigit():
@@ -249,7 +276,7 @@ class Client:
         capacity = min(max(1,h-13),max(10,len(content)))
         pages = max(1,(len(content)+capacity-1)//capacity)
         self.lobby_page = min(getattr(self,'lobby_page',0),pages-1)
-        self.line(screen,3,f'CURRENTLY ONLINE: {len(players)} | Guest names are unverified',curses.A_BOLD)
+        self.line(screen,3,f"CURRENTLY ONLINE: {len(players)} | " + ('42 identities verified over TLS' if getattr(self, 'secure', False) else 'Guest names are unverified'),curses.A_BOLD)
         self.line(screen,4,f'/roster | /map 1 | /map 2 | /next /prev (page {self.lobby_page+1}/{pages})')
         for y,segments in enumerate(content[self.lobby_page*capacity:(self.lobby_page+1)*capacity],5):
             x = 0
@@ -295,7 +322,7 @@ class Client:
         banner = curses.A_BOLD | curses.A_REVERSE
         if getattr(self,'colors',False):
             banner |= curses.color_pair(4 if game_window else 2)
-        label = f" LAN42 | {self.window_label()} | {self.name} [Guest] | "+('ONLINE' if self.connected else 'DISCONNECTED')
+        label = f" LAN42 | {self.window_label()} | {self.name} [{'42 Verified' if getattr(self, 'secure', False) else 'Guest'}] | "+('ONLINE' if self.connected else 'DISCONNECTED')
         self.line(screen,0,label.ljust(w-1),banner)
         hint = ('GAME CONTROLS: /start /leave /quit | /lobby /game | HQ stays in its other window'
                 if game_window else 'HQ: /join IP [PORT] | /host hexwars | /host tetris | /games | /who')
@@ -341,6 +368,32 @@ class Client:
         self.line(screen,h-2,'Tab: roster/map (game: play/chat) | PgUp/PgDn: chat | /quit',curses.A_DIM)
         self.line(screen,h-1,('PLAY > ' if self.play else '> ')+self.input[-(w-10):])
         screen.refresh()
+
+    def start_signin(self):
+        if getattr(self, 'secure', False):
+            self.lines.append('Already signed in with 42. /signout ends this session.')
+            return
+        if self.role != 'lobby' or self.current != self.home:
+            self.lines.append('Use /signin in your local HQ window.')
+            return
+        if self.signing_in:
+            self.lines.append('Sign-in is already waiting in your browser (five-minute limit).')
+            return
+        self.signing_in = True
+        self.lines.append("Opening 42 in your browser. Enter credentials only on 42's website.")
+        def authenticate():
+            try:
+                destination = auth_client.sign_in(self.home)
+                message = dict(type='local_signin', destination=destination)
+            except Exception as exc:
+                # Only explicitly safe AuthError strings are exposed to the UI.
+                message = dict(type='local_signin', error=str(exc) if isinstance(exc, auth_client.AuthError)
+                               else 'Sign-in failed or timed out. Check the auth host and try again.')
+            try:
+                self.inbox.put(message, timeout=2)
+            except queue.Full:
+                self.signing_in = False
+        threading.Thread(target=authenticate, daemon=True).start()
 
     def draw_hexwars(self, screen):
         game = self.game
@@ -497,6 +550,8 @@ class Client:
             self.colors = True
         while True:
             self.consume()
+            if self.auth_destination:
+                return self.auth_destination
             self.update_title()
             if not self.connected and self.home != self.current:
                 return self.home
@@ -563,7 +618,9 @@ class Client:
                     except ValueError:
                         self.lines.append('Use /connect IP_OR_SEAT [PORT].')
                 elif text=='/home':
-                    if self.role=='lobby':
+                    if getattr(self, 'secure', False):
+                        self.lines.append('Use /signout to return to your local guest HQ.')
+                    elif self.role=='lobby':
                         self.game_target = self.home
                         self.lobby_command('/lobby')
                         self.lines.append('Game target reset to your own node.')
@@ -571,6 +628,22 @@ class Client:
                         break
                 elif text=='/quit':
                     break
+                elif text == '/signin':
+                    self.start_signin()
+                elif text.startswith('/authhost '):
+                    if getattr(self, 'secure', False) or self.signing_in:
+                        self.lines.append('Sign out or finish the pending sign-in before changing the auth host.')
+                    else:
+                        try:
+                            host = auth_client.change_host(text.split(maxsplit=1)[1])
+                            self.lines.append(f'Trusted sign-in host verified at {host}. Use /signin.')
+                        except (OSError, ValueError):
+                            self.lines.append('Could not verify the trusted host at that seat. Settings unchanged.')
+                elif text == '/signout':
+                    if getattr(self, 'secure', False):
+                        self.send(dict(type='command', text='/signout'))
+                    else:
+                        self.lines.append('You are using the guest lobby. /signin opens 42 sign-in.')
                 elif text == '/bot' or text.startswith('/bot '):
                     self.bot_command(text)
                 elif text=='/help':
@@ -595,10 +668,10 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
         # to observe the new dimensions. Unsupported terminals safely ignore it.
         time.sleep(.15)
     while True:
-        print(f'Connecting to {host}:{port} as Guest...')
+        print(f'Connecting to {host}:{port}...')
         try:
-            sock = socket.create_connection((host,port),timeout=5)
-        except OSError as e:
+            sock, auth_session = auth_client.connect_socket(host, port)
+        except (OSError, ValueError) as e:
             if home and (host,port)!=home:
                 print(f'Peer unavailable; returning to your node. {e}')
                 host,port = home
@@ -606,9 +679,9 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
             raise OSError(f'Cannot connect to {host}:{port}. Friend must run lan42; check seat/network. {e}')
         with sock:
             sock.settimeout(None)
-            client = Client(sock,username,socket.gethostname(),notify,role,initial_command)
+            client = Client(sock,username,socket.gethostname(),notify,role,initial_command,auth_session)
             client.peer_callback = peer_callback
-            client.game_target = game_target or (host,port)
+            client.game_target = (host,port) if auth_session else game_target or (host,port)
             client.port = port
             client.home = home or (host,port)
             client.current = (host,port)
@@ -631,7 +704,7 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
         if not destination:
             return
         host,port = destination
-        if peer_callback:
+        if peer_callback and (host, port) == home:
             try:
                 peer_callback(host,port)
             except (OSError,RuntimeError,ValueError) as e:

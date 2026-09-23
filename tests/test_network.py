@@ -157,8 +157,8 @@ class Network(unittest.IsolatedAsyncioTestCase):
         _,denied = await self.connect('alice')
         self.assertEqual(denied['type'],'error')
         await self.cmd(p,'/signin')
-        msg = await self.receive(p,lambda m:m['type']=='event' and 'coming later' in m['text'])
-        self.assertIn('Guest',msg['text'])
+        msg = await self.receive(p,lambda m:m['type']=='event' and 'local HQ' in m['text'])
+        self.assertIn('/signin',msg['text'])
 
 if __name__=='__main__':
     unittest.main()

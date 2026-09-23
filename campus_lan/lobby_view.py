@@ -32,8 +32,8 @@ def plain(text):
 def player_line(number, player, location):
     label = f'c{location[0]}r{location[1]}s{location[2]}' if location else 'Unknown / off campus'
     name = str(player.get('name','guest'))[:24]
-    return [(f'{number:>3}. {name:<24}', guest_style(name)),
-            (f' {label:<22} Guest', 0)]
+    return [(f'{number:>3}. {name:<24}', 1 if player.get('verified') else guest_style(name)),
+            (f" {label:<22} {'42 Verified' if player.get('verified') else 'Guest'}", 0)]
 
 
 def lobby_lines(players, view='roster', cluster=1):
@@ -67,7 +67,7 @@ def lobby_lines(players, view='roster', cluster=1):
                 if members:
                     n,p = members[0]
                     token = '[++]' if len(members)>1 else (f'[#{n}]' if n<10 else f'[{n:02}]' if n<100 else '[**]')
-                    style = guest_style(p.get('name','guest'))
+                    style = 1 if p.get('verified') else guest_style(p.get('name','guest'))
                 line.append((token,style))
             lines.append(line)
     lines += [plain(''), plain('CURRENTLY ONLINE - map markers match these roster numbers')]

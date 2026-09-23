@@ -4,8 +4,8 @@ A terminal hangout for a few friends at 42 Singapore. See who's online and where
 they're sitting, chat, and invite each other to co-op Tetris or a round of
 **Who Said That?**, or program a C army for **Hex Wars**.
 
-This is version **0.5.0**, a small LAN prototype. Everyone joins as a guest;
-Intra sign-in is planned for later.
+This is version **0.6.0**, a small LAN prototype. Start as a guest, or use `/signin` to enter a TLS-protected lobby with your
+verified 42 account. [Owner setup and student sign-in](docs/sign-in.md).
 
 ## Get started
 
@@ -164,7 +164,9 @@ last 500 event lines. Text input currently supports ASCII.
 | `/invite` | Ask for a friend's seat and invite their running lobby to your room. |
 | `/invite-room` | Share your room invitation across the connected nodes. |
 | `/notify off` | Mute your desktop notifications. |
-| `/signin` | Show the placeholder for future Intra sign-in. |
+| `/signin` | Open 42 in your browser, then join the configured secure lobby. |
+| `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
+| `/signout` | Revoke this device's session and return to guest HQ. |
 | `/quit` | Close the app and stop your node. |
 
 To invite someone, first create or join a room. They receive its server address
@@ -196,7 +198,7 @@ join your room and submit their bots; the host runs `/start`. Try it solo with
 
 Custom C bots require Clang + LLVM wasm-ld on the submitting computer and
 Node.js on the host. Bots execute as bounded, import-free WebAssembly. The
-lobby still uses guest identities; Intra verification is not implemented.
+guest mesh remains unverified; `/signin` joins the separate verified TLS lobby.
 
 Read the **[C API, structs, exact rules and setup guide](minigames/hexwars/README.md)**.
 Use the [header](minigames/hexwars/hexwars.h) and
@@ -274,16 +276,26 @@ setup prepares the launcher and explains how to enable the helpers later.
 See [the zsh helper guide](useful-scripts/README.md) for manual setup, project
 paths, compile/run helpers and optional Documents syncing.
 
-## Guest names and future Intra sign-in
+## Guest names and 42 sign-in
 
-The app uses your OS username and hostname, both marked **Guest**. These aren't
-verified identities: a modified client could impersonate someone. This version
-is meant for a few friends who trust each other. Green is reserved for future
-verified users; nobody gets verified status yet.
+The guest mesh uses unverified OS usernames. A guest node cannot assign verified
+status. `/signin` in your local HQ opens 42's website; after browser consent,
+the trusted host verifies `/v2/me` and moves HQ into its TLS-protected lobby.
+Your canonical 42 login appears in green as **42 Verified**. The verified lobby
+hosts its own games and does not forward identities or messages to the guest mesh.
 
-The planned callback, `http://localhost:31416/callback`, is an unused
-placeholder for future OAuth sign-in. There is no callback web server in this
-version. The lobby uses a separate TCP port, **31415**.
+Students never provide passwords or personal API credentials to LAN42. Only the
+trusted host holds the app secret. Authentication uses HTTPS 31416, the secure
+lobby uses TLS 31417, and the registered localhost:31415 callback stays on each
+student's own machine. Students pin the owner's public certificate before use. The owner's `dailylogin`
+starts the sign-in service on their current campus seat; after the owner moves,
+students can use `/authhost SEAT` to verify and select its new address without
+changing their certificate pin.
+
+Sessions expire after one hour. `/signout` revokes the session across your HQ
+and game windows and returns to guests. Read the **[setup, privacy, and security
+guide](docs/sign-in.md)** for importing the existing app, distributing public
+trust information, and handling secret rotation.
 
 <details>
 <summary>Optional 42 API lookup</summary>
@@ -310,7 +322,7 @@ The launcher uses `git pull --ff-only`. If you have local edits, it skips the
 update; if pulling fails, it warns you and runs the existing copy. Set
 `LAN42_NO_UPDATE=1` to skip updating deliberately.
 
-**Updating?** Everyone needs v0.5.0 (protocol 4); quit existing apps and restart.
+**Updating?** Everyone needs v0.6.0 (protocol 5); quit existing apps and restart.
 The legacy `host` and `join` startup commands remain as compatibility aliases.
 Normal startup is simply `lan42`, with `/join` inside HQ.
 
@@ -333,8 +345,8 @@ across the group**, plus chat and game traffic. Each node is capped at 16 peers.
 Campus network rules and client isolation still determine whether connections
 are allowed and can reach each other; this needs testing on campus.
 
-This prototype uses plaintext TCP and keeps no persistent chat or account
-database. It has no internet discovery or NAT traversal. Games share their
+The guest mesh uses plaintext TCP; the separate authenticated lobby requires
+pinned TLS. Neither keeps a persistent chat or account database. It has no internet discovery or NAT traversal. Games share their
 hosting node's process and port. macOS can run it, with terminal notifications
 as the fallback when Linux `notify-send` isn't available.
 

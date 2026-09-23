@@ -6,7 +6,7 @@ concept, not an exact recreation of the reference video.
 
 ## Play now
 
-Restart LAN42 after updating; all peers need **v0.5.0 / protocol 4**.
+Restart LAN42 after updating; all peers need **v0.6.0 / protocol 5**.
 From HQ, `/host hexwars` opens a game window. Friends connect to your node and
 `/join ROOM_NUMBER`, just like the other games.
 
@@ -34,9 +34,11 @@ on bot runtime and host load. Between matches you can replace your bot and
 the host can `/start` again. Joining mid-match is disabled. There is no replay
 archive, persistent ladder, or separate spectator role yet.
 
-LAN42 currently uses **unverified guest names**. This arena is for campus
-friends using that existing system; Intra OAuth and verified student-only
-admission are not implemented. It is not a graded or cheat-proof competition.
+LAN42 supports the **guest mesh** and a separate **verified 42 lobby**. Use
+`/signin` in local HQ before hosting to play over TLS under your verified login.
+See [42 sign-in setup](../../docs/sign-in.md). Verification proves 42 account
+ownership, not campus enrollment or honest code. This is not a graded or
+cheat-proof competition.
 
 ## C toolchain
 
@@ -202,7 +204,7 @@ security boundary. Keep the host runtime updated. See LLVM's official
 [Wasm linker documentation](https://lld.llvm.org/WebAssembly.html) and Node's
 [execution timeout documentation](https://nodejs.org/api/vm.html).
 
-After the normal protocol-4 `hello`, a room member uploads:
+After the normal protocol-5 `hello`, a room member uploads:
 
 ```json
 {"type":"hex_bot","room":"1","wasm":"BASE64_WASM_BYTES"}

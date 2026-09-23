@@ -108,7 +108,7 @@ class Owner:
         self.socket.close()
 
 def main():
-    parser = argparse.ArgumentParser(description='42SG guest LAN lobby — Python 3.9+, no pip packages')
+    parser = argparse.ArgumentParser(description='42SG LAN lobby — guest mesh and optional verified 42 sign-in')
     parser.add_argument('--version',action='version',version=VERSION)
     sub = parser.add_subparsers(dest='mode',required=True)
     for name in ('lobby','host','server','join','game'):

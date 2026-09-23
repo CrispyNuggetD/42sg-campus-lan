@@ -11,7 +11,7 @@ if [ "${LAN42_NO_UPDATE:-0}" != 1 ]; then
     fi
 fi
 echo "[lan42] Version $(python3 -c 'from campus_lan import VERSION; print(VERSION)') | commit $(git rev-parse --short HEAD) | $(git log -1 --format=%cs)"
-echo "[lan42] Guest mode. Intra sign-in is not implemented."
+echo "[lan42] Guest mesh ready. /signin opens 42 sign-in when a trusted auth host is configured."
 if [ "$#" -eq 0 ]; then
     set -- lobby
 fi
