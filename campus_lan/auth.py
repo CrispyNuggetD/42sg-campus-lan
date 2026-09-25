@@ -76,12 +76,24 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise AuthError('Authentication endpoint redirected unexpectedly.')
 
 
+def provider_tls_context():
+    """Use the OS CA bundle when a custom Python has no default trust paths."""
+    context = ssl.create_default_context()
+    paths = ssl.get_default_verify_paths()
+    if (paths.cafile is None and paths.capath is None
+            and 'SSL_CERT_FILE' not in os.environ and 'SSL_CERT_DIR' not in os.environ):
+        bundle = Path('/etc/ssl/certs/ca-certificates.crt')
+        if bundle.is_file():
+            context.load_verify_locations(cafile=str(bundle))
+    return context
+
+
 def request_json(url, data=None, headers=None, context=None, empty_ok=False):
     """TLS verification stays on. Refuse redirects rather than forward secrets."""
     request = urllib.request.Request(url, data=data,
         headers={'User-Agent': 'LAN42/0.6.0', 'Accept': 'application/json', **(headers or {})})
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),
-        urllib.request.HTTPSHandler(context=context or ssl.create_default_context()), NoRedirect())
+        urllib.request.HTTPSHandler(context=context or provider_tls_context()), NoRedirect())
     try:
         with opener.open(request, timeout=10) as response:
             raw = response.read(131073)

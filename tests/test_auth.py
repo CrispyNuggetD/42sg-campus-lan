@@ -12,7 +12,8 @@ import urllib.error
 from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlsplit
 from campus_lan.auth import (AuthError, AuthUnavailable, Broker, CallbackRelay, Provider, REDIRECT_URI,
-    TOKEN_URL, ME_URL, REVOKE_URL, digest, private_read, private_write, request_json)
+    TOKEN_URL, ME_URL, REVOKE_URL, digest, private_read, private_write, request_json,
+    provider_tls_context)
 from campus_lan.auth_client import save_session, load_session, clear_session
 
 
@@ -134,6 +135,44 @@ class PrivateFiles(unittest.TestCase):
             with self.assertRaises(AuthError):
                 private_write(path, 'new-secret')
             self.assertEqual(path.read_text(), 'secret')
+
+
+class ProviderTrustTests(unittest.TestCase):
+    def test_missing_python_trust_paths_load_system_bundle_with_verification(self):
+        if not Path('/etc/ssl/certs/ca-certificates.crt').is_file():
+            self.skipTest('Linux system CA bundle unavailable')
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        self.assertEqual(context.cert_store_stats()['x509_ca'], 0)
+        with patch.dict(os.environ, {}, clear=True), \
+                patch('campus_lan.auth.ssl.create_default_context', return_value=context), \
+                patch('campus_lan.auth.ssl.get_default_verify_paths', return_value=Mock(cafile=None, capath=None)):
+            result = provider_tls_context()
+        self.assertGreater(result.cert_store_stats()['x509_ca'], 0)
+        self.assertEqual(result.verify_mode, ssl.CERT_REQUIRED)
+        self.assertTrue(result.check_hostname)
+
+    def test_existing_trust_paths_and_explicit_overrides_are_preserved(self):
+        for cafile, capath, env in (
+                ('/custom/ca.pem', None, {}), (None, '/custom/certs', {}),
+                (None, None, {'SSL_CERT_FILE': '/custom/ca.pem'}),
+                (None, None, {'SSL_CERT_DIR': '/custom/certs'})):
+            with self.subTest(cafile=cafile, capath=capath, env=env), \
+                    patch.dict(os.environ, env, clear=True), \
+                    patch('campus_lan.auth.ssl.create_default_context') as create, \
+                    patch('campus_lan.auth.ssl.get_default_verify_paths', return_value=Mock(cafile=cafile, capath=capath)):
+                self.assertIs(provider_tls_context(), create.return_value)
+                create.return_value.load_verify_locations.assert_not_called()
+
+    def test_missing_system_bundle_does_not_disable_verification(self):
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        with patch.dict(os.environ, {}, clear=True), \
+                patch('campus_lan.auth.ssl.create_default_context', return_value=context), \
+                patch('campus_lan.auth.ssl.get_default_verify_paths', return_value=Mock(cafile=None, capath=None)), \
+                patch('campus_lan.auth.Path.is_file', return_value=False):
+            result = provider_tls_context()
+        self.assertEqual(result.verify_mode, ssl.CERT_REQUIRED)
+        self.assertTrue(result.check_hostname)
+        self.assertEqual(result.cert_store_stats()['x509_ca'], 0)
 
 
 class TransportErrors(unittest.TestCase):
