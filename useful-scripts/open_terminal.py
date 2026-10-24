@@ -19,7 +19,7 @@ def terminal_command(repo, platform=sys.platform, which=shutil.which, args=()):
         if not Path(helper).is_file():
             raise RuntimeError('Daily tmux helper missing: ' + helper)
         # Separate game launches must not steal the lobby's window.
-        role = 'lan42-game-' + str(os.getpid()) if args else 'lan42'
+        role = ('lan42-admin-' if args and args[0]=='admin' else 'lan42-game-') + str(os.getpid()) if args else 'lan42'
         return [sys.executable, helper, 'open', '--cwd', str(repo), role, '--', *invocation]
     if platform == 'darwin':
         script = '''on run argv

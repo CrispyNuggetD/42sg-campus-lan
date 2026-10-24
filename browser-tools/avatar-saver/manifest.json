@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "LAN42 — save this avatar",
+  "version": "1.0.0",
+  "description": "On an explicitly opened 42 photo tab, save its displayed image for the local LAN42 importer.",
+  "permissions": ["activeTab", "scripting", "downloads"],
+  "action": {"default_title": "Save this displayed photo to LAN42", "default_popup": "popup.html"}
+}

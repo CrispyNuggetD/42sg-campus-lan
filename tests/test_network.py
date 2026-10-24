@@ -160,5 +160,29 @@ class Network(unittest.IsolatedAsyncioTestCase):
         msg = await self.receive(p,lambda m:m['type']=='event' and 'local HQ' in m['text'])
         self.assertIn('/signin',msg['text'])
 
+    async def test_forknite_is_a_normal_room_with_per_player_browser_entry(self):
+        import tempfile, os
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp:
+            binary=Path(tmp)/'philo'
+            binary.write_text('#!/bin/sh\nprintf "0 1 is eating\\n130 2 died\\n"\n')
+            binary.chmod(0o700)
+            with patch.dict(os.environ,{'LAN42_PHILO_BINARY':str(binary),'LAN42_FORKNITE_LOGDIR':tmp}):
+                host,_=await self.connect('host')
+                friend,_=await self.connect('friend')
+                await self.cmd(host,'/game forknite')
+                h=await self.receive(host,lambda m:m['type']=='browser_game')
+                self.assertEqual(h['room'],'1')
+                await self.cmd(friend,'/join 1')
+                f=await self.receive(friend,lambda m:m['type']=='browser_game')
+                self.assertEqual(f['url'],h['url'])
+                self.assertNotEqual(f['ticket'],h['ticket'])
+                await self.cmd(host,'/start')
+                await self.receive(host,lambda m:m['type']=='event' and 'native simulation started' in m.get('text',''))
+                await self.cmd(friend,'/leave')
+                await self.cmd(host,'/leave')
+                await self.receive(host,lambda m:m['type']=='game' and not m.get('game'))
+                self.assertFalse(self.lobby.rooms)
+
 if __name__=='__main__':
     unittest.main()

@@ -146,6 +146,12 @@ def post(trust, route, payload):
             headers={'Content-Type': 'application/json', 'User-Agent': 'LAN42/0.6.0'})
         response = connection.getresponse()
         if response.status != 200:
+            try:
+                problem = json.loads(response.read(16384))
+            except Exception:
+                problem = {}
+            if isinstance(problem, dict) and problem.get('reason') == 'app_credentials':
+                raise AuthError('42 rejected the app credentials. The LAN42 host owner must renew them; retrying /signin will not fix this.')
             raise AuthError('Sign-in was rejected or expired. Start again shortly.')
         raw = response.read(16385)
         if len(raw) > 16384:

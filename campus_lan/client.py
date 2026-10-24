@@ -20,15 +20,21 @@ from .network import seat_address, address
 from .lobby_view import lobby_lines, guest_style
 from .hexbot import SDK, compile_bot
 from . import auth_client
+from .updater import RestartRequested, generation
+from .completion import complete
+from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
-    '/who /rooms /games | /host tetris | /host bluff free|prompt | /host hexwars',
+    '/who /rooms /games | /game tetris | /game bluff free|prompt | /game hexwars | /game forknite',
     'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
-    '/signin /signout | /authhost SEAT | /notify on|off | /home | /help | /quit',
-    'Chat: type and Enter. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
+    '/admin: local API owner avatar cache tools',
+    '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
+    '/game forknite: browser game room; identity follows your LAN42 sign-in',
+    '/update (or /upgrade): update package + reload local instances | /restart: reload installed code',
+    'Chat: type and Enter. Tab completes /commands and games. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
     'Bluff: identify each entry author in order; own entry is ignored in scoring.',
 ]
@@ -61,6 +67,7 @@ class Client:
         self.auth_destination = None
         self.sock, self.name = sock, name
         self.role, self.initial_command = role, initial_command
+        self.requested_game=initial_command.split()[1] if initial_command and initial_command.startswith(('/host ','/game ')) else None
         self.inbox = queue.Queue(maxsize=256)
         self.lines = collections.deque(HELP,maxlen=500)
         self.state, self.game = {}, {}
@@ -161,6 +168,18 @@ class Client:
                     sender,separator,_ = msg.get('text','').partition(delimiter)
                     if separator and sender!=self.name:
                         self.notify(msg['text'],throttle=False)
+            elif kind=='browser_game':
+                signature=(msg.get('room'),msg.get('url'))
+                if signature != getattr(self,'browser_room',None):
+                    self.browser_room=signature
+                    import urllib.parse, webbrowser
+                    parsed=urllib.parse.urlsplit(msg.get('url',''))
+                    if parsed.scheme not in ('http','https') or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
+                        self.lines.append('Invalid FORKNITE browser URL from room.')
+                        continue
+                    url=msg['url']+'/#lan42='+urllib.parse.quote(msg['ticket'])
+                    threading.Thread(target=webbrowser.open,args=(url,),daemon=True).start()
+                    self.lines.append('FORKNITE opened in your browser with your LAN42 room identity. Host uses /start here.')
             elif kind=='welcome':
                 self.id = msg['id']
                 if getattr(self, 'secure', False):
@@ -179,12 +198,17 @@ class Client:
                     if (room.get('address'),room.get('port'),room['id']) not in old_rooms:
                         self.lines.append(f"Game {room['name']} hosted by {room['host']}: /connect {room.get('address')} {room.get('port')}, then /join {room['id']}")
 
+            elif kind=='forknite_status':
+                self.game['forknite']=msg['status']
             elif kind=='game':
                 new = msg.get('room') != self.game.get('room')
                 if new:
                     self.show_lobby = False
+                    if msg.get('game')=='forknite':self.lines.extend(FORKNITE_HELP)
                 self.game = msg
+                if msg.get('game'):self.requested_game=msg['game']
                 if not msg.get('game'):
+                    self.browser_room = None
                     self.play = False
                 elif msg.get('game')=='tetris' and 'board' in msg and (new or 'board' not in getattr(self,'previous_game',{})):
                     self.play = True
@@ -229,9 +253,9 @@ class Client:
 
     def open_game(self, text):
         parts = text.split()
-        if parts[0]=='/host':
-            if len(parts) not in (2,3) or parts[1] not in ('tetris','bluff','hexwars') or (len(parts)==3 and parts[2] not in ('free','prompt')):
-                self.lines.append('Use /host tetris, /host bluff free|prompt, or /host hexwars.')
+        if parts[0] in ('/host','/game'):
+            if len(parts) not in (2,3) or parts[1] not in ('tetris','bluff','hexwars','forknite') or (len(parts)==3 and parts[2] not in ('free','prompt')):
+                self.lines.append('Use /game tetris, /game bluff free|prompt, /game hexwars, or /game forknite.')
                 return
             target,port = self.current if getattr(self, 'secure', False) else self.home
             action = ['--create',parts[1],'--game-mode',parts[2] if len(parts)==3 else 'free']
@@ -288,7 +312,7 @@ class Client:
                 x += len(text)
         bottom = 5+capacity
         self.line(screen,bottom,'-'*(w-1),curses.A_DIM)
-        self.line(screen,bottom+1,'CHAT & INVITATIONS | /host hexwars | /host tetris | /rooms',curses.A_BOLD)
+        self.line(screen,bottom+1,'CHAT & INVITATIONS | /game hexwars | /game forknite | /rooms',curses.A_BOLD)
         return bottom+2
 
     def window_label(self):
@@ -305,6 +329,13 @@ class Client:
 
     def update_title(self):
         title = self.terminal_title()
+        if os.environ.get('TMUX_PANE') and shutil.which('tmux'):
+            game=self.game.get('game') or getattr(self,'requested_game',None)
+            label=(str(game)+'-'+str(self.game.get('room','waiting'))) if game else ('lan42' if getattr(self,'role','lobby')=='lobby' else 'game-waiting')
+            label=''.join(c for c in label if c.isalnum() or c in '-_')[:64]
+            if label!=getattr(self,'last_tmux_label',None):
+                subprocess.run(['tmux','rename-window','-t',os.environ['TMUX_PANE'],label],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=2)
+                self.last_tmux_label=label
         if title!=getattr(self,'last_title',None) and sys.stdout.isatty():
             sys.stdout.write('\033]0;'+title+'\007')
             sys.stdout.flush()
@@ -325,12 +356,15 @@ class Client:
         label = f" LAN42 | {self.window_label()} | {self.name} [{'42 Verified' if getattr(self, 'secure', False) else 'Guest'}] | "+('ONLINE' if self.connected else 'DISCONNECTED')
         self.line(screen,0,label.ljust(w-1),banner)
         hint = ('GAME CONTROLS: /start /leave /quit | /lobby /game | HQ stays in its other window'
-                if game_window else 'HQ: /join IP [PORT] | /host hexwars | /host tetris | /games | /who')
+                if game_window else 'HQ: /join IP [PORT] | /game NAME | /games | /who')
         self.line(screen,1,hint)
         players = self.state.get('players',[])
         if not self.state:
             self.line(screen,2,'Connecting; waiting for presence...')
-            self.line(screen,3,'Loading online roster...')
+            self.line(screen,3,'Loading online roster...' if self.connected else 'Connection failed; see details below. /restart retries.')
+            for y,message in enumerate(list(getattr(self,'lines',[]))[-min(8,h-7):],5):
+                self.line(screen,y,message)
+            self.line(screen,h-1,'> '+getattr(self,'input','')[-(w-4):])
             screen.refresh()
             return
         self.line(screen,2,f"{len(players)} online across {self.state.get('nodes',1)} nodes | refresh ~5s | "+
@@ -355,6 +389,14 @@ class Client:
             self.line(screen,9,'/answer TEXT' if phase=='writing' else '/vote USER1 USER2 ... (one per entry; see history)')
             self.line(screen,10,'Players: '+', '.join(game.get('players',[])))
             logs_y = 12
+        elif game.get('game')=='forknite':
+            status=game.get('forknite')
+            self.line(screen,4,forknite_summary(status) if status else 'FORKNITE | waiting for status',curses.A_BOLD)
+            self.line(screen,5,'HOST: /start /stop | /status | /help | stop before changing settings')
+            self.line(screen,6,'/timings DIE EAT SLEEP | /storm on|off | /storm step MS | /storm pause MS')
+            self.line(screen,7,'/meals N | /preset chill|chaos | /sabo LOGIN... | /admin (owner photos)')
+            self.line(screen,8,'Defaults: 600/100/100ms, 3 meals, deadline -25ms per round, gap 2000ms')
+            logs_y=10
         elif game.get('game'):
             self.line(screen,6,f"Room {game['room']} {game['game']} | waiting; host uses /start")
             logs_y = 8
@@ -369,9 +411,47 @@ class Client:
         self.line(screen,h-1,('PLAY > ' if self.play else '> ')+self.input[-(w-10):])
         screen.refresh()
 
+    def open_admin(self):
+        try:
+            from .auth import private_read, config_dir
+            private_read(config_dir()/'auth-server.json')
+            opener=Path(__file__).resolve().parents[1]/'useful-scripts/open_terminal.py'
+            result=subprocess.run([sys.executable,str(opener),'admin'],capture_output=True,text=True,timeout=10)
+            if result.returncode:raise RuntimeError()
+            self.lines.append('Local avatar admin opened. Photos stay in the private master cache.')
+        except (OSError,ValueError,RuntimeError,subprocess.TimeoutExpired):
+            self.lines.append('Avatar admin is local to the API owner computer; run sh lan42.sh admin there.')
+
+    def settings_command(self, text):
+        parts = text.split()
+        if not parts or parts[0] not in ('/settings','/profile'):
+            return False
+        if len(parts) == 1:
+            signed = getattr(self,'secure',False)
+            self.lines.extend([
+                'SETTINGS | '+self.name+(' | signed in with 42' if signed else ' | guest'),
+                '/settings signin  — open 42 sign-in (local HQ)',
+                '/settings signout — end the LAN42 session on this device',
+                '/settings notifications on|off — desktop notifications',
+                'Sign-in sessions expire automatically after one hour.',
+            ])
+        elif parts[1:] == ['signin']:
+            self.start_signin()
+        elif parts[1:] == ['signout']:
+            if getattr(self,'secure',False):
+                self.send(dict(type='command',text='/signout'))
+            else:
+                self.lines.append('Already a guest. Use /signin to sign in.')
+        elif len(parts)==3 and parts[1]=='notifications' and parts[2] in ('on','off'):
+            self.notify_enabled=parts[2]=='on'
+            self.lines.append('Notifications '+parts[2])
+        else:
+            self.lines.append('Use /settings, /settings signin, /settings signout, or /settings notifications on|off.')
+        return True
+
     def start_signin(self):
         if getattr(self, 'secure', False):
-            self.lines.append('Already signed in with 42. /signout ends this session.')
+            self.lines.append('Already signed in with 42. /settings signout ends this session.')
             return
         if self.role != 'lobby' or self.current != self.home:
             self.lines.append('Use /signin in your local HQ window.')
@@ -427,7 +507,7 @@ class Client:
 
     def bot_command(self, text):
         if self.game.get('game') != 'hexwars':
-            self.lines.append('Open /host hexwars or join a Hex Wars room first.')
+            self.lines.append('Open /game hexwars or join a Hex Wars room first.')
             return
         if text == '/bot':
             self.wizard = ('bot_menu', [])
@@ -536,6 +616,7 @@ class Client:
             self.lines.append(f'Trying friend server at {seat} = {target}...')
 
     def run(self,screen):
+        installed_generation = generation()
         screen.timeout(80)
         try:
             curses.curs_set(1)
@@ -549,6 +630,8 @@ class Client:
                 curses.init_pair(pair,color,curses.COLOR_BLACK)
             self.colors = True
         while True:
+            if generation() != installed_generation:
+                raise RestartRequested()
             self.consume()
             if self.auth_destination:
                 return self.auth_destination
@@ -563,6 +646,10 @@ class Client:
                 self.scroll += 8
             elif key==curses.KEY_NPAGE:
                 self.scroll = max(0,self.scroll-8)
+            elif key==9 and self.input.startswith('/') and not self.wizard:
+                self.input, matches = complete(self.input)
+                if len(matches)>1:
+                    self.lines.append('Complete: '+'  '.join(matches))
             elif key==9 and (not self.game.get('game') or self.show_lobby):
                 self.lobby_view = 'map' if self.lobby_view=='roster' else 'roster'
                 self.lobby_page = 0
@@ -596,7 +683,9 @@ class Client:
                         self.link_friend(address(parts[1]),int(parts[2]) if len(parts)==3 else self.port)
                     except ValueError as exc:
                         self.lines.append(str(exc))
-                elif getattr(self,'role','lobby')=='lobby' and (text.startswith('/host ') or text.startswith('/join ')):
+                elif text=='/forknite' or text.startswith('/forknite '):
+                    self.open_game('/game forknite')
+                elif text.startswith('/game ') or (getattr(self,'role','lobby')=='lobby' and (text.startswith('/host ') or text.startswith('/join '))):
                     self.open_game(text)
                 elif self.lobby_command(text):
                     pass
@@ -626,8 +715,14 @@ class Client:
                         self.lines.append('Game target reset to your own node.')
                     else:
                         break
+                elif text in ('/update','/upgrade','/restart'):
+                    raise RestartRequested(update=text!='/restart')
                 elif text=='/quit':
                     break
+                elif text in ('/admin','/admin avatars'):
+                    self.open_admin()
+                elif self.settings_command(text):
+                    pass
                 elif text == '/signin':
                     self.start_signin()
                 elif text.startswith('/authhost '):
@@ -647,7 +742,7 @@ class Client:
                 elif text == '/bot' or text.startswith('/bot '):
                     self.bot_command(text)
                 elif text=='/help':
-                    self.lines.extend(HELP)
+                    self.lines.extend(FORKNITE_HELP if self.game.get('game')=='forknite' else HELP)
                 elif text.startswith('/notify'):
                     self.notify_enabled = text=='/notify on'
                     self.lines.append('Notifications '+('on' if self.notify_enabled else 'off'))
@@ -693,6 +788,10 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
             try:
                 destination = curses.wrapper(client.run)
             finally:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
                 if title_terminal:
                     sys.stdout.write('\033[23;0t')
                     sys.stdout.flush()

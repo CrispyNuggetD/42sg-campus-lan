@@ -14,6 +14,7 @@ from . import VERSION, PROTOCOL
 from .client import connect
 from .network import address, ask_seat
 from .server import serve
+from .updater import RestartRequested, restart
 
 def runtime_dir():
     path = Path(os.environ.get('XDG_STATE_HOME',str(Path.home()/'.local/state')))/'42sg-campus-lan'
@@ -108,6 +109,14 @@ class Owner:
         self.socket.close()
 
 def main():
+    if sys.argv[1:2] == ['admin']:
+        from .avatar_admin import launch
+        launch()
+        return
+    if sys.argv[1:2] == ['forknite']:
+        from .forknite import launch
+        launch(sys.argv[2:])
+        return
     parser = argparse.ArgumentParser(description='42SG LAN lobby — guest mesh and optional verified 42 sign-in')
     parser.add_argument('--version',action='version',version=VERSION)
     sub = parser.add_subparsers(dest='mode',required=True)
@@ -117,7 +126,7 @@ def main():
             p.add_argument('address')
             action = p.add_mutually_exclusive_group(required=True)
             action.add_argument('--room')
-            action.add_argument('--create',choices=('tetris','bluff','hexwars'))
+            action.add_argument('--create',choices=('tetris','bluff','hexwars','forknite'))
             p.add_argument('--game-mode',choices=('free','prompt'),default='free')
         elif name=='join':
             p.add_argument('address',nargs='?',help='IP, hostname, or c1r2s3; omit for seat questions')
@@ -174,12 +183,22 @@ def main():
         owner.peer(target,args.port)
         connect(local,local_port,username,not args.no_notify,peer_callback=owner.peer,
                 home=(local,local_port),game_target=(target,args.port))
+    except RestartRequested as request:
+        # Defer exec until the owner's cleanup below has run.
+        maintenance = request
+    else:
+        maintenance = None
     finally:
         owner.close()
+    if maintenance is not None:
+        restart(maintenance.update, wait_for_node=lambda: probe(local,local_port))
 
 if __name__=='__main__':
     try:
         main()
+    except RestartRequested as request:
+        # Standalone game clients do not own a background node.
+        restart(request.update)
     except (KeyboardInterrupt,EOFError):
         pass
     except (OSError,RuntimeError,ValueError) as e:

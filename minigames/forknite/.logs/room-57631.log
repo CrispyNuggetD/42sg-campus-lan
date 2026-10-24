@@ -1,0 +1,6 @@
+
+FORKNITE → http://localhost:57631 | LAN: http://<this-machine-IP>:57631
+Logs: /home/hnah/Documents/42sg-campus-lan/minigames/forknite/.logs
+Players join first. Type start + Enter here to run. Type stop to stop.
+Usage: sabo thtay dthoo guoliu (up to 50 logins)
+Sabo: Configure FORTYTWO_CLIENT_ID and FORTYTWO_CLIENT_SECRET first

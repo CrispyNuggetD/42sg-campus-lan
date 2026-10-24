@@ -37,3 +37,15 @@ class HQ(unittest.TestCase):
         c.consume()
         c.send.assert_called_once_with(dict(type='command',text='/join 7'))
         self.assertIsNone(c.initial_command)
+
+    def test_game_command_launches_each_game_including_forknite(self):
+        c = self.client()
+        with patch('campus_lan.client.subprocess.run',return_value=Mock(returncode=0)) as run:
+            for name in ('tetris','bluff','hexwars'):
+                c.open_game('/game '+name)
+                args = run.call_args.args[0]
+                self.assertIn('--create', args)
+                self.assertEqual(args[args.index('--create')+1], name)
+            c.open_game('/game forknite')
+            self.assertIn('forknite', run.call_args.args[0])
+            self.assertIn('--create', run.call_args.args[0])

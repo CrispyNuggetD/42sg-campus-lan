@@ -28,7 +28,7 @@ class WindowIdentity(unittest.TestCase):
         c=self.client('game')
         c.name='bad\x1b\x07\nname'
         output=io.StringIO()
-        with patch('campus_lan.client.sys.stdout',output), patch.object(output,'isatty',return_value=True):
+        with patch('campus_lan.client.sys.stdout',output), patch.object(output,'isatty',return_value=True), patch('campus_lan.client.subprocess.run'):
             c.update_title()
             c.update_title()
             c.game=dict(game='bluff',room='2')
@@ -38,3 +38,10 @@ class WindowIdentity(unittest.TestCase):
         self.assertEqual(value.count('\x07'),2)
         self.assertIn('WHO SAID THAT? | ROOM 2',value)
         self.assertIn('badname',value)
+
+    def test_tmux_name_contains_game_and_room(self):
+        c=self.client('game');c.game=dict(game='forknite',room='7')
+        with patch.dict('os.environ',{'TMUX_PANE':'%123'}), patch('campus_lan.client.shutil.which',return_value='/usr/bin/tmux'), patch('campus_lan.client.subprocess.run') as run:
+            c.update_title();c.update_title()
+        self.assertEqual(run.call_count,1)
+        self.assertEqual(run.call_args.args[0],['tmux','rename-window','-t','%123','forknite-7'])

@@ -28,6 +28,10 @@ class AuthError(ValueError):
     """Only fixed, non-sensitive messages cross this exception boundary."""
 
 
+class AuthConfigError(AuthError):
+    """The provider rejected the configured application credentials."""
+
+
 class AuthUnavailable(AuthError):
     """Transport failure, distinct from rejected credentials or consent."""
 
@@ -105,7 +109,14 @@ def request_json(url, data=None, headers=None, context=None, empty_ok=False):
             if not isinstance(result, dict):
                 raise AuthError('Invalid authentication response.')
             return result
-    except urllib.error.HTTPError:
+    except urllib.error.HTTPError as exc:
+        if exc.code in (400, 401):
+            try:
+                problem = json.loads(exc.read(16384))
+            except Exception:
+                problem = {}
+            if isinstance(problem, dict) and problem.get('error') == 'invalid_client':
+                raise AuthConfigError('42 rejected the app credentials. Ask the LAN42 host owner to renew them.') from None
         raise AuthError('Authentication request was rejected. Start sign-in again or check the service configuration.') from None
     except urllib.error.URLError as exc:
         if isinstance(exc.reason, ssl.SSLCertVerificationError):
@@ -144,7 +155,18 @@ class Provider:
             uid, login = profile.get('id'), profile.get('login')
             if type(uid) is not int or uid <= 0 or not isinstance(login, str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,24}', login):
                 raise AuthError('42 returned an invalid account identity.')
-            return dict(uid=uid, login=login)
+            identity = dict(uid=uid, login=login)
+            image = profile.get('image') or {}
+            if isinstance(image, dict):
+                versions = image.get('versions') or {}
+                avatar = (versions.get('small') if isinstance(versions, dict) else None) or image.get('link')
+                if isinstance(avatar, str):
+                    parsed = urllib.parse.urlsplit(avatar)
+                    if (parsed.scheme == 'https' and parsed.hostname and
+                            (parsed.hostname == '42.fr' or parsed.hostname.endswith('.42.fr'))
+                            and not parsed.username and not parsed.password):
+                        identity['avatar'] = avatar
+            return identity
         finally:
             if access_token:
                 # Best effort: tokens are never retained, even if revocation is down.
@@ -201,12 +223,16 @@ class Broker:
         self.exchanges.append(self.clock())
         try:
             identity = await asyncio.to_thread(self.provider.identify, code, flow['verifier'])
+        except AuthConfigError:
+            raise
         except Exception:
             raise AuthError('42 sign-in failed. Start again; the app secret may need renewal.') from None
         finally:
             self.busy = False
         session = secrets.token_hex(32)
         record = dict(uid=identity['uid'], login=identity['login'], expires=self.clock() + SESSION_TTL)
+        if identity.get('avatar'):
+            record['avatar'] = identity['avatar']
         self.sessions[digest(session)] = record
         return dict(session=session, **record)
 
@@ -346,10 +372,10 @@ class AuthHTTP:
             else:
                 raise AuthError('Unknown authentication endpoint.')
             await http_response(writer, '200 OK', json.dumps(result))
-        except (ValueError, OSError, asyncio.TimeoutError, asyncio.IncompleteReadError):
+        except (ValueError, OSError, asyncio.TimeoutError, asyncio.IncompleteReadError) as exc:
             # Never log requests, query strings, authorization codes or exception reprs.
             try:
-                await http_response(writer, '400 Bad Request', '{"error":"Sign-in failed or expired. Try again shortly."}')
+                await http_response(writer, '400 Bad Request', json.dumps(dict(error='Sign-in failed or expired. Try again shortly.', reason='app_credentials' if isinstance(exc, AuthConfigError) else 'sign_in_failed')))
             except (OSError, asyncio.TimeoutError):
                 pass
         finally:

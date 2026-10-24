@@ -35,6 +35,8 @@ class Lobby:
         self.mesh = Mesh(self)
         self.bot_slots = asyncio.Semaphore(2)
         self.hex_tasks = set()
+        from .profile_lookup import ProfileLookup
+        self.profile_lookup = ProfileLookup()
 
     async def send(self, client, data):
         if client['writer'].is_closing():
@@ -72,6 +74,8 @@ class Lobby:
         room = self.rooms[rid]
         data = dict(type='game',room=rid,game=room['game'],host=room['host'],
                     members=[self.clients[p]['name'] for p in room['members'] if p in self.clients])
+        if room['game'] == 'forknite':
+            data['forknite'] = await room['web'].control(dict(action='status'))
         if room['game'] == 'hexwars':
             data['bots'] = [dict(name=self.clients[p]['name'], ready=p in room.get('bots', {}))
                             for p in sorted(room['members']) if p in self.clients]
@@ -81,6 +85,25 @@ class Lobby:
         else:
             data['phase'] = 'waiting'
         await self.broadcast(data,room['members'])
+        if room['game']=='forknite':
+            members=[]
+            for pid in sorted(room['members']):
+                c=self.clients.get(pid)
+                if not c:continue
+                identity=self.auth_broker.sessions.get(c.get('session_key'),{}) if self.auth_broker else {}
+                members.append(dict(id=pid,name=c['name'],verified=bool(self.auth_broker),avatar=identity.get('avatar')))
+            try:
+                result=await room['web'].control(dict(action='members',members=members))
+                for entry in result['entries']:
+                    c=self.clients.get(entry['id'])
+                    if not c:continue
+                    host=c['writer'].get_extra_info('sockname')[0]
+                    if ipaddress.ip_address(host).is_loopback:
+                        import socket
+                        host=socket.gethostbyname(socket.gethostname())
+                    await self.send(c,dict(type='browser_game',room=rid,url='http://'+host+':'+str(room['web'].port),ticket=entry['ticket']))
+            except (OSError,ValueError):
+                await self.event('FORKNITE browser unavailable. Leave and recreate the room.',room['members'])
 
     def room_for(self, pid):
         return next(((r,x) for r,x in self.rooms.items() if pid in x['members']), (None,None))
@@ -94,6 +117,7 @@ class Lobby:
                 if room['engine'] and not room['engine'].over:
                     room['engine'].forfeit(pid)
             if not room['members']:
+                if room.get('web'):await room['web'].close()
                 del self.rooms[rid]
             else:
                 if room['host']==pid:
@@ -122,7 +146,7 @@ class Lobby:
                         pid,rid,room = other,candidate,active
                         break
         if cmd == '/games':
-            await self.send(c,dict(type='event',text='Games: tetris, bluff (free|prompt), hexwars (C bot arena). /host hexwars | /join ROOM'))
+            await self.send(c,dict(type='event',text='Games: tetris, bluff (free|prompt), hexwars (C bot arena), forknite (browser). /game NAME | /join ROOM'))
         elif cmd == '/signin':
             await self.send(c,dict(type='event',text='Use /signin in your local HQ client to open 42 in your browser.'))
         elif cmd == '/signout':
@@ -134,10 +158,10 @@ class Lobby:
                 if peer.get('session_key') == key:
                     await self.send(peer, dict(type='signed_out'))
                     peer['writer'].close()
-        elif cmd == '/host':
+        elif cmd in ('/host','/game'):
             bits = arg.split()
-            if not bits or bits[0] not in ('tetris','bluff','hexwars'):
-                raise ValueError('Use /host tetris, /host bluff [free|prompt], or /host hexwars.')
+            if not bits or bits[0] not in ('tetris','bluff','hexwars','forknite'):
+                raise ValueError('Use /game tetris, /game bluff [free|prompt], or /game hexwars. FORKNITE launches locally with /game forknite.')
             if len(self.rooms)>=10:
                 raise ValueError('Room limit reached.')
             mode = bits[1] if len(bits)>1 else 'free'
@@ -145,10 +169,14 @@ class Lobby:
                 raise ValueError('Bluff mode: free or prompt.')
             if time.monotonic()-c.get('invite',-100)<10:
                 raise ValueError('Wait 10 seconds between hosting/invitations.')
+            web=None
+            if bits[0]=='forknite':
+                from .forknite_room import ForkniteRoom
+                web=await ForkniteRoom.create()
             await self.leave(pid)
             self.room_sequence += 1
             rid = str(self.room_sequence)
-            self.rooms[rid] = dict(game=bits[0],mode=mode,host=pid,members={pid},engine=None,last=0)
+            self.rooms[rid] = dict(game=bits[0],mode=mode,host=pid,members={pid},engine=None,last=0,web=web)
             await self.event(f"{c['name']} opened {bits[0]} room {rid}; /join {rid}")
             await self.room_state(rid)
             await self.invite(pid,rid)
@@ -172,6 +200,27 @@ class Lobby:
             target['members'].add(pid)
             await self.room_state(arg)
             await self.state()
+        elif cmd in ('/stop','/status','/timings','/storm','/meals','/preset') and room and room['game']=='forknite':
+            from .forknite_controls import parse,summary
+            if cmd!='/status' and room['host']!=pid:raise ValueError('Only this room host can change the game.')
+            if cmd=='/status':result=await room['web'].control(dict(action='status'))
+            elif cmd=='/stop':
+                await room['web'].control(dict(action='stop'))
+                result=await room['web'].control(dict(action='status'))
+            else:result=await room['web'].control(parse(cmd,arg))
+            await self.event(summary(result),room['members'])
+            await self.broadcast(dict(type='forknite_status',status=result),room['members'])
+        elif cmd == '/sabo':
+            if not room or room['game']!='forknite' or room['host']!=pid:
+                raise ValueError('Only the FORKNITE room host can use /sabo LOGIN...')
+            profiles, errors = await self.profile_lookup.lookup_many(arg.split())
+            if profiles:
+                if rid not in self.rooms or self.rooms[rid] is not room:
+                    raise ValueError('Room closed while profiles were loading.')
+                result = await room['web'].control(dict(action='sabo_profiles',profiles=profiles))
+                await self.event('SABO: '+', '.join(result.get('added',[])) if result.get('added') else 'No new sabo slots added (already present or room full).',room['members'])
+            if errors:
+                await self.event('Could not load: '+', '.join(errors)+'. Check logins, credentials or API rate limits.',{pid})
         elif cmd == '/leave':
             await self.leave(pid)
             await self.state()
@@ -216,6 +265,11 @@ class Lobby:
                                    (room['game']=='bluff' and room['engine'].phase!='results') or
                                    (room['game']=='hexwars' and not room['engine'].over)):
                 raise ValueError('Game already running.')
+            if room['game']=='forknite':
+                await room['web'].control(dict(action='start'))
+                await self.event('FORKNITE native simulation started; watch your browser.',room['members'])
+                await self.broadcast(dict(type='forknite_status',status=await room['web'].control(dict(action='status'))),room['members'])
+                return
             if room['game']=='tetris':
                 room['engine'] = Tetris()
             elif room['game'] == 'hexwars':
@@ -500,6 +554,14 @@ class Lobby:
                         c['writer'].close()
             for rid,room in list(self.rooms.items()):
                 engine = room['engine']
+                if room['game']=='forknite' and time.monotonic()-room.get('status_at',0)>.5:
+                    room['status_at']=time.monotonic()
+                    try:
+                        status=await room['web'].control(dict(action='status'))
+                        if status!=room.get('last_status'):
+                            room['last_status']=status
+                            await self.broadcast(dict(type='forknite_status',status=status),room['members'])
+                    except (OSError,ValueError):pass
                 if not engine:
                     continue
                 if room['game']=='tetris' and not engine.over and time.monotonic()-room['last']>=.65:
@@ -518,7 +580,16 @@ class Lobby:
                         await self.room_state(rid)
 
 async def serve(host,port,ready=None,managed=False):
+    from .updater import generation
+    installed_generation = generation()
     lobby = Lobby()
+    async def watch_updates():
+        while True:
+            await asyncio.sleep(.2)
+            if generation() != installed_generation:
+                lobby.shutdown.set()
+                return
+    watcher = asyncio.create_task(watch_updates()) if managed else None
     lobby.port = port
     server = await asyncio.start_server(lobby.handle,host,port,limit=131072)
     print(f'42SG LAN {VERSION} listening on {host}:{port} — guest mode',flush=True)
@@ -537,6 +608,9 @@ async def serve(host,port,ready=None,managed=False):
                     return
             await lobby.shutdown.wait()
     finally:
+        if watcher:
+            watcher.cancel()
+            await asyncio.gather(watcher, return_exceptions=True)
         ticker.cancel()
         presence.cancel()
         mesh_task.cancel()
@@ -544,6 +618,8 @@ async def serve(host,port,ready=None,managed=False):
         for task in list(lobby.hex_tasks):
             task.cancel()
         await asyncio.gather(*list(lobby.hex_tasks), return_exceptions=True)
+        for room in list(lobby.rooms.values()):
+            if room.get('web'):await room['web'].close()
         lobby.rooms.clear()
         await lobby.mesh.goodbye()
         for client in list(lobby.clients.values()):

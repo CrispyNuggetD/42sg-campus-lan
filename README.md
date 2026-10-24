@@ -166,7 +166,7 @@ last 500 event lines. Text input currently supports ASCII.
 | `/notify off` | Mute your desktop notifications. |
 | `/signin` | Open 42 in your browser, then join the configured secure lobby. |
 | `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
-| `/signout` | Revoke this device's session and return to guest HQ. |
+| `/settings signout` | Revoke this device's session and return to guest HQ. |
 | `/quit` | Close the app and stop your node. |
 
 To invite someone, first create or join a room. They receive its server address
@@ -365,3 +365,84 @@ To run the tests:
 ```sh
 python3 -m unittest discover -s tests -v
 ```
+
+### Update the whole LAN42 package
+
+`/update` (alias `/upgrade`) is LAN42's global package update: it fast-forwards
+this checkout and notifies all updated local HQ/game clients, managed lobby
+nodes and supervised FORKNITE servers to reload. Active local matches end.
+Each computer updates its own checkout; no command restarts a friend's machine.
+`/restart` restarts only the current terminal without pulling. Local changes skip
+the pull and preserve your work; failed pulls retain the installed code. No reset,
+stash, commit or push is performed. The trusted authentication/room service also reloads on a successful package update;
+its in-memory sign-ins expire, so use `/signin` again after an upgrade.
+
+Old processes need one manual restart to gain the update watcher. After that,
+all bundled minigames share the same LAN42 package update mechanism. Browser
+clients reconnect after the FORKNITE server reloads and reclaim their slots.
+
+### FORKNITE (bundled browser minigame)
+
+Use `/game forknite` in HQ and `/join ROOM_NUMBER`, exactly like the other games.
+The room server launches the bundled Node wrapper and opens each participant's
+browser automatically. Their philosopher slot, name, photo (when available) and
+verified/guest status come from their existing LAN42 connection. Sign in once
+with `/signin` in LAN42; FORKNITE has no separate OAuth login or URL handoff command.
+Guests retain their LAN42 pseudonym and a silly avatar. The host uses `/start` in
+the game terminal. `/leave` releases the slot, invalidates that member's browser
+session and closes the wrapper when the last member leaves. Opening a bare browser
+URL is guest spectator mode, not proof of a LAN42 identity.
+
+The room host machine needs Node.js 12+ and its compiled philo binary at
+`minigames/forknite/philo` (local symlink), `LAN42_PHILO_BINARY`, or on PATH.
+The C project is untouched. The LAN42 room server owns process lifecycle,
+match logs, and automatic shutdown/reload. Public browser ports must be reachable
+from participants on the LAN; each room advertises its own port.
+
+Room identity goes through a single-use 60-second browser ticket delivered only
+to that player's existing LAN42 connection. Node's control channel is loopback-only
+and requires a random per-room secret. No 42 OAuth tokens, app secrets or LAN42
+session credentials enter browser URLs. Browser sessions expire after an hour;
+leaving the room revokes them immediately. Verified names cannot be claimed by
+supplying a nickname. Guests may still visit the game directly and use free slots.
+See [the game README](minigames/forknite/README.md) for developer pipe mode and logs.
+
+### Game launcher and Tab completion
+
+Use `/game tetris`, `/game bluff free`, `/game hexwars`, or `/game forknite`.
+`/host` remains a compatibility alias. Bare `/game` still returns to the current
+terminal game view. While typing a slash command, Tab completes commands, game
+names, bluff modes and a few simple options. `/sig` + Tab completes `/signin` directly;
+`/signout` is available when typed explicitly but is omitted from completion suggestions. Ambiguous matches expand their
+common prefix and print choices. With no slash input, Tab keeps its existing
+lobby-map / Tetris-control behavior.
+
+FORKNITE can use `minigames/forknite/philo`, a machine-local executable or symlink
+(ignored by Git), as its default native binary. `LAN42_PHILO_BINARY` overrides it;
+otherwise the launcher tries that local path then `philo` on PATH. Explicit
+`--exec` still works. On this workstation the symlink targets your existing
+Philosophers executable, so rebuilding that executable updates what FORKNITE runs.
+
+### Personal settings
+
+`/settings` (alias `/profile`) shows your identity status, sign-in/sign-out
+actions, notification controls and session lifetime. Use `/settings signout` to
+end your session explicitly. Tab offers sign-out inside settings; `/sig` + Tab
+continues to complete `/signin` directly. The old `/signout` command remains a
+compatibility alias without appearing in top-level completion suggestions.
+
+FORKNITE renders only joined players and explicitly requested `/sabo` stand-ins.
+At match start, the native philosopher count is the seated-player count; no
+synthetic diners are added. tmux game windows use `GAME-ROOM`, such as `forknite-1`.
+Profile URLs come from 42; if its image CDN denies a fetch, the card explicitly
+shows “42 photo unavailable” and keeps the silly fallback face.
+
+### Local API-owner avatar tools
+
+`/admin` opens the master computer's private avatar importer in the normal local
+browser. It supports profile-link lookup, a bounded ordinary download attempt,
+and manual file selection/drop after opening the photo in the user's browser.
+Nothing reads or exports Chrome cookies/profiles. Cache files are kept outside
+Git at `~/.cache/42sg-campus-lan/avatars` with private permissions. Joined players
+receive same-origin image responses from the game server; see the game README
+for access control, HTTP transport limits, cache lifetime and import commands.

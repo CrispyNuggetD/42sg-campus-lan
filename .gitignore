@@ -9,3 +9,7 @@ __pycache__/
 auth-server.json
 auth-session.json
 auth-key.pem
+# FORKNITE match history is intentionally eligible for version control.
+!minigames/forknite/.logs/*.log
+# Machine-local link to the owner's native C executable.
+/minigames/forknite/philo

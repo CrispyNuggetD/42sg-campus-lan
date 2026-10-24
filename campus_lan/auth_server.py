@@ -4,6 +4,7 @@ import asyncio
 import datetime
 import ipaddress
 import json
+import os
 from pathlib import Path
 import re
 import shlex
@@ -70,8 +71,12 @@ def read_credentials(path):
 
 async def wait_for_host_move(settings):
     generation = settings.get('host_generation')
+    from .updater import generation as package_generation
+    installed = package_generation()
     while True:
         await asyncio.sleep(1)
+        if package_generation() != installed:
+            return True
         try:
             current = json.loads(private_read(config_dir() / 'auth-server.json'))
         except (OSError, ValueError):
@@ -110,9 +115,10 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
         raise
     ticker = asyncio.create_task(lobby.tick())
     print(f"LAN42 secure sign-in host ready: HTTPS {settings['broker_port']}, TLS lobby {settings['lobby_port']}.", flush=True)
+    reload_package = False
     try:
         async with web, server:
-            await wait_for_host_move(settings)
+            reload_package = await wait_for_host_move(settings)
     finally:
         ticker.cancel()
         for task in list(lobby.hex_tasks):
@@ -120,7 +126,11 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
         await asyncio.gather(ticker, *list(lobby.hex_tasks), return_exceptions=True)
         for client in list(lobby.clients.values()):
             client['writer'].close()
+        for room in list(lobby.rooms.values()):
+            if room.get('web'):await room['web'].close()
         broker.sessions.clear()
+    if reload_package:
+        os.execv(sys.executable,[sys.executable,'-m','campus_lan.auth_server',*sys.argv[1:]])
 
 
 def main():
