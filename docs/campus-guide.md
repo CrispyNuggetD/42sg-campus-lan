@@ -9,7 +9,7 @@
 - [Live Singapore campus seats](#live-singapore-campus-seats)
 - [Profile browsing](#profile-browsing)
 - [Personal tracking and lists](#personal-tracking-and-lists)
-- [Track from the displayed rosterIn `/clusters`, `/track 2 4` uses the **displayed online roster numbers** (also](#track-from-the-displayed-rosterin-clusters-track-2-4-uses-the-displayed-online-roster-numbers-also)
+- [Track from the displayed roster](#track-from-the-displayed-roster)
 - [Relationships and named lists](#relationships-and-named-lists)
 - [Cluster arrival rules](#cluster-arrival-rules)
 
@@ -231,7 +231,9 @@ Guest sender names remain explicitly unverified. Multiple matching guest nodes
 require connecting to the intended node first. Message sends are limited to one
 per two seconds. Notification buttons prepare drafts only; they do not send.
 
-## Track from the displayed rosterIn `/clusters`, `/track 2 4` uses the **displayed online roster numbers** (also
+## Track from the displayed roster
+
+In `/clusters`, `/track 2 4` uses the **displayed online roster numbers** (also
 shown on map markers), not physical desk numbers. LAN42 lists the current Intra
 names and seats for confirmation before adding them to your private tracking.
 It captures those people, never future desk occupants; a changed seat snapshot
