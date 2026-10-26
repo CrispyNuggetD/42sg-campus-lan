@@ -750,6 +750,8 @@ async def serve(host,port,ready=None,managed=False):
     watcher = asyncio.create_task(watch_updates()) if managed else None
     lobby.port = port
     server = await asyncio.start_server(lobby.handle,host,port,limit=131072)
+    from .release import banner
+    print(banner(), flush=True)
     print(f'42SG LAN {VERSION} listening on {host}:{port} — guest mode',flush=True)
     ticker = asyncio.create_task(lobby.tick())
     mesh_task = asyncio.create_task(lobby.mesh.loop())

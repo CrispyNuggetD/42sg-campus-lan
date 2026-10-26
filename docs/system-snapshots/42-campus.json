@@ -1,0 +1,11 @@
+{
+  "label": "42-campus",
+  "status": "to be updated",
+  "observed_at": null,
+  "os": "to be updated",
+  "cpu": "to be updated",
+  "ram_bytes": null,
+  "storage": "to be updated (home, sgoinfre/NAS, local system storage)",
+  "lan42_version_checked": "to be updated",
+  "validation": "to be updated on the actual 42 terminal; historical evidence is documented separately"
+}

@@ -94,3 +94,19 @@ the generated runtime-help block. Update README and guide together. Run
 and ignored; never copy configs, caches or credentials into it. Pages rebuilds
 from main via `.github/workflows/pages.yml`; owner must enable Pages with
 Source: GitHub Actions once. Do not claim a deployment is live before verifying.
+
+## Releases and last checked systems
+
+Read `docs/versioning.md`, `docs/runtime-environment.md`, and the snapshots under
+`docs/system-snapshots/` before assuming OS, CPU/RAM/storage or campus support.
+A snapshot is observation only, not proof that LAN42 passed on that OS. Record
+actual test results separately. Never substitute a Mac snapshot for the 42 Linux
+terminal. On a relevant campus test session, run
+`python3 tools/system_snapshot.py --label 42-campus --output docs/system-snapshots/42-campus.json`,
+review for privacy, then commit it with the actual validation result and version.
+Refresh after OS updates or changing test hosts. Do not probe other students.
+
+Version the server, not the README. Use `feat:`, `fix:` and `!`/`BREAKING CHANGE:`
+accurately for runtime changes; unclassified runtime changes default to patch.
+CI prepares releases automatically. Never bump just for wording, screenshots,
+tests or this instruction file. Preserve beta entry date and alpha credits.

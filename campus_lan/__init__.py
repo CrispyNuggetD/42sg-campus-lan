@@ -1,2 +1,2 @@
-VERSION = '0.6.0'
+from .release import VERSION, RELEASE_DATE
 PROTOCOL = 5

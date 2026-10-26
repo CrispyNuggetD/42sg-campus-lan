@@ -1,0 +1,44 @@
+{
+  "label": "maintainer-mac",
+  "observed_at": "2026-10-26T17:21:17.211692+00:00",
+  "system": "Darwin",
+  "kernel": "25.5.0",
+  "architecture": "arm64",
+  "os": {
+    "version": "26.5",
+    "build": "25F71"
+  },
+  "cpu": "Apple M1",
+  "logical_cpus": 8,
+  "ram_bytes": 8589934592,
+  "storage": [
+    {
+      "label": "system",
+      "available": true,
+      "total_bytes": 245107195904,
+      "used_bytes": 227726819328,
+      "free_bytes": 17380376576
+    },
+    {
+      "label": "home",
+      "available": true,
+      "total_bytes": 245107195904,
+      "used_bytes": 227726819328,
+      "free_bytes": 17380376576
+    },
+    {
+      "label": "sgoinfre",
+      "available": false
+    },
+    {
+      "label": "goinfre",
+      "available": false
+    },
+    {
+      "label": "NAS",
+      "available": false
+    }
+  ],
+  "lan42_version": "2.0.0-beta.1",
+  "validation": "Observation only; see runtime-environment.md for tests. Quotas are not filesystem capacity. NAS mount may use another path; unavailable is not proof of absence."
+}

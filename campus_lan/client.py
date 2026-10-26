@@ -30,6 +30,7 @@ from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    '/changelog: server release history and alpha testing credits',
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
     'Up/Down: local command history | !COMMAND: local shell | /volume [0–100]: output volume',
     '/uwu: local koel test | /uwu auto|on|off: random local calls every 10–15 min | /uwu LOGIN: poke',
@@ -100,7 +101,8 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         self.role, self.initial_command = role, initial_command
         self.requested_game=initial_command.split()[1] if initial_command and initial_command.startswith(('/host ','/game ')) else None
         self.inbox = queue.Queue(maxsize=256)
-        self.lines = SectionLog(HELP,maxlen=500)
+        from .release import banner
+        self.lines = SectionLog([banner()]+HELP,maxlen=500)
         self.state, self.game = {}, {}
         self.input, self.scroll = '', 0
         self.play = False
@@ -387,6 +389,10 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         self.last_rule_error=error
 
     def about_command(self,text):
+        if text == '/changelog':
+            from .release import changelog
+            self.lines.extend(changelog())
+            return True
         if text not in ('/about','/about repo','/repo'):return False
         from .about import lines,REPOSITORY
         self.lines.extend(lines())

@@ -1,3 +1,11 @@
+# LAN42 BETA
+
+Server **2.0.0-beta.1** · Beta since Tuesday **27 October 2026, 00:48 SGT**.
+
+Alpha testing: dthoo and [whatisthisbuffoonery](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.
+
+Use `/changelog` for full server release history. See [release policy](docs/versioning.md) and [system evidence](docs/runtime-environment.md).
+
 # Ryker's 42SG Campus LAN Server
 
 **[Open the visual guide & quick start ↗](https://CrispyNuggetD.github.io/42sg-campus-lan/)** · [Source repository](https://github.com/CrispyNuggetD/42sg-campus-lan)
@@ -20,7 +28,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 ## LAN42 in your daily workspace
 
 <!-- shell-installer-features:start -->
-- `lan42` / `lan42_window`: open your campus HQ in its own tmux workspace.
+- `lan42` / `lan42_window`: BETA campus HQ in tmux; startup version/date and `/changelog`.
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
 - `/dm` / `/uwu LOGIN`: messages and sound pokes; `/volume` for audio; `/koel` for approved group file sharing.

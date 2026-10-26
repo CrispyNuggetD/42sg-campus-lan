@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LAN42 BETA · Alpha testing credit</title></head><body><main><h1>Thank you for alpha testing LAN42</h1><p>dthoo and <a id="profile" href="https://github.com/whatisthisbuffoonery">whatisthisbuffoonery</a> helped LAN42 reach beta.</p><p id="status">Looking up the current GitHub profile for account #222878446…</p><p><a href="index.html">LAN42 BETA guide</a></p></main><script>
+const profile=document.getElementById('profile'),status=document.getElementById('status');
+fetch('https://api.github.com/user/222878446',{signal:AbortSignal.timeout(5000)})
+.then(response=>{if(!response.ok)throw new Error('lookup failed');return response.json();})
+.then(user=>{if(user.id!==222878446||!/^https:\/\/github\.com\/[A-Za-z0-9-]+$/.test(user.html_url))throw new Error('invalid profile');profile.href=user.html_url;profile.textContent=user.login;status.textContent='Current GitHub profile, resolved using the permanent account ID.';})
+.catch(()=>{status.textContent='GitHub lookup is unavailable. The link shows the last known username; account ID: 222878446.';});
+</script></body></html>

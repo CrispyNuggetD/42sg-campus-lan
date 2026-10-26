@@ -122,6 +122,9 @@ class Owner:
         self.socket.close()
 
 def main():
+    from .release import banner
+    if '--version' not in sys.argv:
+        print(banner(), flush=True)
     if sys.argv[1:2] == ['admin']:
         from .popup_permissions import ensure_session
         ensure_session()
@@ -139,7 +142,7 @@ def main():
         launch(sys.argv[2:])
         return
     parser = argparse.ArgumentParser(description='42SG LAN lobby — guest mesh and optional verified 42 sign-in')
-    parser.add_argument('--version',action='version',version=VERSION)
+    parser.add_argument('--version',action='version',version=banner())
     sub = parser.add_subparsers(dest='mode',required=True)
     for name in ('lobby','host','server','join','game'):
         p = sub.add_parser(name)

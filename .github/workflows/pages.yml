@@ -4,7 +4,7 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -13,12 +13,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install -r website/requirements.txt
+      - name: Prepare server release
+        run: python tools/release.py
+      - run: python -m unittest discover -s tests -p test_release.py
+      - run: python -m unittest discover -s tests -p test_shell_features.py
+      - run: python -m unittest discover -s tests -p test_about.py
       - run: python website/build.py
       - run: python -m unittest discover -s tests -p test_website.py
+      - name: Publish validated server version and immutable tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add campus_lan/release.json CHANGELOG.md
+          version=$(python -c 'from campus_lan import VERSION; print(VERSION)')
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): v$version"
+          fi
+          if ! git rev-parse "refs/tags/v$version" >/dev/null 2>&1; then
+            git tag -a "v$version" -m "LAN42 server v$version"
+          fi
+          git push --atomic origin HEAD:main "refs/tags/v$version"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

@@ -2,7 +2,7 @@
 import os
 
 GAMES = ('bluff', 'forknite', 'hexwars', 'tetris')
-COMMANDS = ('/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
+COMMANDS = ('/changelog','/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
             '/help', '/info', '/info_campus', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
             '/lobby', '/map', '/next', '/meals', '/notify', '/practice', '/prev', '/preset', '/profile', '/quit', '/settings',
             '/restart', '/roster', '/rooms', '/signin', '/start', '/stop', '/status', '/storm', '/timings',
