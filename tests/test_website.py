@@ -56,4 +56,3 @@ class Website(unittest.TestCase):
                 self.assertIn('aria-label="Page contents"',page)
                 self.assertNotIn('{{',page)
                 self.assertNotIn('href="frontend-milestone.md',page)
-
