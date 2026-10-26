@@ -446,7 +446,7 @@ class Client(KoelUI):
                 sender=safe(msg.get('sender','unknown'))
                 if msg.get('uwu') is True:
                     self.lines.append(sender+' poked you: uwu!')
-                    if self.notify_enabled:self.uwu_notice(sender)
+                    if self.notify_enabled and getattr(self,'role','lobby')=='lobby':self.uwu_notice(sender)
                     continue
                 title='DM from '+sender+(' [42 Verified]' if self.secure and msg.get('verified') else ' [Guest]')
                 self.lines.extend([title,safe(msg.get('text',''))])
