@@ -55,7 +55,9 @@ checked seat locator. Do not promote arbitrary peers, replace certificate pins,
 open OAuth automatically, or overwrite students' guest nodes on host recovery.
 
 Desktop approval and broadcast paths are privileged, separate from ordinary
-chat mute. Never turn an announcement into executable update/shell instructions.
+chat mute. Respect the per-device announcements channel, all-off override,
+--no-notify and explicit notifications popup denial, including approval requests.
+Important-channel defaults are not permission to bypass those opt-outs. Never turn an announcement into executable update/shell instructions.
 Keep queue/rate/expiry bounds and per-machine popup deduplication. Tests must
 mock GUI actions/network outside loopback; use temporary config roots and fake
 OAuth identities. Run test_announcements.py plus auth/TLS, client, notification,

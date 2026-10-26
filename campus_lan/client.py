@@ -25,12 +25,14 @@ from . import auth_client
 from .updater import RestartRequested, generation
 from .completion import complete
 from .local_console import LocalConsole,History,shell_command
+from .notification_preferences import NotificationControls
 from .quick_controls import QuickControls
 from .permission_setup import PermissionSetup
 from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",
     "Click footer buttons or use F2 sign in/out | F3 system mute | F4 output 0/30% | F5 uwu | F6 auto uwu",
     '/changelog: server release history and alpha testing credits',
     'API views: verified Singapore sign-in; enrolled API operators may use local /clusters and /info offsite.',
@@ -90,7 +92,7 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
-class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
+class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
@@ -114,6 +116,7 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         self.colors = False
         self.connected = True
         self.notify_enabled, self.last_notice = notify, 0
+        self.notifications_disabled = not notify
         self.id = None
         self.tracker=None
         self.track_next=0
@@ -213,15 +216,16 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         return True
 
     def uwu_notice(self,sender):
+        if not self.notification_allowed('pokes'):return
         def show():
-            if not self.notify_enabled:return False
+            if not self.notification_allowed('pokes'):return False
             from .koel_sound import SoundChoice
             if not getattr(self,'tracking_notifier',None):
                 from .desktop_notifications import Notifications
                 self.tracking_notifier=Notifications(self.inbox)
             choice=SoundChoice(self.name)
             def notify():
-                if not self.notify_enabled:return
+                if not self.notification_allowed('pokes'):return
                 self.tracking_notifier.poke(sender+' says uwu!', 'You have been poked.',sender,
                                             koel_sound=choice.read()['enabled'])
             if choice.read()['enabled']:self.with_audio_volume(notify)
@@ -304,14 +308,19 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         guide=Path(__file__).resolve().parents[1]/'docs/quick-guide.html'
         self.open_urls('help',[guide.as_uri()],'Open the LAN42 visual command guide in your browser?')
 
-    def desktop_notice(self,title,body,name,icon='',can_message=False):
+    def desktop_notice(self,title,body,name,icon='',can_message=False,category='tracking'):
+        important=category in ('host','announcements','releases','warnings')
+        allowed=lambda:self.important_notification_allowed(category) if important else self.notification_allowed(category)
+        if not allowed():return
         def show():
-            if not self.notify_enabled:return False
+            if not allowed():return False
             if not getattr(self,'tracking_notifier',None):
                 from .desktop_notifications import Notifications
                 self.tracking_notifier=Notifications(self.inbox)
-            self.tracking_notifier.show(title,body,name,icon,can_message)
-        self.request_popup('notifications','Show desktop notification: '+safe(title)+'?',show)
+            if important:self.tracking_notifier.announcement(title,body,name)
+            else:self.tracking_notifier.show(title,body,name,icon,can_message)
+        if important:show()
+        else:self.request_popup('notifications','Show desktop notification: '+safe(title)+'?',show)
 
     def get_tracker(self):
         if not getattr(self,'tracker',None):
@@ -417,7 +426,7 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         for notice in tracker.transitions(players,source):
             title,body=describe(notice)
             self.lines.extend([title,body])
-            if not self.notify_enabled:continue
+            if not self.notification_allowed('tracking'):continue
             icon=''
             try:
                 from .avatar_cache import AvatarCache,key
@@ -522,12 +531,12 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
             self.connected = False
 
     def notify(self,text,throttle=True):
-        if not self.notify_enabled:return
+        if not self.notification_allowed('chat'):return
         self.request_popup('notifications','Show desktop notification: '+safe(text)+'?',lambda:self._notify(text,throttle))
 
     def _notify(self,text,throttle=True):
         now = time.monotonic()
-        if not self.notify_enabled or (throttle and now-self.last_notice<3):
+        if not self.notification_allowed('chat') or (throttle and now-self.last_notice<3):
             return
         self.last_notice = now
         if shutil.which('notify-send'):
@@ -587,15 +596,15 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
                 sender=safe(msg.get('sender','unknown'))
                 if msg.get('uwu') is True:
                     self.lines.append(sender+' poked you: uwu!')
-                    if self.notify_enabled and getattr(self,'role','lobby')=='lobby':self.uwu_notice(sender)
+                    if self.notification_allowed('pokes') and getattr(self,'role','lobby')=='lobby':self.uwu_notice(sender)
                     continue
                 title='DM from '+sender+(' [42 Verified]' if self.secure and msg.get('verified') else ' [Guest]')
                 self.lines.extend([title,safe(msg.get('text',''))])
-                if self.notify_enabled:
+                if self.notification_allowed('dms'):
                     from .tracking import login
                     try:
                         login(sender)
-                        self.desktop_notice(title,safe(msg.get('text','')),sender,can_message=True)
+                        self.desktop_notice(title,safe(msg.get('text','')),sender,can_message=True,category='dms')
                     except ValueError:pass
             elif kind == 'signin_resume':
                 self.signing_in=False
@@ -971,6 +980,7 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
             return False
 
     def settings_command(self, text):
+        if self.notification_command(text):return True
         if self.host_settings_command(text):return True
         parts = text.split()
         if not parts or parts[0] not in ('/settings','/profile'):
@@ -983,7 +993,7 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
                 'SETTINGS | '+self.name+(' | signed in with 42' if signed else ' | guest'),
                 '/settings signin  — open 42 sign-in (local HQ)',
                 '/settings signout — end the LAN42 session on this device',
-                '/settings notifications on|off — desktop notifications',
+                '/notify — notification channels; /notify all off — silence everything',
                 '/volume [0–100] — desktop output; /settings audio-auto-on on|off — uwu unmute',
                 '/settings host-discovery on|off | auto-host-join on|off | host-poll 60–300',
                 '/settings permissions — browser, popup and notification consent',
@@ -1051,9 +1061,6 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
                 self.send(dict(type='command',text='/signout'))
             else:
                 self.lines.append('Already a guest. Use /signin to sign in.')
-        elif len(parts)==3 and parts[1]=='notifications' and parts[2] in ('on','off'):
-            self.notify_enabled=parts[2]=='on'
-            self.lines.append('Notifications '+parts[2])
         else:
             self.lines.append('Use /settings, /settings signin, /settings signout, or /settings notifications on|off.')
         return True
@@ -1438,9 +1445,8 @@ class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
                     self.bot_command(text)
                 elif text=='/help':
                     self.show_help()
-                elif text.startswith('/notify'):
-                    self.notify_enabled = text=='/notify on'
-                    self.lines.append('Notifications '+('on' if self.notify_enabled else 'off'))
+                elif text.split()[:1]==['/notify']:
+                    self.notification_command(text)
                 elif text:
                     if self.connected:
                         self.send(dict(type='command',text=text))

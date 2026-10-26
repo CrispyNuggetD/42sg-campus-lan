@@ -12,6 +12,8 @@ class Uwu(unittest.TestCase):
     def setUp(self):
         patcher=patch('campus_lan.volume.Volume');volume=patcher.start();self.addCleanup(patcher.stop)
         volume.return_value.get.return_value=50
+        channels=patch('campus_lan.notification_preferences.Preferences.allows',return_value=True)
+        channels.start();self.addCleanup(channels.stop)
 
     def client(self):
         client=Client.__new__(Client);client.name='recipient';client.lines=collections.deque()

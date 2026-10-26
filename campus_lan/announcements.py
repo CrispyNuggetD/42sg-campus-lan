@@ -95,7 +95,9 @@ class Announcements:
         if type(cursor) is not int or cursor<0:raise AuthError('Invalid announcement cursor.')
         pending=[{k:r[k] for k in ('id','author','text','expires')} for r in self.requests.values() if r['status']=='pending'] if host else []
         statuses=[{k:r[k] for k in ('id','status','author')} for r in self.requests.values() if person and r['uid']==person['uid']]
+        from .release import VERSION, RELEASE_DATE
         return dict(epoch=self.epoch,owner=self.owner,host=host,sequence=self.sequence,
+                    version=VERSION,release_date=RELEASE_DATE,
                     announcements=[e for e in self.feed if e['seq']>cursor],pending=pending[:8],statuses=statuses[-16:])
 
     def dispatch(self,route,data):

@@ -50,10 +50,10 @@ class GuestHostGuidance(unittest.TestCase):
         c=self.client();c.announcement_event(event)
         self.assertIn('public trust file/fingerprint',' '.join(c.lines))
 
-    def test_arrival_respects_mute_and_popup_deduplication(self):
+    def test_arrival_bypasses_social_mute_and_respects_popup_deduplication(self):
         data=dict(owner='hnah',epoch='epoch',announcements=[],statuses=[],pending=[])
         event=dict(type='local_host_update',online=True,recovered=True,host='10.11.1.1',port=31417,auto_join=False,data=data)
-        for enabled,claim_result,expected in ((False,True,0),(True,False,0),(True,True,1)):
+        for enabled,claim_result,expected in ((False,True,1),(True,False,0),(True,True,1)):
             c=self.client();c.notify_enabled=enabled;c.desktop_notice=Mock();c.link_api_guest_node=Mock()
             with patch('campus_lan.announcement_ui.claim',return_value=claim_result):c.announcement_event(event)
             self.assertEqual(c.desktop_notice.call_count,expected)

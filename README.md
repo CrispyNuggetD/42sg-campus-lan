@@ -32,7 +32,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE—a multiplayer visualiser/game for the legacy 42 C Philosophers project; Up/Down history and !COMMAND for the local shell.
 - Click the footer or F2 to sign in/out; SG API views need the on-campus host; guests keep chat/games.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
-- Pinned host discovery: on-campus guest guidance, quiet offline checks, and one host-arrival alert per computer.
+- Pinned host discovery + important alerts on by default; `/notify` separates host/broadcasts from quiet DMs/pokes; all-off override.
 <!-- shell-installer-features:end -->
 
 The public dailylogin shell installer reads this block directly from this README
@@ -119,7 +119,9 @@ browser pages immediately while still asking before profile tabs. Set
 and then allow all browser actions, use `all inherit` followed by `browser allow`.
 
 These settings are private to the current local login and are re-read before an
-action. `/notify off` still mutes desktop notices even when permission is allowed.
+action. `/notify off` mutes ordinary notifications; `/notify all off` silences
+all channels, including host status and approved broadcasts. An explicit
+`/settings permissions notifications deny` also blocks important desktop alerts.
 Queued notifications stay in terminal history; the popup queue keeps only the
 latest waiting notice to avoid a flood of permission questions.
 
@@ -293,7 +295,7 @@ last 500 event lines. Text input currently supports ASCII.
 | `/leave` | Leave the game room. |
 | `/invite` | Ask for a friend's seat and invite their running lobby to your room. |
 | `/invite-room` | Share your room invitation across the connected nodes. |
-| `/notify off` | Mute your desktop notifications. |
+| `/notify` | View channels; `/notify dms on`, `/notify host off`, or `/notify all off`. |
 | `/signin` | When the approved on-campus host is online, SG students can sign in and use `/clusters`. |
 | `/clusters [1|2]` | Needs sign-in and the running campus host; shows API-reported occupied seats/logins and a snapshot timestamp. |
 | `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
@@ -304,9 +306,10 @@ To invite someone, first create or join a room. They receive its server address
 and room number, then use `/connect IP PORT` followed by `/join NUMBER` to join.
 Invitations don't move anyone automatically.
 
-Lobby windows also notify for each chat message from another sender, including
-messages received across the mesh. Your own messages and game windows do not
-produce chat notifications. Use `/notify off` to mute them.
+Lobby chat popups, DMs and uwu pokes default to **off**. Enable them separately
+with `/notify chat on`, `/notify dms on` or `/notify pokes on`. Your own messages
+and game windows do not produce chat notifications. Messages remain in the
+terminal even with desktop alerts off.
 
 Desktop notifications use `notify-send` on the recipient's computer, so they
 need their client open. If notifications aren't available, the terminal beeps
@@ -565,6 +568,33 @@ Philosophers executable, so rebuilding that executable updates what FORKNITE run
 
 ### Personal settings
 
+Notification channels are private **per computer** and shared by its LAN42
+windows. Important channels default to on: **host** (API host online),
+**announcements** (approved broadcasts and moderator approval requests),
+**releases** (a changed trusted-host version, including patches), and **warnings**
+(host going offline). **Tracking** alerts also default to on for people/rules you
+explicitly track; **chat**, **dms** and **pokes** default to off.
+
+Use `/notify` to inspect them, `/notify dms on` or `/notify host off` for one
+channel, and `/notify all off` to silence everything—even important alerts.
+`/notify all on` restores your individual choices. `/notify on|off` controls the
+ordinary chat/DM/poke/tracking channels together; it leaves important channels
+alone. `/settings notifications CATEGORY on|off` is an alias. `--no-notify`
+silences every desktop category for that launch. Sound/output controls are
+separate from notification visibility.
+
+Important alerts display without a new consent question by default, while an
+existing `/settings permissions notifications deny` blocks them. To restore
+those popups, use `/settings permissions notifications allow`. Social and tracking
+popups retain the existing consent flow. Host changes and broadcasts are deduplicated
+per computer. Initial offline startup stays quiet; a live host going offline
+produces one warning. Release notices compare the pinned host's advertised server
+version with the last observed version; first contact establishes a baseline.
+They add no 42 API requests, never install updates, and do not announce unrelated
+GitHub/README changes. Guest chat/games work without the API host; sign-in and
+fresh campus views need it. In-app status and message history remain visible
+regardless of desktop preferences.
+
 The persistent footer buttons are clickable. **F2** signs in or out (use HQ for
 account changes), **F3** mutes system output, **F4** toggles system output
 between 0% and 30%, **F5** tries `/uwu` once, and **F6** toggles automatic uwu
@@ -666,7 +696,9 @@ PyGObject/GIO; plain `notify-send` is the fallback. `/notify off` suppresses
 popups while keeping tracking text in the terminal.
 
 `/dm LOGIN MESSAGE` and `/alert LOGIN MESSAGE` deliver a targeted message and a
-desktop notification to that online user. They work within the current lobby
+desktop notification if the recipient enables the DMs channel. `/alert` remains
+a personal message; it cannot promote itself to an important system channel.
+They work within the current lobby
 and directly between known guest-mesh nodes. DMs are never broadcast as public
 chat or included in mesh gossip; verified lobbies refuse guest-mesh delivery.
 Guest sender names remain explicitly unverified. Multiple matching guest nodes
@@ -888,8 +920,9 @@ use `/announce approve REQUEST_ID` or `/announce reject REQUEST_ID` in HQ.
 This is server-side privilege control. A guest called `hnah`, a client-provided
 `host=true`, or another student's local guest server cannot grant approval.
 Numeric admin IDs in the private access policy control moderation. A configured display login grants no permissions; a local moderation capability also requires an enrolled admin.
-Ordinary chat mute does not hide trusted approved announcements; OS display/
-notification availability still applies. Each window gets terminal history and
+Ordinary chat mute does not hide trusted approved announcements. The
+announcements channel, all-off override and explicit popup denial are respected;
+OS display/notification availability still applies. Each window gets terminal history and
 each local computer gets one desktop alert, avoiding duplicate game-window popups.
 Announcement text never executes commands, installs an update, or changes trust.
 

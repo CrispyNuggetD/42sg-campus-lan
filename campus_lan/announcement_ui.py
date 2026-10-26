@@ -129,7 +129,11 @@ class AnnouncementUI:
             return True
         if kind!='local_host_update':return False
         if not event.get('online'):
+            previous=getattr(self,'announcement_status',{})
+            was_online=previous.get('online',False)
             self.announcement_status=dict(online=False)
+            if was_online and self.important_notification_allowed('warnings') and claim(str(previous.get('epoch','host'))+':offline'):
+                self.desktop_notice('LAN42 API host offline','Sign-in and fresh API views are unavailable. Guest chat/games keep working. LAN42 is checking for its return.','API host',category='warnings')
             if event.get('configured') is False:
                 self.lines.append('Trusted API host is not configured or its trust is invalid. Get the owner-approved public trust file/fingerprint first; LAN42 cannot recognize an arriving host without it.')
             else:
@@ -137,12 +141,13 @@ class AnnouncementUI:
             return True
         data=event['data'];self.announcement_status=dict(data,online=True)
         self.link_api_guest_node(event)
+        self.release_notification(data)
         if event.get('recovered'):
             from .network import seat_label
             text=data['owner']+' (API host) is online at '+seat_label(event['host'])+' ('+event['host']+'). Use /signin, then /clusters or /clusters 2 for current campus seats.'
             self.lines.append(text)
-            if getattr(self,'notify_enabled',False) and claim(data['epoch']+':online'):
-                self.desktop_notice('LAN42 API host online',text,data['owner'])
+            if self.important_notification_allowed('host') and claim(data['epoch']+':online'):
+                self.desktop_notice('LAN42 API host online',text,data['owner'],category='host')
             if getattr(self,'role','lobby')=='lobby' and not getattr(self,'secure',False):
                 from .login_settings import auto_login_paused
                 if event.get('auto_join') and not auto_login_paused() and not getattr(self,'game',{}).get('room'):
@@ -162,7 +167,7 @@ class AnnouncementUI:
             if states.get(key):continue
             states[key]=True
             self.lines.append('Approve/reject intra:'+request['author']+': '+request['text']+' | /announce approve|reject '+request['id'])
-            if claim(data['epoch']+':request:'+request['id']):
+            if self.important_notification_allowed('announcements') and claim(data['epoch']+':request:'+request['id']):
                 if not getattr(self,'tracking_notifier',None):
                     from .desktop_notifications import Notifications
                     self.tracking_notifier=Notifications(self.inbox)
@@ -173,10 +178,28 @@ class AnnouncementUI:
             title='LAN42 announcement — '+author
             body='“'+announcement['text']+'”'
             self.lines.extend([title,body])
-            if claim(data['epoch']+':'+announcement['id']):
-                # Privileged API-host channel intentionally bypasses ordinary LAN mute.
+            if self.important_notification_allowed('announcements') and claim(data['epoch']+':'+announcement['id']):
+                # Trusted feed bypasses social mute, but respects category/all-off.
                 if not getattr(self,'tracking_notifier',None):
                     from .desktop_notifications import Notifications
                     self.tracking_notifier=Notifications(self.inbox)
                 self.tracking_notifier.announcement(title,body,announcement['author'])
         return True
+
+    def release_notification(self,data):
+        version=data.get('version');date=data.get('release_date')
+        if not isinstance(version,str) or not re.fullmatch(r'\d+\.\d+\.\d+(?:-beta\.\d+)?',version):return
+        if not isinstance(date,str) or len(date)>80:return
+        from .local_console import local_path
+        from .auth import private_write
+        path=local_path('last-host-release')
+        try:previous=json.loads(private_read(path)).get('version')
+        except (OSError,ValueError,AttributeError):previous=None
+        if previous==version:return
+        try:private_write(path,json.dumps(dict(version=version)))
+        except OSError:return
+        text='The trusted host is running v'+version+' ('+date+'). Update/restart LAN42 for its bundled /changelog.'
+        self.lines.append(text)
+        # First contact establishes a baseline; host-online already announces it.
+        if previous and self.important_notification_allowed('releases') and claim('release:'+version):
+            self.desktop_notice('LAN42 server release: v'+version,text,data['owner'],category='releases')
