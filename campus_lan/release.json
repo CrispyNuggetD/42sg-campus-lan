@@ -1,8 +1,16 @@
 {
-  "version": "2.7.0-beta.1",
-  "date": "2026-10-27T04:42:59+08:00",
-  "source": "08e11242579349c13ade7370ad2567e82507ceba",
+  "version": "2.7.1-beta.1",
+  "date": "2026-10-27T04:49:00+08:00",
+  "source": "a392728c538a8c2509201503d0d1496af88032bd",
   "history": [
+    {
+      "version": "2.7.1-beta.1",
+      "date": "2026-10-27T04:49:00+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: reuse scoped daily flock folder across reconnects"
+      ]
+    },
     {
       "version": "2.7.0-beta.1",
       "date": "2026-10-27T04:42:59+08:00",
@@ -170,5 +178,5 @@
       ]
     }
   ],
-  "runtime_sha256": "f5043645a4e67b2a448cdf9954555c8a5e51d7bcc204733cfbd665f686e24add"
+  "runtime_sha256": "8a18d0c038a459956e3ed660f4fd0c718f5986a7683e84dc75b1603bfddd6f73"
 }
