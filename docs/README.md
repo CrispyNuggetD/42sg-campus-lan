@@ -20,6 +20,10 @@ F4 Easter egg, permanent aggregates and privacy.
 [Exam quiet and release digests](exam-quiet.md) explains automatic app-only audio
 quiet, calendar updates and the release notification budget.
 
+[Experimental roadmap](roadmap.md) describes the possible Life OS integration,
+hosted LLM exploration and gamification/social experiment. These are plans, not
+available features or release commitments.
+
 ## Hosting and maintaining LAN42
 
 | Guide | What is inside |

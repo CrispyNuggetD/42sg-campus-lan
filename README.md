@@ -7,7 +7,8 @@ seats, send a file with a koel, or turn your Philosophers project into dinner
 with friends.
 
 [Visual command guide ↗](https://crispynuggetd.github.io/42sg-campus-lan/) ·
-[All guides](docs/README.md) · [Release history](CHANGELOG.md)
+[All guides](docs/README.md) · [Release history](CHANGELOG.md) ·
+[Experimental roadmap](docs/roadmap.md)
 
 [Highlights](#highlights) · [Quick start](#quick-start) · [Games](#games) ·
 [Guides](#guides) · [About](#about)
