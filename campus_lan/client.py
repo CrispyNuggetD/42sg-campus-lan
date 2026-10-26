@@ -209,13 +209,32 @@ class Client(AnnouncementUI,KoelUI):
         if getattr(self,'auto_login_checked',False) or getattr(self,'role','lobby')!='lobby':return
         if not self.connected or not self.id:return
         self.auto_login_checked=True
-        if getattr(self,'secure',False):return
+        if getattr(self,'secure',False):
+            self.offer_auto_login()
+            return
         from .login_settings import LoginSettings,auto_login_paused
         if auto_login_paused():return
         settings=LoginSettings()
         if settings.error:self.lines.append(settings.error);return
         mode=settings.data['autologin']
         if mode!='off':self.start_signin(saved_only=mode=='saved')
+
+    def offer_auto_login(self):
+        from .login_settings import LoginSettings
+        settings=LoginSettings()
+        if settings.error:
+            self.lines.append(settings.error)
+            return
+        if settings.data['autologin_asked'] or settings.data['autologin']!='off':return
+        def choose(mode):
+            # Read again: a queued prompt must not overwrite newer settings.
+            current=LoginSettings()
+            if current.data['autologin_asked'] or current.data['autologin']!='off':return
+            current.set('autologin',mode)
+            self.lines.append('Automatic sign-in '+('enabled. Reuse saved sessions; expired sessions still ask before opening 42.' if mode=='on' else 'off. Use /settings autologin on to enable it later.'))
+        self.popup_prompts().confirm(
+            'Sign in automatically next time? Reuse your saved session; if expired, ask to open 42 sign-in.',
+            lambda:choose('on'),lambda:choose('off'))
 
     def popup_prompts(self):
         if not getattr(self,'consent',None):

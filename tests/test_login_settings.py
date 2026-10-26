@@ -23,7 +23,7 @@ class LoginOptions(unittest.TestCase):
     def test_defaults_persist_and_bad_config_is_preserved(self):
         settings=LoginSettings();self.assertEqual(settings.data['autologin'],'off')
         settings.set('autologin','saved');settings.set('close_tab',False)
-        self.assertEqual(LoginSettings().data,dict(autologin='saved',close_tab=False))
+        self.assertEqual(LoginSettings().data,dict(autologin='saved',close_tab=False,autologin_asked=True))
         self.assertEqual(settings.path.stat().st_mode&0o777,0o600)
         settings.path.write_text('{bad')
         broken=LoginSettings();self.assertEqual(broken.data['autologin'],'off')
@@ -55,3 +55,28 @@ class LoginOptions(unittest.TestCase):
         c.auto_login_tick();c.auto_login_tick();c.start_signin.assert_called_once_with(saved_only=True)
         from campus_lan.login_settings import pause_for_session
         pause_for_session();c=self.client();c.start_signin=Mock();c.auto_login_tick();c.start_signin.assert_not_called()
+
+    def test_first_verified_login_offers_once_and_remembers_yes_or_no(self):
+        for answer,expected in ((True,'on'),(False,'off')):
+            settings=LoginSettings()
+            if settings.path.exists():settings.path.unlink()
+            c=self.client();c.secure=True;c.popup_prompts=Mock();c.start_signin=Mock()
+            c.auto_login_tick();c.auto_login_tick()
+            confirm=c.popup_prompts.return_value.confirm
+            confirm.assert_called_once()
+            self.assertEqual(LoginSettings().data['autologin'],'off')
+            confirm.call_args.args[1 if answer else 2]()
+            stored=LoginSettings()
+            self.assertEqual(stored.data['autologin'],expected)
+            self.assertTrue(stored.data['autologin_asked'])
+            c=self.client();c.secure=True;c.popup_prompts=Mock()
+            c.auto_login_tick();c.popup_prompts.assert_not_called()
+
+    def test_guest_and_failed_signin_do_not_offer_and_old_settings_migrate(self):
+        c=self.client();c.popup_prompts=Mock();c.auto_login_tick()
+        c.popup_prompts.assert_not_called()
+        settings=LoginSettings();settings.path.write_text('{"autologin":"off","close_tab":true}')
+        settings.path.chmod(0o600)
+        self.assertFalse(LoginSettings().data['autologin_asked'])
+        c=self.client();c.secure=True;c.popup_prompts=Mock();c.auto_login_tick()
+        c.popup_prompts.return_value.confirm.assert_called_once()

@@ -837,3 +837,8 @@ Disabling host discovery stops seat relocation/automatic guest linking; trusted
 announcements from the configured endpoint remain available. Approved messages
 are cached in host memory for 15 minutes (latest ten); pending requests expire in
 five minutes. A host-service restart resets that queue and may require resubmission.
+
+After your first successful `/signin`, LAN42 asks whether to sign in automatically
+next time. Yes reuses a valid saved session and asks before opening 42 when it
+expires; No keeps automatic login off. The choice is remembered on this device.
+Change it later with `/settings autologin off|saved|on`.
