@@ -30,7 +30,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `/map` / `/track`: maps and personal lists; `/clusters` adds current SG seats while the campus host is online.
 - `/uwu`: meet the koel file courier; `/koel` for approved sharing; `/dm` / `/uwu LOGIN` for messages/pokes; `/volume` for audio.
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE—a multiplayer visualiser/game for the legacy 42 C Philosophers project; Up/Down history and !COMMAND for the local shell.
-- `/signin`: SG API views need a running approved on-campus host (currently hnah); guests keep chat/games.
+- Click the footer or F2 to sign in/out; SG API views need the on-campus host; guests keep chat/games.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
 - Pinned host discovery: on-campus guest guidance, quiet offline checks, and one host-arrival alert per computer.
 <!-- shell-installer-features:end -->
@@ -564,6 +564,16 @@ otherwise the launcher tries that local path then `philo` on PATH. Explicit
 Philosophers executable, so rebuilding that executable updates what FORKNITE runs.
 
 ### Personal settings
+
+The persistent footer buttons are clickable. **F2** signs in or out (use HQ for
+account changes), **F3** mutes system output, **F4** toggles system output
+between 0% and 30%, **F5** tries `/uwu` once, and **F6** toggles automatic uwu
+for this window. The guest prompt also supports “click here”. Some terminals
+require Fn with function keys; the clickable buttons work without them. These
+controls preserve your typed draft and wait while a consent/setup question is
+active. Sound permission remains separate; output mute does not disable desktop
+popups (`/notify off` controls ordinary notifications). Tab still switches the
+roster/map or game mode; PgUp/PgDn scroll chat.
 
 `/settings` (alias `/profile`) shows your identity status, sign-in/sign-out
 actions, notification controls and session lifetime. Use `/settings signout` to

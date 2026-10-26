@@ -25,11 +25,13 @@ from . import auth_client
 from .updater import RestartRequested, generation
 from .completion import complete
 from .local_console import LocalConsole,History,shell_command
+from .quick_controls import QuickControls
 from .permission_setup import PermissionSetup
 from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    "Click footer buttons or use F2 sign in/out | F3 system mute | F4 output 0/30% | F5 uwu | F6 auto uwu",
     '/changelog: server release history and alpha testing credits',
     'API views: verified Singapore sign-in; enrolled API operators may use local /clusters and /info offsite.',
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
@@ -88,7 +90,7 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
-class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
+class Client(QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
@@ -873,6 +875,8 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
 
     def draw(self,screen):
         screen.erase()
+        self.control_hits=[]
+        self.lobby_hits=[]
         h,w = screen.getmaxyx()
         if h<28 or w<76:
             self.line(screen,0,'Please resize terminal to at least 76 columns x 28 rows.')
@@ -894,6 +898,7 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
             self.line(screen,3,'Loading online roster...' if self.connected else 'Connection failed; see details below. /restart retries.')
             for y,message in enumerate(list(getattr(self,'lines',[]))[-min(8,h-7):],5):
                 self.line(screen,y,message)
+            self.draw_quick_controls(screen)
             self.line(screen,h-1,'> '+getattr(self,'input','')[-(w-4):])
             screen.refresh()
             return
@@ -937,7 +942,7 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         shown = lines[max(0,end-log_h):end]
         for y,line in enumerate(shown,logs_y):
             self.line(screen,y,line,x=logs_x)
-        self.line(screen,h-2,'Tab: roster/map (game: play/chat) | PgUp/PgDn: chat | /quit',curses.A_DIM)
+        self.draw_quick_controls(screen)
         if getattr(self,'permission_prompt',False):
             category,description,action,stage=self.popup_prompts().active
             self.line(screen,h-3,description,curses.A_BOLD)
@@ -1244,7 +1249,7 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         installed_generation = generation()
         screen.timeout(80)
         try:
-            curses.mousemask(curses.BUTTON1_CLICKED|curses.BUTTON1_PRESSED)
+            curses.mousemask(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED)
             curses.mouseinterval(150)
         except curses.error:pass
         try:
@@ -1281,11 +1286,14 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
             if key==curses.KEY_MOUSE:
                 try:
                     _,mouse_x,mouse_y,_,buttons=curses.getmouse()
-                    if buttons&(curses.BUTTON1_CLICKED|curses.BUTTON1_PRESSED):
+                    if buttons&(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED):
+                        if self.quick_click(mouse_x,mouse_y):continue
+                        if getattr(self,'permission_prompt',False) or getattr(self,'wizard',None):continue
                         for y,left,right,player in getattr(self,'lobby_hits',[]):
                             if mouse_y==y and left<=mouse_x<right:self.focus_player(player);break
                 except curses.error:pass
                 continue
+            if self.quick_key(key):continue
             if key==21:
                 self.input='';self.play=False
                 continue
