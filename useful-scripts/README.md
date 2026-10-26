@@ -1,8 +1,8 @@
 # Public zsh helpers
 
-Adapted from [Ryker's public SUTD zsh additions](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29).
+Adapted from [Christopher Nah’s public SUTD zsh additions](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29).
 
-The original combines general helpers with Ryker's own settings and daily routine.
+The original combines general helpers with Christopher Nah’s own settings and daily routine.
 This copy keeps the reusable compile/run, project navigation, repository pulls and
 dailylogin ideas. It does not copy his email, project selection, brightness changes,
 attendance scripts, mailbox/stayon startup, application launches or automatic cleanup.
@@ -72,7 +72,7 @@ Set `LAN42_OPEN_ON_LOGIN=0` to update without opening a lobby window.
 
 If you do not already have a function or alias with the name, setup also provides
 dailylogin, syncdocs, syncproj, cdmain, curproj, compile and run as short wrappers.
-Existing functions and aliases remain intact — especially Ryker's personal
+Existing functions and aliases remain intact — especially Christopher Nah’s personal
 dailylogin. Use the lan42_ names to access these helpers unambiguously.
 Put any existing personal definitions before the source line.
 

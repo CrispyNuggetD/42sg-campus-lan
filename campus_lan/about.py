@@ -1,16 +1,16 @@
 """Public project identity; no host credentials, directory exports or user state."""
 from . import VERSION
 
-NAME="Ryker's 42SG Campus LAN Server"
+NAME='LAN42 — 42 Singapore Campus HQ (Beta)'
 REPOSITORY='https://github.com/CrispyNuggetD/42sg-campus-lan'
-DESCRIPTION=('Student-built terminal LAN lobby for 42 Singapore: discover online peers and campus seats via read-only 42 API data, '
-             'chat, invite players, and coordinate locally hosted minigames and useful scripts.')
+DESCRIPTION=('Student-built, AI-assisted terminal community app for 42 Singapore: read-only public 42 API data for campus seats and information, '
+             'LAN chat, moderated announcements, consent-based file sharing and locally hosted minigames. API-backed campus services require an approved host.')
 
 
 def lines():
     from .release import banner
     return [banner(),NAME+' · '+VERSION,DESCRIPTION,
-            'Built by Ryker (hnah) as a public learning and portfolio project. The repo is the source for setup, scope and implementation notes.',
+            'Built by Christopher Nah (hnah), a student at 42 Singapore, as a public learning and portfolio project. The repo is the source for setup, scope and implementation notes.',
             'Source / issues / contributions: '+REPOSITORY,
             'Working features in this checkout: guest mesh, verified TLS lobby, campus maps, relationships/lists, DMs, minigames and consent-controlled local tools.',
             'KoelDrop — campus file sharing with explicit group, folder and per-file consent.','Alpha testing: dthoo (GitHub: whatisthisbuffoonery — https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.',
