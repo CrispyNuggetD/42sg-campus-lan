@@ -47,11 +47,11 @@ class Volume:
                 run('wpctl','set-mute','@DEFAULT_AUDIO_SINK@','1' if value==0 else '0')
         return value
 
-    def adjust(self,value=None):return self.set((50 if self.get()==0 else 0) if value is None else value)
+    def adjust(self,value=None):return self.set((30 if self.get()==0 else 0) if value is None else value)
 
 
 def main():
-    parser=argparse.ArgumentParser(description='Toggle output volume 0/50, or set 0–100. Uses the desktop output slider.')
+    parser=argparse.ArgumentParser(description='Toggle output volume 0/30, or set 0–100. Uses the desktop output slider.')
     parser.add_argument('level',nargs='?',type=int)
     args=parser.parse_args()
     try:print('Output volume: '+str(Volume().adjust(args.level))+'%')

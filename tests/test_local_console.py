@@ -33,7 +33,7 @@ class Console(unittest.TestCase):
                 self.assertIn('50',str(run.call_args_list))
             with self.assertRaises(ValueError):volume.set(101)
         volume=Volume.__new__(Volume);volume.get=Mock(return_value=0);volume.set=Mock(side_effect=lambda n:n)
-        self.assertEqual(volume.adjust(),50)
+        self.assertEqual(volume.adjust(),30)
         volume.get.return_value=20;self.assertEqual(volume.adjust(),0)
         self.assertEqual(volume.adjust(73),73)
 
@@ -45,7 +45,7 @@ class Console(unittest.TestCase):
             volume.set.assert_not_called();play.assert_not_called()
             first=c.popup_prompts.return_value.confirm.call_args
             first.args[1]()
-            volume.set.assert_called_once_with(50);play.assert_called_once()
+            volume.set.assert_called_once_with(30);play.assert_called_once()
             second=c.popup_prompts.return_value.confirm.call_args
             self.assertIn('Always',second.args[0]);second.args[1]()
             c.with_audio_volume(play);self.assertEqual(play.call_count,2)

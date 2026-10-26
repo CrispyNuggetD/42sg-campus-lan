@@ -3,38 +3,25 @@
 A little campus file courier inside **Ryker's 42SG Campus LAN Server**.
 Files in your nest, only if you say yes.
 
-**State: offline prototype, execution disabled.** Nothing here starts a listener,
-scans a folder, sends an invitation or transfers files when LAN42 runs.
-`/roadmap koeldrop` and `/koel status` show the work. Mutating commands are
-blocked, including `/koel create`, `invite`, `accept`, `dir` and `sync`.
-`/files status` remains a neutral alias. There is no activation setting or
-an environment variable that bypasses this.
+**State: available as a standard LAN42 feature.** No experimental setting is
+required. The runtime is wired to the existing pinned HTTPS broker, with verified
+session and live campus-seat evidence checks. Importing modules or constructing
+`start(broker, host, port)` does not bind a socket or begin folder scans.
 
-The Intra application's public name and purpose remain those of the campus LAN
-project. KoelDrop is one experimental sub-feature, not a second platform.
+`/koel help` describes create/invite/accept, dedicated folders, per-file receives,
+explicit receive whitelists, sync and leave. `/files` and `/koeldrop` are aliases.
+Only deliberate group creation/acceptance starts dedicated-folder upload polling;
+recipient approval is separate. The API service owner creates groups, and members
+must be signed in to that same trusted service.
 
-## What is implemented and what still needs work
-
-| Milestone | Current state |
-| --- | --- |
-| Verified-session, campus membership and source-seat policy | Implemented and tested with controlled evidence |
-| Read-only 42 API evidence adapter | Implemented; live integration still needs validation before activation |
-| Recipient-bound, expiring, one-use invitation acceptance | Implemented in the offline core |
-| Member ownership, shared files, conflict checks and retained history | Implemented and tested |
-| Audit events and integrity chain | Implemented and tested |
-| Native HTTPS request dispatcher | Implemented and tested in process; no listener registered |
-| Explicit bounded local scan, sync pass, receive/upload and folder-pointer operations | Implemented and tested; no watcher |
-| Local friend/list expansion and notification wording | Implemented as UI plans; no invitation delivery |
-| Desktop invitation/receive action wiring and real two-computer sync | Not connected; requires end-to-end review |
-| Campus deployment | Disabled; Bocal review and transport integration remain ahead |
-
-The core is under `campus_lan/file_sharing/`. `start()` unconditionally raises a
-disabled-feature error. The tests construct temporary stores and call the core, one-pass sync controller
-or request dispatcher directly; they do not start a file-sharing server.
+The core and transport tests use temporary stores and controlled identities,
+campus evidence and HTTPS request adapters. Real campus transfers and real
+notifications are not used as automated tests. Cross-machine campus behaviour
+still needs verification on actual participating computers.
 
 ## A group session
 
-The intended flow after review is:
+The group flow is:
 
 1. The host creates a group while signed into a trusted, verified LAN42 service.
 2. `/koel invite dthoo`, `friends`, or `@lunch` resolves selectors locally. Only
@@ -177,14 +164,13 @@ and an on-campus machine can be remotely controlled or used as a TCP proxy.
 Rejecting forwarding headers does not detect every transparent tunnel. The app
 will not create forwarding rules or tunnels, but cannot prevent the OS user from
 running another forwarding program. Strong external-access restrictions need
-campus network/firewall controls and Bocal agreement.
+campus network/firewall controls.
 
-The host is trusted with group contents. This prototype is not end-to-end
+The host is trusted with group contents. File sharing is not end-to-end
 encrypted against its operator. No file service can revoke a copy somebody
 already downloaded. Short sessions stop future access, not existing local copies.
-An API app's registration/description documents intent; it is not approval for a
-new campus service. Live eligibility, timeout/retry behaviour, pinned TLS,
-notification actions and a two-computer test still need review before activation.
+Pinned TLS, current eligibility, timeouts and recipient actions remain enforced;
+automated tests do not replace checking a transfer on two actual computers.
 
 ## The uwu option
 
@@ -194,11 +180,11 @@ The always-on choice has a second prompt: `Always uwu? Are you SURE? ಠ_ಠ [y/
 Only confirming that prompt saves always-on. `/settings koel-sound off` clears
 it; `on` enables only this session; `always` requests the confirmation.
 
-KoelDrop notice plans include 🔊 to hint that the optional sound exists. The
+KoelDrop notices include 🔊 to hint that the optional sound exists. The
 native notifier uses the D-Bus `sound-file` hint only for an enabled notice;
 disabled ones request `suppress-sound`. It does not start a second audio player.
 Desktop support and system sound settings still apply. The sound option does
-not activate sharing, and no KoelDrop file notices are delivered while it is parked.
+not join a group or authorize incoming files.
 
 ## Review references
 

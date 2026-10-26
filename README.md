@@ -21,7 +21,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `lan42` / `lan42_window`: open your campus HQ in its own tmux workspace.
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
-- `/dm` / `/uwu LOGIN`: messages and short sound pokes; `/uwu auto` for random calls, `/volume` for desktop volume.
+- `/dm` / `/uwu LOGIN`: messages and sound pokes; `/volume` for audio; `/koel` for approved group file sharing.
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE; Up/Down history and !COMMAND for the local shell.
 - `/signin`: optionally verify your 42 identity; the secure service requires owner setup.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
@@ -30,10 +30,9 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 
 The public dailylogin shell installer reads this block directly from this README
 when recommending LAN42. Maintainers: update it when commands or availability
-change; see [the contribution workflow](AGENTS.md). KoelDrop transfers remain
-excluded while execution is disabled.
+change; see [the contribution workflow](AGENTS.md).
 
-## What works, and what is parked
+## Available features
 
 | Area | State in this checkout |
 | --- | --- |
@@ -43,13 +42,13 @@ excluded while execution is disabled.
 | Direct messages, local notifications and browser consent | Implemented |
 | API-host moderated announcements and online discovery | Implemented; initial public host trust required |
 | Tetris, Bluff, Hex Wars and FORKNITE | Implemented; game requirements apply |
-| KoelDrop: session-scoped LAN file sharing | Offline prototype under review; **execution disabled** |
+| KoelDrop: session-scoped LAN file sharing | Available through the verified host; explicit group/folder consent |
 
 **KoelDrop — the uwu bird, but it brings files.** A little campus file courier
 inside LAN42: files in your nest, only if you say yes. Its scope is small,
 invited groups on campus. `/koel status` (also `/files status`) is
-read-only; creation, invitation delivery, directory watching and transfers are
-not available. See the [design, boundaries and test plan](docs/file-sharing-design.md).
+available without an experimental flag. Create/join a group to start its dedicated
+folder uploads; incoming files require approval. See the [design, boundaries and test plan](docs/file-sharing-design.md).
 
 The public repository contains code, tests, diagrams and instructions. Private
 API credentials, certificate keys, sessions, campus directory exports, photos,
@@ -758,20 +757,26 @@ the normal best-effort page behaviour is retained.
 ## KoelDrop — the uwu bird, but it brings files
 
 A little campus file courier inside LAN42. **Files in your nest, only if you say
-yes.** The planned receive notice is `🔊 uwu, dthoo sent you funny.txt`.
+yes.** The receive notice is `🔊 uwu, dthoo sent you funny.txt`.
 
-**The sharing experiment is disabled.** `/koel status` or `/roadmap koeldrop`
-shows the offline implementation and remaining work. No file-sharing listener,
-watcher, invitation delivery or automatic transfer starts. `/koel create`,
-`invite`, `accept`, `dir` and `sync` remain blocked, with no activation setting.
-The [design notes](docs/file-sharing-design.md) explain the scope, invitation and
-folder permissions, tested safeguards and the limits that need campus review.
+KoelDrop is a standard feature. There is no experimental toggle. From your
+signed-in HQ, `/koel help` lists commands (`/files` and `/koeldrop` are aliases).
+The on-campus API service owner starts a group with `/koel create`, then uses
+`/koel invite dthoo` (or `friends` / `@LIST`). Recipients accept or decline their
+numbered invitation. Accepting creates a dedicated folder whose added files
+upload to that group; unrelated folders are never scanned.
 
-What is testable offline: current-session admission policy, recipient-bound
-one-use invites, owner-only member folders, collaborative root files,
-versioned writes/deletes, audit history, per-file receive approval, explicit
-folder-pointer changes, bounded scans/one-pass sync and a bounded native HTTPS dispatcher. The production
-transport, desktop action wiring and two-computer sync are not connected yet.
+`/koel pending` lists offers; `/koel receive NUMBER` approves a file and
+`/koel reject NUMBER` declines it. `/koel trust LOGIN...` separately confirms an
+automatic-receive whitelist for the current group. Deletions still require
+approval. `/koel dir "EMPTY PATH"` chooses a folder; `/koel sync` syncs now;
+`/koel leave` stops group uploads and preserves local copies.
+
+Transfers use the existing pinned HTTPS broker, current verified sessions,
+fresh campus seat/source-IP evidence, recipient-bound expiring invites, private
+storage, file ownership, version conflicts and bounded polling. No files transfer
+merely because LAN42 starts or a legacy experimental setting says `on`.
+See [the design and permissions](docs/file-sharing-design.md).
 
 The project name and public Intra description remain **Ryker's 42SG Campus LAN
 Server** and the student-built campus LAN purpose at the top of this README.
@@ -854,14 +859,14 @@ Type `!COMMAND` to run a local shell command, for example `!pwd` or
 `!adjust_volume 35`. LAN42 hands over the terminal, then Enter returns to the app.
 Only your typed input executes commands; server messages cannot execute them.
 
-`/volume` (alias `/adjust_volume`) toggles desktop output between 0 and 50 percent.
+`/volume` (alias `/adjust_volume`) toggles desktop output between 0 and 30 percent.
 `/volume 0` through `/volume 100` sets a level explicitly. The Zsh shell helper is
 `adjust_volume [0–100]`, available after sourcing `useful-scripts/campus.zsh`.
 The controls use the same output device as the GNOME/macOS slider (PulseAudio,
 PipeWire or macOS); Bluetooth/device-specific volume remains up to that device.
 
 Sound-enabled `/uwu`, received pokes and automatic calls check system output.
-If muted/zero, they ask before raising it to 50 percent. A second confirmation
+If muted/zero, they ask before raising it to 30 percent. A second confirmation
 can remember permission to do this automatically on this device. This remains
 separate from permission to play the koel sound. Manage it with
 `/settings audio-auto-on on|off`. `/volume` itself applies your explicit request
@@ -875,3 +880,9 @@ cancels the pending request. `/track LOGIN LOGIN` still works normally.
 
 Terminal display recovery: Ctrl-L forces a full LAN42 redraw. Resizing a tmux
 pane also redraws the screen; API queue notices stay in the chat log.
+
+`lan42_restart` restarts LAN42 tmux client panes by injecting `/restart` into the
+app. It skips shells, servers and unrelated Python programs, and clears unfinished
+app input. `lan42_restart --check` lists matching panes without sending anything.
+It works on Linux and macOS. Source the installed shell helpers or run
+`useful-scripts/lan42_restart` directly. It does not restart the API host service.

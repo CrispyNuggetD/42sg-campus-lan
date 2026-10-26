@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import Mock,patch
 from urllib.parse import quote
 from campus_lan.auth import Broker,digest
-from campus_lan.file_sharing import start,DisabledFeature
+from campus_lan.file_sharing import start
 from campus_lan.file_sharing.security import Gate,Proof,Denied,Conflict,Limit,CampusProofs
 from campus_lan.file_sharing.store import Store,MAX_FILE
 from campus_lan.file_sharing.http import Requests
@@ -43,9 +43,10 @@ class FileSharing(unittest.TestCase):
         invitation=self.store.invite(self.host,self.gid,actor.login)
         self.store.accept(actor,self.gid,invitation['invite']);return invitation
 
-    def test_runtime_is_hard_disabled_and_import_never_opens_socket(self):
+    def test_runtime_construction_never_opens_socket_or_scans_folders(self):
         with patch('socket.socket') as socket:
-            with self.assertRaises(DisabledFeature):start(enabled=True)
+            runtime=start(self.broker,'10.11.1.1',31416,root=Path(self.tmp.name)/'unused',owner='hnah')
+            self.assertIsNone(runtime.requests)
             socket.assert_not_called()
 
     def test_tls_campus_membership_freshness_and_actual_socket_address_required(self):
@@ -200,10 +201,10 @@ class FileSharing(unittest.TestCase):
         client=Client.__new__(Client);client.lines=collections.deque();client.send=Mock();client.request_popup=Mock()
         for command in ('/files create','/files invite friends','/files accept anything','/files dir /tmp/anything','/settings files on'):
             if command.startswith('/settings'):client.settings_command(command)
-            else:self.assertTrue(client.experimental_command(command))
+            else:self.assertTrue(client.koel_command(command))
         client.send.assert_not_called();client.request_popup.assert_not_called()
-        self.assertIn('disabled',' '.join(client.lines))
-        client.experimental_command('/roadmap files');self.assertIn('KoelDrop',' '.join(client.lines))
+        self.assertIn('signed-in HQ',' '.join(client.lines))
+        client.koel_command('/roadmap files');self.assertIn('KoelDrop',' '.join(client.lines))
 
     def test_namespace_stays_reserved_after_member_leaves_and_pending_invite(self):
         self.store.invite(self.host,self.gid,'dthoo')

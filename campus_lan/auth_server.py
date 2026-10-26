@@ -106,7 +106,7 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
     lobby.port = settings['lobby_port']
     lobby.mesh.host = settings['host']
     from .file_sharing.runtime import Runtime
-    koeldrop=Runtime(broker,settings['host'],settings['broker_port'])
+    koeldrop=Runtime(broker,settings['host'],settings['broker_port'],owner=settings.get('owner_login',getpass.getuser()))
     lobby.koeldrop=koeldrop
     http = AuthHTTP(broker, f"{settings['host']}:{settings['broker_port']}")
     http.koeldrop=koeldrop
@@ -136,7 +136,6 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
                                                    id=context.get('request_id'),decision=decision))
                 except AuthError:pass
     announcement_moderator=asyncio.create_task(moderate_announcements())
-    monitor=asyncio.create_task(koeldrop.monitor())
     web = await asyncio.start_server(http.handle, bind, settings['broker_port'], ssl=context,
                                      ssl_handshake_timeout=5, limit=16384)
     try:
@@ -157,8 +156,8 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
         async with web, server:
             reload_package = await wait_for_host_move(settings)
     finally:
-        monitor.cancel();announcement_moderator.cancel();announcement_notifier.close()
-        await asyncio.gather(monitor,announcement_moderator,return_exceptions=True)
+        announcement_moderator.cancel();announcement_notifier.close()
+        await asyncio.gather(announcement_moderator,return_exceptions=True)
         koeldrop.close()
         ticker.cancel()
         for task in list(lobby.hex_tasks):

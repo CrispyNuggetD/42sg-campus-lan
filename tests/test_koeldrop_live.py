@@ -15,7 +15,6 @@ from campus_lan.file_sharing.client import Courier
 from campus_lan.file_sharing.remote import RemoteStore
 from campus_lan.file_sharing.runtime import Runtime
 from campus_lan.file_sharing.security import Gate,Proof,Denied,Conflict
-from campus_lan.file_sharing.settings import ExperimentalSettings
 from campus_lan.file_sharing.store import Store
 from campus_lan.file_sharing.http import Requests
 
@@ -24,14 +23,13 @@ class KoelDropLive(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.env=patch.dict(os.environ,XDG_CONFIG_HOME=self.tmp.name);self.env.start();self.addCleanup(self.env.stop)
-        self.settings=ExperimentalSettings();self.settings.set(True)
         self.broker=Broker(Mock());self.tokens={'hnah':'1'*64,'dthoo':'2'*64}
         self.peers={'hnah':'10.11.3.6','dthoo':'10.11.4.2'}
         self.uids={'hnah':1,'dthoo':2}
         proofs=Mock()
         proofs.identity.side_effect=lambda uid,name:Proof(True,('c1r3s6' if uid==1 else 'c1r4s2',),time.time())
         proofs.target.side_effect=lambda name:(self.uids[name],name)
-        self.gate=Gate(self.broker,proofs,enabled=lambda:ExperimentalSettings().enabled)
+        self.gate=Gate(self.broker,proofs)
         self.actors={}
         for name,token in self.tokens.items():
             self.broker.sessions[digest(token)]=dict(uid=self.uids[name],login=name,expires=time.time()+3600)
@@ -84,8 +82,7 @@ class KoelDropLive(unittest.TestCase):
         one=remote.put(None,gid,'a.txt',b'one')
         remote.put(None,gid,'a.txt',b'two',one['version'])
         with self.assertRaises(Conflict):remote.put(None,gid,'a.txt',b'stale',one['version'])
-        remote.cancelled=lambda:not ExperimentalSettings().enabled
-        self.settings.set(False)
+        remote.cancelled=lambda:True
         with patch('campus_lan.auth_client.PinnedHTTPSConnection') as connection:
             with self.assertRaises(Denied):remote.manifest(None,gid)
             connection.assert_not_called()
@@ -96,19 +93,20 @@ class KoelDropLive(unittest.TestCase):
         self.assertIsNone(host.sync)
         self.assertEqual(self.store.db.execute('SELECT count(*) FROM versions').fetchone()[0],0)
 
-    def test_worker_stops_when_disabled_without_scanning(self):
-        worker=self.courier('hnah');self.settings.set(False)
-        worker.submit('create');worker.thread.join(2)
-        self.assertTrue(worker.stopped.is_set());self.assertFalse(worker.thread.is_alive())
+    def test_worker_explicit_stop_blocks_jobs_without_scanning(self):
+        worker=self.courier('hnah');worker.stop()
+        with self.assertRaises(Denied):worker.submit('create')
         self.assertIsNone(worker.sync)
 
-    def test_settings_default_off_and_generations_invalidate_fast_toggle(self):
-        first=self.settings.generation
-        self.settings.set(False);off=self.settings.generation
-        self.settings.set(True)
-        self.assertNotEqual(first,off);self.assertNotEqual(first,self.settings.generation)
-        self.settings.path.write_text('{bad json');self.assertFalse(ExperimentalSettings().enabled)
-        self.settings.path.unlink();self.assertFalse(ExperimentalSettings().enabled)
+    def test_legacy_experimental_file_cannot_gate_standard_feature(self):
+        from campus_lan.auth import config_dir,private_write
+        legacy=config_dir()/'experimental.json'
+        for value in ('{"enabled":false}','{bad json'):
+            private_write(legacy,value)
+            remote=self.remote('hnah');gid=remote.create()
+            self.assertEqual(len(gid),32)
+        legacy.unlink()
+        self.assertEqual(len(self.remote('hnah').create()),32)
 
     def test_wire_cannot_inject_local_approval_events(self):
         client=Client.__new__(Client);client.inbox=queue.Queue();client.connected=True
@@ -120,7 +118,7 @@ class KoelDropLive(unittest.TestCase):
     def test_popup_allow_does_not_approve_group_or_file(self):
         from campus_lan.popup_permissions import Permissions,Prompts
         permissions=Permissions('hnah');permissions.set('notifications','allow')
-        report=[];prompts=Prompts(permissions,report.append);action=Mock();decline=Mock()
+        report=[];prompts=Prompts(permissions,report.append);action=Mock();action.popup_category='notifications';decline=Mock()
         prompts.confirm('Join this group?',action,decline)
         self.assertEqual(prompts.activate()[3],'decision');action.assert_not_called()
         prompts.answer('');decline.assert_called_once();action.assert_not_called()
@@ -130,7 +128,7 @@ class KoelDropLive(unittest.TestCase):
         gid=self.store.create(self.actors['hnah'],self.peers['hnah'])
         invitation=self.store.invite(self.actors['hnah'],gid,'dthoo')
         runtime=Runtime(self.broker,self.peers['hnah'],31416,owner='hnah')
-        runtime.requests=self.requests;runtime.generation=ExperimentalSettings().generation
+        runtime.requests=self.requests
         writer=Mock();writer.get_extra_info.return_value=(self.peers['hnah'],1234)
         lobby=Mock();lobby.clients={1:dict(session_key=digest(self.tokens['hnah']),writer=writer),
                                   2:dict(uid=2,role='lobby'),3:dict(uid=3,role='lobby'),4:dict(name='dthoo',role='lobby')}
@@ -139,7 +137,7 @@ class KoelDropLive(unittest.TestCase):
         asyncio.run(runtime.deliver_invite(lobby,1,dict(group=gid,invite=invitation['invite'])))
         message,recipients=lobby.broadcast.call_args.args
         self.assertEqual(recipients,{2});self.assertEqual(message['invite'],invitation['invite'])
-        self.settings.set(False)
+        self.broker.sessions.pop(digest(self.tokens['hnah']))
         with self.assertRaises(Denied):asyncio.run(runtime.deliver_invite(lobby,1,dict(group=gid,invite=invitation['invite'])))
 
     def test_invalid_native_invitation_is_ignored_and_valid_one_requires_action(self):
@@ -151,3 +149,20 @@ class KoelDropLive(unittest.TestCase):
         self.assertEqual(len(client.koel_invites),1);self.assertFalse(hasattr(client,'courier'))
         self.assertIn('/koel accept 1',' '.join(client.lines))
         client.koel_invitation(message);self.assertEqual(len(client.koel_invites),1)
+
+    def test_standard_runtime_initializes_without_flag_and_keeps_owner_gate(self):
+        runtime=Runtime(self.broker,self.peers['hnah'],31416,owner='hnah',root=Path(self.tmp.name)/'runtime-store',api_factory=lambda:(Mock(),99))
+        self.addCleanup(runtime.close)
+        with self.assertRaises(Denied):runtime._initialize(self.tokens['dthoo'],self.peers['dthoo'])
+        with patch('campus_lan.file_sharing.runtime.CampusProofs',return_value=self.gate.proofs):
+            runtime._initialize(self.tokens['hnah'],self.peers['hnah'])
+        self.assertIsNotNone(runtime.requests)
+        self.assertEqual(runtime.requests.host.login,'hnah')
+
+    def test_signed_in_group_creation_still_requires_confirmation(self):
+        client=Client.__new__(Client);client.secure=True;client.lines=[]
+        worker=Mock();client.koel_worker=Mock(return_value=worker);client.popup_prompts=Mock()
+        client.koel_command('/koel create')
+        worker.submit.assert_not_called()
+        client.popup_prompts.return_value.confirm.call_args.args[1]()
+        worker.submit.assert_called_once_with('create')

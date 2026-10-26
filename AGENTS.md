@@ -10,7 +10,7 @@ when LAN42 is missing. It is separate from this repository's dailylogin helper.
 
 - When a feature, command, requirement or availability changes, update that
   README block in the same change. Advertise implemented features only; never
-  list disabled KoelDrop transfers as available. Keep the list short.
+  claim transfers occur before explicit group/folder consent. Keep the list short.
 - Run `python3 -m unittest discover -s tests -p test_shell_features.py`.
 - Online installers read the current upstream README; publishing the README
   update makes it available without a separate hard-coded feature list.
@@ -74,3 +74,9 @@ permission to raise muted system output are separate. Do not test with real
 shell execution, audio playback, volume changes or notifications: mock them.
 Numeric `/track` refers to the displayed campus roster, with explicit confirmation
 of captured identities/seats. Never silently retarget a changed desk occupant.
+
+KoelDrop is a standard feature: do not restore experimental.json gates. Keep
+signed-in campus admission, pinned transport, group/folder consent and per-file
+receive/delete permissions. Tests use controlled campus evidence and temporary
+folders, never real students or live transfers. `lan42_restart` may send the
+literal `/restart` only to verified LAN42 client processes in tmux, never shells.

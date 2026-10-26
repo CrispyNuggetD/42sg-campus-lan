@@ -6,7 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 class FeatureList(unittest.TestCase):
-    def test_exported_features_reference_real_commands_not_disabled_transfers(self):
+    def test_exported_features_reference_real_commands(self):
         text = (ROOT/'README.md').read_text()
         start, end = '<!-- shell-installer-features:start -->', '<!-- shell-installer-features:end -->'
         self.assertEqual(text.count(start), 1)
@@ -17,8 +17,7 @@ class FeatureList(unittest.TestCase):
         shell = (ROOT/'useful-scripts/campus.zsh').read_text()
         for command in re.findall(r'`([^`]+)`', block):
             self.assertIn(command, client if command.startswith('/') else shell)
-        self.assertNotIn('KoelDrop', block)
-        self.assertNotIn('/files', block)
+        self.assertIn('/koel', block)
 
 if __name__ == '__main__':
     unittest.main()

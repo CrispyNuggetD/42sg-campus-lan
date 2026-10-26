@@ -7,7 +7,6 @@ from pathlib import Path
 from .controller import SyncSession
 from .remote import RemoteStore
 from .security import Denied
-from .settings import ExperimentalSettings
 from .sync import Mirror,ReceivePolicy
 from .workflow import default_folder
 
@@ -18,11 +17,11 @@ class Courier:
         self.uid=uid;self.login=login;self.inbox=inbox;self.interval=interval
         self.stopped=threading.Event();self.jobs=queue.Queue(maxsize=32)
         self.remote=remote or RemoteStore(token)
-        self.remote.cancelled=lambda:self.stopped.is_set() or not ExperimentalSettings().enabled
+        self.remote.cancelled=lambda:self.stopped.is_set()
         self.sync=None;self.folder=None;self.thread=None
 
     def submit(self,operation,*args):
-        if self.stopped.is_set():raise Denied('KoelDrop stopped; enable experimental features and try again.')
+        if self.stopped.is_set():raise Denied('KoelDrop stopped; run the command again.')
         try:self.jobs.put_nowait((operation,args))
         except queue.Full:raise Denied('KoelDrop is busy; wait for pending operations.') from None
         if self.thread is None:
@@ -107,7 +106,6 @@ class Courier:
         next_poll=0;failed=False
         try:
             while not self.stopped.is_set():
-                if not ExperimentalSettings().enabled:break
                 try:operation,args=self.jobs.get(timeout=max(.05,min(.5,next_poll-time.monotonic())))
                 except queue.Empty:
                     if not self.sync or time.monotonic()<next_poll:continue
@@ -117,7 +115,7 @@ class Courier:
                     self.perform(operation,args);failed=False
                 except (OSError,ValueError,KeyError,TypeError):
                     if not failed or operation!='sync':
-                        self.emit(lines=['KoelDrop could not complete '+operation+'. Check experimental settings, fresh sign-in/campus seat, group membership, empty folder and file conflicts. /koel pending'])
+                        self.emit(lines=['KoelDrop could not complete '+operation+'. Check fresh sign-in/campus seat, group membership, empty folder and file conflicts. /koel pending'])
                     failed=True
                 next_poll=time.monotonic()+self.interval
         finally:

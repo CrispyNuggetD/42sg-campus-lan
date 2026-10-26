@@ -102,5 +102,7 @@ lan42_dailylogin() {
 (( $+functions[compile] || $+aliases[compile] )) || functions[compile]='lan42_compile "$@"'
 (( $+functions[run] || $+aliases[run] )) || functions[run]='lan42_run "$@"'
 
-# Uses the same output volume as the GNOME/macOS slider. No arguments toggles 0/50.
+# Uses the same output volume as the GNOME/macOS slider. No arguments toggles 0/30.
 adjust_volume() { ( builtin cd -- "$LAN42_REPO_ROOT" && command python3 -m campus_lan.volume "$@" ); }
+
+lan42_restart() { ( builtin cd -- "$LAN42_REPO_ROOT" && command python3 -m campus_lan.tmux_control "$@" ); }

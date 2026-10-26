@@ -3,13 +3,11 @@ import re
 import secrets
 import shlex
 import time
-from .settings import ExperimentalSettings
 from .security import Denied,login
 
 
 class KoelUI:
     def koel_worker(self):
-        if not ExperimentalSettings().enabled:raise Denied('KoelDrop is disabled. /settings experimental on opts in.')
         if not getattr(self,'secure',False) or getattr(self,'role','lobby')!='lobby':raise Denied('Use KoelDrop from your signed-in HQ lobby.')
         worker=getattr(self,'courier',None)
         if worker is None or worker.stopped.is_set():
@@ -21,7 +19,7 @@ class KoelUI:
             self.courier=Courier(self.session_token,self.uid,self.name,self.inbox,RemoteStore(self.session_token,trust))
         return self.courier
 
-    def experimental_command(self,text):
+    def koel_command(self,text):
         try:parts=shlex.split(text)
         except ValueError:
             if text.startswith(('/koel','/files')):self.lines.append('KoelDrop: close the quotation marks in your command.');return True
@@ -32,8 +30,9 @@ class KoelUI:
             self.lines.extend(roadmap());return True
         try:
             action=parts[1] if len(parts)>1 else 'status';args=parts[2:]
-            if action in ('status','help') and not ExperimentalSettings().enabled:
-                self.lines.extend(roadmap());return True
+            if action=='help' or (action=='status' and not getattr(self,'secure',False)):
+                self.lines.extend(roadmap())
+                return True
             worker=self.koel_worker()
             if action in ('status','help'):
                 worker.submit('status')
@@ -78,7 +77,7 @@ class KoelUI:
         self.lines.extend(lines or ['No pending KoelDrop invitations or files.'])
 
     def koel_invitation(self,message):
-        if not getattr(self,'secure',False) or not ExperimentalSettings().enabled:return
+        if not getattr(self,'secure',False):return
         try:
             gid=message['group'];token=message['invite'];host=login(message['host']);expiry=message['expires']
             if not isinstance(gid,str) or not re.fullmatch('[a-f0-9]{32}',gid):return
@@ -101,7 +100,7 @@ class KoelUI:
         if len(contexts)>=100:contexts.pop(next(iter(contexts)))
         key=secrets.token_hex(16);contexts[key]=(accept,decline);self.koel_actions=contexts
         def show():
-            if not self.notify_enabled or not ExperimentalSettings().enabled:return False
+            if not self.notify_enabled:return False
             if not getattr(self,'tracking_notifier',None):
                 from ..desktop_notifications import Notifications
                 self.tracking_notifier=Notifications(self.inbox)
@@ -111,7 +110,7 @@ class KoelUI:
 
     def koel_local(self,message):
         worker=getattr(self,'courier',None)
-        if not worker or message.get('courier')!=id(worker) or not ExperimentalSettings().enabled:return
+        if not worker or message.get('courier')!=id(worker):return
         self.lines.extend(''.join(c for c in str(line) if c.isprintable()) for line in message.get('lines',[]))
         if message.get('deliver'):self.send(message['deliver'])
         if 'offers' in message:
@@ -133,4 +132,4 @@ class KoelUI:
 
     def koel_notification_action(self,message):
         commands=getattr(self,'koel_actions',{}).pop(message.get('context'),None)
-        if commands:self.experimental_command(commands[0 if message['action']=='koel_accept' else 1])
+        if commands:self.koel_command(commands[0 if message['action']=='koel_accept' else 1])

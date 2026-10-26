@@ -62,7 +62,7 @@ class LocalConsole:
         try:settings=json.loads(private_read(local_path('audio-volume')))
         except (OSError,ValueError):settings={}
         def enable():
-            try:volume.set(50);action();return True
+            try:volume.set(30);action();return True
             except (OSError,ValueError) as error:self.lines.append(str(error));return False
         if isinstance(settings,dict) and settings.get('auto_on') is True:enable();return
         if getattr(self,'audio_volume_pending',False):return
@@ -74,10 +74,10 @@ class LocalConsole:
             if isinstance(settings,dict) and settings.get('asked') is True:return
             def always():
                 private_write(local_path('audio-volume'),json.dumps({'auto_on':True,'asked':True}))
-                self.lines.append('Automatic unmute to 50% enabled. /settings audio-auto-on off disables it.')
-            self.popup_prompts().confirm('Always raise muted output to 50% for uwu on this device?',always,
+                self.lines.append('Automatic unmute to 30% enabled. /settings audio-auto-on off disables it.')
+            self.popup_prompts().confirm('Always raise muted output to 30% for uwu on this device?',always,
                 lambda:private_write(local_path('audio-volume'),json.dumps({'auto_on':False,'asked':True})))
-        self.popup_prompts().confirm('Output is muted or at 0%. Raise it to 50% for uwu?',accept,decline)
+        self.popup_prompts().confirm('Output is muted or at 0%. Raise it to 30% for uwu?',accept,decline)
 
     def volume_command(self,text):
         parts=text.split()

@@ -35,8 +35,8 @@ class Identity:
 
 
 class Gate:
-    def __init__(self,broker,proofs,clock=time.time,max_age=120,enabled=None):
-        self.broker=broker;self.proofs=proofs;self.clock=clock;self.max_age=max_age;self.enabled=enabled
+    def __init__(self,broker,proofs,clock=time.time,max_age=120):
+        self.broker=broker;self.proofs=proofs;self.clock=clock;self.max_age=max_age
 
     def admit(self,token,peer_ip,tls):
         if tls is not True:raise Denied('File sharing requires TLS.')
@@ -48,7 +48,6 @@ class Gate:
         return identity
 
     def check(self,identity):
-        if self.enabled is not None and not self.enabled():raise Denied('Experimental features are off.')
         if (not isinstance(identity,Identity) or type(identity.uid) is not int or identity.uid<=0
                 or identity.expires<=self.clock() or not self.broker.active(identity.session_key)):
             raise Denied('The verified session has ended.')

@@ -32,7 +32,7 @@ HELP = [
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
     'Up/Down: local command history | !COMMAND: local shell | /volume [0–100]: output volume',
     '/uwu: local koel test | /uwu auto|on|off: random local calls every 10–15 min | /uwu LOGIN: poke',
-    '/about: project purpose + public source | /repo: request browser link | /roadmap files: experimental milestones',
+    '/about: project purpose + public source | /repo: request browser link | /roadmap files: file-sharing help',
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
     '/who /rooms /games | /game tetris | /game bluff free|prompt | /game hexwars | /game forknite',
     'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
@@ -44,7 +44,7 @@ HELP = [
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
     '/game forknite: browser game room | /browser: reopen current FORKNITE website',
-    '/roadmap koeldrop | /koel help: opt-in campus file sharing; /settings experimental on|off',
+    '/roadmap koeldrop | /koel help: campus file sharing; /koel create | /koel pending',
     '/update (or /upgrade): update package + reload local instances | /restart: reload installed code',
     'Chat: type and Enter. Tab completes /commands and games. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
@@ -934,7 +934,7 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
                 '/settings permissions — browser, popup and notification consent',
                 '/settings autologin off|saved|on — reuse login, optionally request OAuth',
                 '/settings signin-close on|off — try to close the completed sign-in tab',
-                '/settings experimental on|off — opt into KoelDrop (default off); /koel help',
+                '/koel help — file sharing; /koel leave — stop group uploads',
                 '/settings clusters — separate include/exclude arrival rules; /track help — relationships/lists',
                 'Sign-in sessions expire automatically after one hour.',
             ])
@@ -949,17 +949,7 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
                 self.lines.append('Koel sound: '+('always on' if choice.always_on() else 'on for this session' if choice.read()['enabled'] else 'off')+'. Sound does not enable file sharing.')
             except (OSError,ValueError) as error:self.lines.append(str(error))
         elif parts[0]=='/settings' and parts[1] in ('experimental','files','koel','koeldrop'):
-            from .file_sharing.settings import ExperimentalSettings
-            try:
-                settings=ExperimentalSettings()
-                if len(parts)>2:
-                    if len(parts)!=3 or parts[2] not in ('on','off'):raise ValueError('Use /settings experimental on|off')
-                    settings.set(parts[2]=='on')
-                    if not settings.enabled and getattr(self,'courier',None):self.courier.stop()
-                    if not settings.enabled:
-                        self.koel_actions={};self.koel_invites={};self.koel_offers={}
-                self.lines.append('Experimental features: '+('on. Signed-in HQ: /koel help. No folder sync starts until create/accept.' if settings.enabled else 'off. KoelDrop requests and polling are blocked.'))
-            except (OSError,ValueError) as error:self.lines.append(str(error))
+            self.lines.append('KoelDrop is a standard feature; no experimental switch is needed. /koel help | /koel leave stops group uploads.')
         elif parts[0]=='/settings' and parts[1] in ('autologin','signin-close'):
             from .login_settings import LoginSettings
             settings=LoginSettings()
@@ -1243,6 +1233,9 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
                             if mouse_y==y and left<=mouse_x<right:self.focus_player(player);break
                 except curses.error:pass
                 continue
+            if key==21:
+                self.input='';self.play=False
+                continue
             if key in (3,4):
                 break
             if key==curses.KEY_PPAGE:
@@ -1272,6 +1265,7 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
             elif key in (10,13):
                 text,self.input = self.input.strip(),''
                 self.scroll = 0
+                if text=='/restart':raise RestartRequested()
                 if getattr(self,'permission_prompt',False):
                     self.permission_answer(text)
                     continue
@@ -1308,7 +1302,7 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
                     pass
                 elif self.about_command(text):
                     pass
-                elif self.experimental_command(text):
+                elif self.koel_command(text):
                     pass
                 elif self.group_command(text):
                     pass

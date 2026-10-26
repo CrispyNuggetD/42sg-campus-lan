@@ -26,7 +26,7 @@ class RemoteStore:
             if len(payload)>MAX_FILE:raise Limit('Server response is too large.')
             if reply.status==409:raise Conflict('A file or group changed; refresh before trying again.')
             if reply.status==429:raise Limit('KoelDrop quota reached; wait before syncing more files.')
-            if reply.status not in (200,201):raise Denied('KoelDrop request rejected. Check experimental opt-in, sign-in, campus seat and invitation.')
+            if reply.status not in (200,201):raise Denied('KoelDrop request rejected. Check sign-in, campus seat and invitation.')
             return (dict(reply.getheaders()),payload) if method=='GET' and route.endswith('/files') else json.loads(payload)
         except (OSError,ValueError) as error:
             if isinstance(error,(Denied,Conflict,Limit)):raise
