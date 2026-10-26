@@ -14,7 +14,7 @@ Student-built terminal LAN lobby for 42 Singapore: discover online peers and
 campus seats via read-only 42 API data, chat, invite players, and coordinate
 locally hosted minigames and useful scripts.
 
-Hi, I’m **Ryker** (**hnah** on Intra), a student at **42 Singapore**. Questions, ideas, or just saying hi? Find me on the **global 42 Slack**, or [here on GitHub](https://github.com/CrispyNuggetD).
+Hi, I’m **Christopher Hui-Kang Nah** (**hnah** on Intra), a student at **42 Singapore**. Questions, ideas, or just saying hi? Find me on the **global 42 Slack**, or [here on GitHub](https://github.com/CrispyNuggetD).
 
 **Source, issues and contributions:** https://github.com/CrispyNuggetD/42sg-campus-lan
 
@@ -390,9 +390,9 @@ You can then use:
 - `lan42_window` to open that separate window directly.
 
 `dailylogin` is a helper from this project, adapted from
-[Ryker's SUTD zsh additions](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29).
+[Christopher's SUTD zsh additions](https://github.com/CrispyNuggetD/42_Singapore_SUTD/blob/main/Useful%20.zshrc%20edits%20%28addition%29).
 If you already have your own `dailylogin`, it is preserved; use
-`lan42_dailylogin` for this repo's version. Ryker's personal version also opens
+`lan42_dailylogin` for this repo's version. Christopher's personal version also opens
 LAN42 alongside his existing tasks.
 
 Future Git pulls update the sourced helpers. To make `dailylogin` update without
