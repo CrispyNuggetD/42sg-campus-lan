@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.8.0-beta.1 · 2026-10-27T04:50:24+08:00
+
+- feat: offer consented sgoinfre storage for campus flock
+
 ## 2.7.1-beta.1 · 2026-10-27T04:49:00+08:00
 
 - fix: reuse scoped daily flock folder across reconnects
