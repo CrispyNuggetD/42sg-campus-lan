@@ -6,6 +6,7 @@ import json
 import os
 import pwd
 import queue
+import re
 import shutil
 import socket
 import subprocess
@@ -17,7 +18,7 @@ import sys
 from pathlib import Path
 from . import VERSION, PROTOCOL
 from .network import seat_address, address
-from .lobby_view import lobby_lines, guest_style
+from .lobby_view import lobby_lines, guest_style, overlay_campus, roster, seat, LAYOUT
 from .hexbot import SDK, compile_bot
 from . import auth_client
 from .updater import RestartRequested, generation
@@ -25,14 +26,19 @@ from .completion import complete
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    '/about: project purpose + public source | /repo: request browser link | /roadmap files: disabled experiment',
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
     '/who /rooms /games | /game tetris | /game bluff free|prompt | /game hexwars | /game forknite',
     'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
-    '/admin: local API owner avatar cache tools | /info [FILTER] [PAGE]: cached campus directory',
+    '/tool LOGIN...: batch private photos | /info [FILTER] [PAGE]: cached campus directory',
+    '/clusters [1|2]: campus seats | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
+    '/track help: relationships/lists | /settings clusters: include/exclude arrival rules',
+    '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
     '/game forknite: browser game room | /browser: reopen current FORKNITE website',
+    '/roadmap koeldrop | /koel status: file-sharing experiment and milestones (execution disabled)',
     '/update (or /upgrade): update package + reload local instances | /restart: reload installed code',
     'Chat: type and Enter. Tab completes /commands and games. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
@@ -59,17 +65,31 @@ def request_terminal_resize(stream=sys.stdout, get_size=shutil.get_terminal_size
 def safe(value):
     return ''.join(c for c in str(value) if c.isprintable())
 
+class SectionLog(collections.deque):
+    """Append individual events separately; extend keeps a help/table block together."""
+    def append(self, text):
+        if self and self[-1]!='':super().append('')
+        super().append(text)
+    def extend(self, lines):
+        lines=list(lines)
+        if not lines:return
+        if self and self[-1]!='':super().append('')
+        for line in lines:super().append(line)
+
 class Client:
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
+        from .popup_permissions import ensure_session
+        ensure_session()
         self.secure = auth_session is not None
         self.session_token = auth_session['session'] if auth_session else None
         self.signing_in = False
+        self.auto_login_checked=False
         self.auth_destination = None
         self.sock, self.name = sock, name
         self.role, self.initial_command = role, initial_command
         self.requested_game=initial_command.split()[1] if initial_command and initial_command.startswith(('/host ','/game ')) else None
         self.inbox = queue.Queue(maxsize=256)
-        self.lines = collections.deque(HELP,maxlen=500)
+        self.lines = SectionLog(HELP,maxlen=500)
         self.state, self.game = {}, {}
         self.input, self.scroll = '', 0
         self.play = False
@@ -79,6 +99,10 @@ class Client:
         self.connected = True
         self.notify_enabled, self.last_notice = notify, 0
         self.id = None
+        self.tracker=None
+        self.track_next=0
+        self.track_pending=0
+        self.tracking_notifier=None
         self.wizard = None
         self.next_server = None
         hello = dict(type='hello',protocol=PROTOCOL,name=name,hostname=hostname,role=role)
@@ -86,6 +110,220 @@ class Client:
             hello['session'] = auth_session['session']
         self.send(hello)
         threading.Thread(target=self.receive,daemon=True).start()
+
+    def sound_tick(self):
+        if getattr(self,'role','lobby')!='lobby' or not self.connected or not self.id or getattr(self,'sound_prompt_queued',False):return
+        from .koel_sound import SoundChoice
+        choice=SoundChoice(self.name)
+        self.sound_prompt_queued=True
+        if choice.read()['asked']:return
+        def accept():choice.choose(True)
+        self.popup_prompts().session_question('Enable the uwu bird? y=once, a=always, Enter=off',accept,
+                                             lambda:choice.choose(False),lambda:not choice.read()['asked'],
+                                             always=lambda:self.confirm_always_koel(choice))
+
+    def confirm_always_koel(self,choice):
+        def accept():
+            choice.set_always(True)
+            self.lines.append('uwu has been given permanent residency. /settings koel-sound off evicts it.')
+        enabled_before=choice.read()['enabled']
+        self.popup_prompts().session_question('Always uwu? Are you SURE? ಠ_ಠ [y/N]',accept,lambda:choice.choose(enabled_before))
+
+    def auto_login_tick(self):
+        if getattr(self,'auto_login_checked',False) or getattr(self,'role','lobby')!='lobby':return
+        if not self.connected or not self.id:return
+        self.auto_login_checked=True
+        if getattr(self,'secure',False):return
+        from .login_settings import LoginSettings,auto_login_paused
+        if auto_login_paused():return
+        settings=LoginSettings()
+        if settings.error:self.lines.append(settings.error);return
+        mode=settings.data['autologin']
+        if mode!='off':self.start_signin(saved_only=mode=='saved')
+
+    def popup_prompts(self):
+        if not getattr(self,'consent',None):
+            from .popup_permissions import Permissions,Prompts
+            self.consent=Prompts(Permissions(self.name),self.lines.append)
+        return self.consent
+
+    def request_popup(self,category,description,action):
+        self.popup_prompts().request(category,description,action)
+
+    def permission_tick(self):
+        prompts=getattr(self,'consent',None)
+        if not prompts:return
+        active=prompts.activate()
+        if active and not getattr(self,'permission_prompt',False):
+            self.permission_prompt=True
+            self.permission_saved_input=self.input
+            self.permission_saved_play=self.play
+            self.input='';self.play=False
+
+    def permission_answer(self,value):
+        self.permission_prompt=False
+        self.input=self.permission_saved_input;self.play=self.permission_saved_play
+        self.popup_prompts().answer(value)
+
+    def open_urls(self,category,urls,description):
+        def launch():
+            def work():
+                import webbrowser
+                opened=True
+                for url in urls:
+                    if self.popup_prompts().permissions.mode(category)=='deny':opened=False;break
+                    try:opened=bool(webbrowser.open_new_tab(url)) and opened
+                    except Exception:opened=False
+                try:self.inbox.put_nowait(dict(type='popup_opened',category=category,opened=opened))
+                except queue.Full:pass
+            threading.Thread(target=work,daemon=True).start()
+            return False  # Remember only after the browser reports launch success.
+        self.request_popup(category,description,launch)
+
+    def show_help(self):
+        self.lines.extend(FORKNITE_HELP if self.game.get('game')=='forknite' else HELP)
+        guide=Path(__file__).resolve().parents[1]/'docs/quick-guide.html'
+        self.open_urls('help',[guide.as_uri()],'Open the LAN42 visual command guide in your browser?')
+
+    def desktop_notice(self,title,body,name,icon='',can_message=False):
+        def show():
+            if not self.notify_enabled:return False
+            if not getattr(self,'tracking_notifier',None):
+                from .desktop_notifications import Notifications
+                self.tracking_notifier=Notifications(self.inbox)
+            self.tracking_notifier.show(title,body,name,icon,can_message)
+        self.request_popup('notifications','Show desktop notification: '+safe(title)+'?',show)
+
+    def get_tracker(self):
+        if not getattr(self,'tracker',None):
+            from .tracking import Tracker
+            self.tracker=Tracker(self.name)
+            if self.tracker.load_error:self.lines.append(self.tracker.load_error)
+            self.tracking_update(self.state.get('players',[]),'lobby')
+        return self.tracker
+
+    def tracking_command(self,text):
+        parts=text.split()
+        if not parts or parts[0] not in ('/track','/untrack','/compose'):return False
+        if parts[0]=='/compose':
+            if getattr(self,'pending_draft',None) and not self.input:
+                self.input=self.pending_draft;self.pending_draft=None
+            else:self.lines.append('No waiting draft, or finish the current input first.')
+            return True
+        if getattr(self,'role','lobby')!='lobby':
+            self.lines.append('Use /track in your HQ window; tracking stays local to your login.')
+            return True
+        tracker=self.get_tracker()
+        try:
+            if parts[0]=='/untrack':
+                names=tracker.names[:] if parts[1:]==['all'] else tracker.resolve(parts[1:])
+                tracker.change(names,remove=True)
+                self.lines.append('Removed from tracking: '+(', '.join(names) or 'nobody'))
+            else:
+                from .relationship_commands import configure
+                self.lines.extend(configure(tracker,parts[1:]))
+            self.track_next=0
+            self.tracking_update(self.state.get('players',[]),'lobby')
+        except (OSError,ValueError) as error:self.lines.append(safe(str(error)))
+        return True
+
+    def tracking_tick(self):
+        if getattr(self,'role','lobby')!='lobby' or not self.connected or not self.id:return
+        tracker=self.get_tracker()
+        now=time.monotonic()
+        if (not tracker.names and not tracker.rules_enabled) or now<getattr(self,'track_next',0):return
+        if getattr(self,'track_pending',0) and now-self.track_pending<90:return
+        from .tracking import INTERVAL
+        self.track_next=now+INTERVAL;self.track_pending=now
+        # No names/watch list cross the network; request the shared campus view.
+        self.send(dict(type='command',text='/campus-presence'))
+
+    def tracking_update(self,players,source):
+        tracker=getattr(self,'tracker',None)
+        if not tracker:return
+        from .tracking import describe
+        for notice in tracker.transitions(players,source):
+            title,body=describe(notice)
+            self.lines.extend([title,body])
+            if not self.notify_enabled:continue
+            icon=''
+            try:
+                from .avatar_cache import AvatarCache,key
+                cache=AvatarCache();cache.read(notice['login'])
+                icon=str(cache.root/(key(notice['login'])+'.img'))
+            except (OSError,ValueError):pass
+            online=source=='lobby' or any(p.get('name','').lower()==notice['login'] for p in self.state.get('players',[]))
+            self.desktop_notice(title,body,notice['login'],icon,online)
+
+        error=getattr(tracker,'rules_error',None)
+        if error and error!=getattr(self,'last_rule_error',None):self.lines.append('Cluster rules: '+error)
+        self.last_rule_error=error
+
+    def about_command(self,text):
+        if text not in ('/about','/about repo','/repo'):return False
+        from .about import lines,REPOSITORY
+        self.lines.extend(lines())
+        if text in ('/about repo','/repo'):
+            self.open_urls('browser',[REPOSITORY],'Open the public LAN42 source repository in your browser?')
+        return True
+
+    def experimental_command(self,text):
+        parts=text.split()
+        if not parts or parts[0] not in ('/roadmap','/experimental','/files','/koel','/koeldrop'):return False
+        from .file_sharing import roadmap
+        if parts[0] in ('/files','/koel','/koeldrop') and parts[1:] not in ([],['status']):
+            self.lines.append('KoelDrop is disabled: no group, invite, directory, file watcher or transfer was started. /roadmap koeldrop shows the implementation and review milestones.')
+        else:self.lines.extend(roadmap())
+        return True
+
+    def group_command(self,text):
+        command=text.split(maxsplit=1)[0] if text else ''
+        if command not in ('/sabo','/dm','/alert'):return False
+        try:
+            if command=='/sabo':parts=shlex.split(text)
+            else:
+                _,_,arguments=text.partition(' ')
+                selector,separator,body=arguments.strip().partition(' ')
+                message=' '.join(shlex.split(body)) if body.lstrip().startswith(('\"',"'")) else body.strip()
+                parts=[command,selector,message] if separator else [command,selector]
+            if len(parts)<2:return False
+            # Re-read local settings so the game window sees HQ relationship edits.
+            from .tracking import Tracker
+            tracker=Tracker(self.name)
+            if tracker.load_error:raise ValueError(tracker.load_error)
+            if command=='/sabo':
+                if not any(tracker.is_variable(p) for p in parts[1:]):return False
+                names=tracker.resolve(parts[1:])
+                if not names:raise ValueError('That local selector is empty. /track status friends LOGIN')
+                if len(names)>50:raise ValueError('SABO selectors may expand to at most 50 people.')
+                self.send(dict(type='command',text='/sabo '+' '.join(names)))
+                self.lines.append('SABO selected locally: '+', '.join(names))
+            else:
+                if len(parts)<3:raise ValueError('Use /dm friends "do you all want lunch?" or /dm LOGIN MESSAGE')
+                names=tracker.resolve([parts[1]])
+                if not names:raise ValueError('That local selector is empty.')
+                if len(names)>100:raise ValueError('Group DMs are limited to 100 recipients.')
+                message=' '.join(parts[2:])
+                if not message.strip() or len(message)>400:raise ValueError('Messages must contain 1–400 characters.')
+                self.send(dict(type='direct_batch',targets=names,text=message))
+                self.lines.append('Queued message to '+str(len(names))+' recipient(s): '+', '.join(names))
+        except (OSError,ValueError) as error:self.lines.append(safe(str(error)))
+        return True
+
+    def notification_action(self,message):
+        from .tracking import login
+        try:name=login(message.get('login'))
+        except ValueError:return
+        if message.get('action')=='message':
+            draft='/dm '+name+' '
+            if self.input:
+                self.pending_draft=draft
+                self.lines.append('Message draft waiting for '+name+'. Finish your input, then /compose.')
+            else:self.input=draft
+            self.show_lobby=True;self.play=False
+            self.lines.append('Write your message to '+name+' and press Enter to send.')
+        elif message.get('action')=='profile':
+            self.open_urls('profiles',['https://profile-v3.intra.42.fr/users/'+name],'Open the Intra profile for '+name+' in your browser?')
 
     def send(self,data):
         try:
@@ -112,6 +350,10 @@ class Client:
             self.connected = False
 
     def notify(self,text,throttle=True):
+        if not self.notify_enabled:return
+        self.request_popup('notifications','Show desktop notification: '+safe(text)+'?',lambda:self._notify(text,throttle))
+
+    def _notify(self,text,throttle=True):
         now = time.monotonic()
         if not self.notify_enabled or (throttle and now-self.last_notice<3):
             return
@@ -139,12 +381,59 @@ class Client:
             except queue.Empty:
                 break
             kind = msg.get('type')
-            if kind == 'local_signin':
+            if kind == 'popup_opened':
+                if msg.get('opened'):self.popup_prompts().remember(msg['category'])
+                else:self.lines.append('Browser launch failed; no always-allow preference was saved.')
+            elif kind == 'tools_required':
+                names=msg.get('logins',[])
+                from .tracking import login
+                try:
+                    if not isinstance(names,list) or len(names)>50:raise ValueError()
+                    names=[login(n) for n in names]
+                    self.open_admin(names)
+                except ValueError:self.lines.append('Invalid photo-tool request ignored.')
+            elif kind == 'notification_action':
+                self.notification_action(msg)
+            elif kind == 'campus_presence':
+                self.track_pending=0
+                if msg.get('error'):self.lines.append(safe(msg['error']))
+                else:self.tracking_update(msg.get('players',[]),'campus')
+            elif kind == 'dm_delivery':
+                self.lines.append('DM '+('delivered to ' if msg.get('delivered') else 'not delivered to ')+safe(msg.get('target',''))+(': '+safe(msg['error']) if msg.get('error') else ''))
+            elif kind == 'dm_summary':
+                self.lines.extend(['Group DM: '+str(msg.get('delivered',0))+' delivered, '+str(msg.get('failed',0))+' unavailable.',
+                                   'Unavailable: '+(', '.join(safe(n) for n in msg.get('unavailable',[])) or 'none')])
+            elif kind == 'direct_message':
+                sender=safe(msg.get('sender','unknown'))
+                title='DM from '+sender+(' [42 Verified]' if self.secure and msg.get('verified') else ' [Guest]')
+                self.lines.extend([title,safe(msg.get('text',''))])
+                if self.notify_enabled:
+                    from .tracking import login
+                    try:
+                        login(sender)
+                        self.desktop_notice(title,safe(msg.get('text','')),sender,can_message=True)
+                    except ValueError:pass
+            elif kind == 'signin_resume':
+                self.signing_in=False
+                if msg.get('destination'):
+                    self.lines.append('Reused your saved LAN42 sign-in; no browser tab opened.')
+                    self.auth_destination=tuple(msg['destination'])
+                elif msg.get('saved_only'):
+                    self.lines.append('No reusable LAN42 session. Staying in guest mode; /signin can authorize a new session.')
+                else:self.request_popup('signin','Open 42 sign-in in your browser?',lambda:self.start_signin(True))
+            elif kind == 'local_signin':
                 self.signing_in = False
                 if msg.get('error'):
                     self.lines.append(safe(msg['error']))
                 else:
                     self.auth_destination = tuple(msg['destination'])
+            elif kind == 'clusters':
+                self.cluster_players=msg.get('players',[])
+                self.cluster_stamp=msg.get('updated_at',0)
+                self.cluster=msg.get('cluster',1)
+                self.cluster_source=True
+                self.lobby_view,self.lobby_page='map',0
+                self.show_lobby,self.play=True,False
             elif kind == 'signed_out':
                 if getattr(self, 'secure', False):
                     auth_client.clear_session(getattr(self, 'session_token', None))
@@ -159,9 +448,12 @@ class Client:
                     self.send(dict(type='hex_bot', room=msg['room'], wasm=msg['wasm']))
                     self.lines.append('Compiled; host is validating your bot...')
             elif kind in ('event','error','invite','online'):
-                self.lines.append(safe(msg.get('text','')))
+                self.lines.extend(safe(line) for line in str(msg.get('text','')).splitlines())
                 if kind in ('invite','online'):
-                    self.notify(msg.get('text',''))
+                    tracker=getattr(self,'tracker',None)
+                    tracked=list(getattr(tracker,'names',[]))+list(getattr(tracker,'targets',{}).get('lobby',set()))
+                    if kind!='online' or not any(msg.get('text','').lower().startswith(n+' ') for n in tracked):
+                        self.notify(msg.get('text',''))
                 elif kind=='event' and getattr(self,'role','lobby')=='lobby':
                     # Existing local and mesh chat events use this wire format.
                     delimiter = ' [42 Verified]: ' if getattr(self, 'secure', False) else ' [Guest]: '
@@ -172,13 +464,13 @@ class Client:
                 signature=(msg.get('room'),msg.get('url'))
                 if msg.get('reopen') or signature != getattr(self,'browser_room',None):
                     self.browser_room=signature
-                    import urllib.parse, webbrowser
+                    import urllib.parse
                     parsed=urllib.parse.urlsplit(msg.get('url',''))
                     if parsed.scheme not in ('http','https') or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
                         self.lines.append('Invalid FORKNITE browser URL from room.')
                         continue
                     url=msg['url']+'/#lan42='+urllib.parse.quote(msg['ticket'])
-                    threading.Thread(target=webbrowser.open,args=(url,),daemon=True).start()
+                    self.open_urls('forknite',[url],'Open this FORKNITE room in your browser?')
                     self.lines.append('FORKNITE: '+msg['url']+' | /browser reopens this room. Host uses /start here.')
             elif kind=='welcome':
                 self.id = msg['id']
@@ -194,6 +486,7 @@ class Client:
                     for player in msg.get('players', []):
                         player['verified'] = False
                 self.state = msg
+                self.tracking_update(msg.get('players',[]),'lobby')
                 for room in msg.get('rooms',[]):
                     if (room.get('address'),room.get('port'),room['id']) not in old_rooms:
                         self.lines.append(f"Game {room['name']} hosted by {room['host']}: /connect {room.get('address')} {room.get('port')}, then /join {room['id']}")
@@ -251,7 +544,7 @@ class Client:
         except (OSError,RuntimeError,ValueError) as exc:
             self.lines.append('Could not link friend: '+str(exc))
 
-    def open_game(self, text):
+    def open_game(self, text, approved=False):
         parts = text.split()
         if parts[0] in ('/host','/game'):
             if len(parts) not in (2,3) or parts[1] not in ('tetris','bluff','hexwars','forknite') or (len(parts)==3 and parts[2] not in ('free','prompt')):
@@ -267,24 +560,53 @@ class Client:
             action = ['--room',parts[1]]
         args = ['game',target,'--port',str(port),'--guest-name',self.name,*action]
         opener = Path(__file__).resolve().parents[1]/'useful-scripts/open_terminal.py'
+        if not approved:
+            self.request_popup('terminals','Open a LAN42 game terminal?',lambda:self.open_game(text,True))
+            return False
         try:
             result = subprocess.run([sys.executable,str(opener),*args],capture_output=True,text=True,timeout=10)
             if result.returncode:
                 raise RuntimeError(result.stderr.strip() or result.stdout.strip())
             self.lines.append('Requested a game terminal. Your HQ stays online here.')
+            return True
         except (OSError,RuntimeError,subprocess.TimeoutExpired) as exc:
             self.lines.append('Could not open game window: '+str(exc))
             self.lines.append('Open another terminal and run: '+shlex.join(['sh',str(opener.parents[1]/'lan42.sh'),*args]))
+            return False
+
+    def focus_player(self, player):
+        location=seat(player)
+        if not location:
+            self.lines.append('No reported seat for '+player.get('name','unknown'))
+            return
+        self.focus_location=location
+        self.focus_name=player.get('name','')
+        self.cluster=location[0]
+        self.lobby_view,self.lobby_page='map',0
+        self.focus_pending=True
+        self.show_lobby,self.play=True,False
 
     def lobby_command(self, text):
         if text in ('/lobby','/who','/roster'):
+            self.focus_name=None
+            self.focus_location=None
+            self.cluster_source=False
             self.lobby_view, self.lobby_page = 'roster', 0
             self.show_lobby, self.play = True, False
         elif text in ('/map','/map 1','/map 2'):
+            self.focus_name=None
+            self.focus_location=None
+            self.cluster_source=False
             self.lobby_view, self.lobby_page = 'map', 0
             if text != '/map':
                 self.cluster = int(text[-1])
             self.show_lobby, self.play = True, False
+        elif text.startswith('/locate '):
+            name=text.split(maxsplit=1)[1].lower()
+            players=getattr(self,'cluster_players',[]) if getattr(self,'cluster_source',False) else self.state.get('players',[])
+            player=next((p for p in players if p.get('name','').lower()==name),None)
+            if player:self.focus_player(player)
+            else:self.lines.append('Login absent from this view. Load /clusters first.')
         elif text in ('/next','/prev'):
             self.lobby_page = max(0,getattr(self,'lobby_page',0)+(1 if text=='/next' else -1))
         elif text == '/game':
@@ -296,20 +618,41 @@ class Client:
 
     def draw_lobby(self, screen, players):
         h,w = screen.getmaxyx()
+        campus=getattr(self,'cluster_source',False)
+        if campus:players=overlay_campus(getattr(self,'cluster_players',[]),players)
         content = lobby_lines(players,getattr(self,'lobby_view','roster'),getattr(self,'cluster',1))
+        if campus:
+            content[-1]=[('API seat snapshot; unmarked desks have no active reported login. /clusters refreshes.',0)]
         capacity = min(max(1,h-13),max(10,len(content)))
         pages = max(1,(len(content)+capacity-1)//capacity)
+        if getattr(self,'focus_pending',False):
+            location=self.focus_location
+            row_index=list(LAYOUT[self.cluster]).index(location[1]) if location[1] in LAYOUT[self.cluster] else 0
+            self.lobby_page=(2+row_index*2+(location[2]%2))//capacity
+            self.focus_pending=False
         self.lobby_page = min(getattr(self,'lobby_page',0),pages-1)
+        self.lobby_hits=[]
+        ordered={n:p for n,p,_ in roster(players)}
         self.line(screen,3,f"CURRENTLY ONLINE: {len(players)} | " + ('42 identities verified over TLS' if getattr(self, 'secure', False) else 'Guest names are unverified'),curses.A_BOLD)
-        self.line(screen,4,f'/roster | /map 1 | /map 2 | /next /prev (page {self.lobby_page+1}/{pages})')
+        if campus:self.line(screen,3,'CAMPUS API: '+str(len(players))+' logged-in seats | snapshot '+time.strftime('%H:%M:%S',time.localtime(self.cluster_stamp)),curses.A_BOLD)
+        self.line(screen,4,f'/clusters 1|2 | /roster | /map 1 | /map 2 | /next /prev (page {self.lobby_page+1}/{pages})')
         for y,segments in enumerate(content[self.lobby_page*capacity:(self.lobby_page+1)*capacity],5):
             x = 0
             for text,style in segments:
                 attr = curses.A_BOLD if style else 0
                 if style and getattr(self,'colors',False):
                     attr |= curses.color_pair(style)
+                match=re.match(r'\s*(\d+)\. ',text)
+                player=ordered.get(int(match[1])) if match else None
+                marker=re.fullmatch(r'\[(?:#)?(\d+)\]',text)
+                if marker and style:player=ordered.get(int(marker[1]))
+                if player:
+                    self.lobby_hits.append((y,x,x+len(text),player))
+                    if seat(player)==getattr(self,'focus_location',None) and int(time.monotonic()*2)%2==0:
+                        attr|=curses.A_REVERSE|curses.A_BOLD
                 self.line(screen,y,text,attr,x)
                 x += len(text)
+        if getattr(self,'focus_name',None):self.line(screen,4,'SELECTED '+self.focus_name+' · c%dr%ds%d'%self.focus_location+' | /next /prev | click a roster name',curses.A_BOLD)
         bottom = 5+capacity
         self.line(screen,bottom,'-'*(w-1),curses.A_DIM)
         self.line(screen,bottom+1,'CHAT & INVITATIONS | /game hexwars | /game forknite | /rooms',curses.A_BOLD)
@@ -408,36 +751,106 @@ class Client:
         for y,line in enumerate(shown,logs_y):
             self.line(screen,y,line,x=logs_x)
         self.line(screen,h-2,'Tab: roster/map (game: play/chat) | PgUp/PgDn: chat | /quit',curses.A_DIM)
-        self.line(screen,h-1,('PLAY > ' if self.play else '> ')+self.input[-(w-10):])
+        if getattr(self,'permission_prompt',False):
+            category,description,action,stage=self.popup_prompts().active
+            self.line(screen,h-3,description,curses.A_BOLD)
+            self.line(screen,h-2,('y=once, a=always, Enter=off | /settings koel-sound off' if stage=='session' and getattr(action,'always_action',None) else '[y/N] Enter = no | /settings koel-sound off' if stage=='session' else '[y/N] Enter = no | always-allow comes next | /settings permissions browser allow'))
+        self.line(screen,h-1,('[y/N] > ' if getattr(self,'permission_prompt',False) else 'PLAY > ' if self.play else '> ')+self.input[-(w-12):])
         screen.refresh()
 
-    def open_admin(self):
+    def open_admin(self, logins=(), approved=False, photos_approved=False):
+        if not approved:
+            self.request_popup('tools','Open the local photo-tool terminal and browser panel?',lambda:self.open_admin(logins,True,photos_approved))
+            return False
+        if logins and not photos_approved:
+            self.request_popup('photos','Allow photo tabs and extension saves for this batch of '+str(len(logins))+' logins?',lambda:self.open_admin(logins,True,True))
+            return False
         try:
             from .auth import private_read, config_dir
             private_read(config_dir()/'auth-server.json')
             opener=Path(__file__).resolve().parents[1]/'useful-scripts/open_terminal.py'
-            result=subprocess.run([sys.executable,str(opener),'admin'],capture_output=True,text=True,timeout=10)
+            result=subprocess.run([sys.executable,str(opener),'admin','--approved','--owner',self.name,*(['--photos-approved'] if photos_approved else []),*logins],capture_output=True,text=True,timeout=10)
             if result.returncode:raise RuntimeError()
             self.lines.append('Local avatar admin opened. Photos stay in the private master cache.')
+            self.popup_prompts().remember('tools')
+            return True
         except (OSError,ValueError,RuntimeError,subprocess.TimeoutExpired):
             self.lines.append('Avatar admin is local to the API owner computer; run sh lan42.sh admin there.')
+            return False
 
     def settings_command(self, text):
         parts = text.split()
         if not parts or parts[0] not in ('/settings','/profile'):
             return False
-        if len(parts) == 1:
+        if len(parts)==1 and parts[0]=='/profile':
+            self.open_urls('profiles',['https://profile-v3.intra.42.fr/'],'Open your personal Intra home in your browser?')
+        elif len(parts) == 1:
             signed = getattr(self,'secure',False)
             self.lines.extend([
                 'SETTINGS | '+self.name+(' | signed in with 42' if signed else ' | guest'),
                 '/settings signin  — open 42 sign-in (local HQ)',
                 '/settings signout — end the LAN42 session on this device',
                 '/settings notifications on|off — desktop notifications',
+                '/settings permissions — browser, popup and notification consent',
+                '/settings autologin off|saved|on — reuse login, optionally request OAuth',
+                '/settings signin-close on|off — try to close the completed sign-in tab',
+                '/settings clusters — separate include/exclude arrival rules; /track help — relationships/lists',
                 'Sign-in sessions expire automatically after one hour.',
             ])
+        elif parts[0]=='/settings' and parts[1]=='koel-sound':
+            from .koel_sound import SoundChoice
+            choice=SoundChoice(self.name)
+            try:
+                if len(parts)>2:
+                    if len(parts)!=3 or parts[2] not in ('on','off','always'):raise ValueError('Use /settings koel-sound on|off|always')
+                    if parts[2]=='always':self.confirm_always_koel(choice)
+                    else:choice.set_always(False);choice.choose(parts[2]=='on')
+                self.lines.append('Koel sound: '+('always on' if choice.always_on() else 'on for this session' if choice.read()['enabled'] else 'off')+'. KoelDrop sharing remains disabled.')
+            except (OSError,ValueError) as error:self.lines.append(str(error))
+        elif parts[0]=='/settings' and parts[1] in ('files','koel','koeldrop'):
+            self.lines.append('File sharing has no activation setting. Read /roadmap files; all sharing execution is disabled.')
+        elif parts[0]=='/settings' and parts[1] in ('autologin','signin-close'):
+            from .login_settings import LoginSettings
+            settings=LoginSettings()
+            try:
+                key='autologin' if parts[1]=='autologin' else 'close_tab'
+                if len(parts)>2:
+                    if len(parts)!=3:raise ValueError('Use /settings autologin off|saved|on or /settings signin-close on|off')
+                    value=parts[2]
+                    if key=='close_tab':
+                        if value not in ('on','off'):raise ValueError('Use /settings signin-close on|off')
+                        value=value=='on'
+                    settings.set(key,value)
+                    if key=='autologin':self.auto_login_checked=parts[2]=='off'
+                self.lines.extend(['Auto-login: '+settings.data['autologin']+' · close sign-in tab: '+('on' if settings.data['close_tab'] else 'off'),
+                                   'saved: reuse an unexpired session without browser; on: request browser sign-in if reuse fails; off: manual.',
+                                   'Tab closing is best effort; browser rules may require you to close the sign-in tab yourself.'])
+            except (OSError,ValueError) as error:self.lines.append(str(error))
+        elif parts[0]=='/settings' and parts[1]=='permissions':
+            from .popup_permissions import CATEGORIES
+            settings=self.popup_prompts().permissions
+            try:
+                if len(parts)>2:
+                    if len(parts)!=4:raise ValueError('Use /settings permissions CATEGORY ask|allow|deny|inherit')
+                    settings.set(parts[2],parts[3])
+                self.lines.extend(['Popup permissions (local): '+', '.join(settings.summary(k) for k in CATEGORIES),
+                                   '/settings permissions CATEGORY ask|allow|deny|inherit · browser controls browser categories; all controls everything',
+                                   'Browser categories inherit browser unless explicitly overridden; browser deny blocks all browser launches.',
+                                   'Allow once: y at the first prompt, then Enter at Always allow. Enter always means no.'])
+            except (OSError,ValueError) as error:self.lines.append(str(error))
+        elif parts[0]=='/settings' and parts[1]=='clusters':
+            self.tracking_command('/track clusters '+' '.join(parts[2:]))
+        elif parts[0]=='/profile' and parts[1] not in ('signin','signout','notifications'):
+            try:
+                from .profile_browser import resolve
+                urls=resolve(parts[1:])
+                self.open_urls('profiles',urls,'Open '+str(len(urls))+' Intra profile tab(s) in your browser?')
+            except ValueError as error:self.lines.append(str(error))
         elif parts[1:] == ['signin']:
             self.start_signin()
         elif parts[1:] == ['signout']:
+            from .login_settings import pause_for_session
+            pause_for_session()
             if getattr(self,'secure',False):
                 self.send(dict(type='command',text='/signout'))
             else:
@@ -449,7 +862,7 @@ class Client:
             self.lines.append('Use /settings, /settings signin, /settings signout, or /settings notifications on|off.')
         return True
 
-    def start_signin(self):
+    def start_signin(self, approved=False,saved_only=False):
         if getattr(self, 'secure', False):
             self.lines.append('Already signed in with 42. /settings signout ends this session.')
             return
@@ -459,11 +872,27 @@ class Client:
         if self.signing_in:
             self.lines.append('Sign-in is already waiting in your browser (five-minute limit).')
             return
+        if not approved:
+            self.signing_in=True
+            self.lines.append('Checking for a reusable LAN42 sign-in…')
+            def resume():
+                try:destination=auth_client.resume_session()
+                except (OSError,ValueError):destination=None
+                try:self.inbox.put(dict(type='signin_resume',destination=destination,saved_only=saved_only),timeout=2)
+                except queue.Full:self.signing_in=False
+            threading.Thread(target=resume,daemon=True).start()
+            return False
         self.signing_in = True
         self.lines.append("Opening 42 in your browser. Enter credentials only on 42's website.")
         def authenticate():
             try:
-                destination = auth_client.sign_in(self.home)
+                def browser(url):
+                    import webbrowser
+                    opened=bool(webbrowser.open(url))
+                    self.inbox.put(dict(type='popup_opened',category='signin',opened=opened),timeout=2)
+                    return opened
+                from .login_settings import LoginSettings
+                destination = auth_client.sign_in(self.home,open_browser=browser,close_tab=LoginSettings().data['close_tab'])
                 message = dict(type='local_signin', destination=destination)
             except Exception as exc:
                 # Only explicitly safe AuthError strings are exposed to the UI.
@@ -474,6 +903,7 @@ class Client:
             except queue.Full:
                 self.signing_in = False
         threading.Thread(target=authenticate, daemon=True).start()
+        return False
 
     def draw_hexwars(self, screen):
         game = self.game
@@ -619,6 +1049,10 @@ class Client:
         installed_generation = generation()
         screen.timeout(80)
         try:
+            curses.mousemask(curses.BUTTON1_CLICKED|curses.BUTTON1_PRESSED)
+            curses.mouseinterval(150)
+        except curses.error:pass
+        try:
             curses.curs_set(1)
         except curses.error:
             pass
@@ -633,13 +1067,25 @@ class Client:
             if generation() != installed_generation:
                 raise RestartRequested()
             self.consume()
-            if self.auth_destination:
+            self.tracking_tick()
+            self.permission_tick()
+            self.auto_login_tick()
+            self.sound_tick()
+            if self.auth_destination and not getattr(self,'permission_prompt',False):
                 return self.auth_destination
             self.update_title()
             if not self.connected and self.home != self.current:
                 return self.home
             self.draw(screen)
             key = screen.getch()
+            if key==curses.KEY_MOUSE:
+                try:
+                    _,mouse_x,mouse_y,_,buttons=curses.getmouse()
+                    if buttons&(curses.BUTTON1_CLICKED|curses.BUTTON1_PRESSED):
+                        for y,left,right,player in getattr(self,'lobby_hits',[]):
+                            if mouse_y==y and left<=mouse_x<right:self.focus_player(player);break
+                except curses.error:pass
+                continue
             if key in (3,4):
                 break
             if key==curses.KEY_PPAGE:
@@ -667,6 +1113,9 @@ class Client:
             elif key in (10,13):
                 text,self.input = self.input.strip(),''
                 self.scroll = 0
+                if getattr(self,'permission_prompt',False):
+                    self.permission_answer(text)
+                    continue
                 if self.wizard:
                     self.wizard_answer(text)
                     if self.next_server:
@@ -687,6 +1136,14 @@ class Client:
                     self.open_game('/game forknite')
                 elif text.startswith('/game ') or (getattr(self,'role','lobby')=='lobby' and (text.startswith('/host ') or text.startswith('/join '))):
                     self.open_game(text)
+                elif self.about_command(text):
+                    pass
+                elif self.experimental_command(text):
+                    pass
+                elif self.group_command(text):
+                    pass
+                elif self.tracking_command(text):
+                    pass
                 elif self.lobby_command(text):
                     pass
                 elif text in ('/join','/connect'):
@@ -719,8 +1176,16 @@ class Client:
                     raise RestartRequested(update=text!='/restart')
                 elif text=='/quit':
                     break
-                elif text in ('/admin','/admin avatars'):
-                    self.open_admin()
+                elif text == '/make':
+                    try:
+                        from .forknite import ensure_binary
+                        self.lines.append('Building configured philo; please wait.')
+                        ensure_binary()
+                        self.lines.append('philo ready. Host FORKNITE to open the browser.')
+                    except (OSError,ValueError,subprocess.SubprocessError) as error:
+                        self.lines.append('Build failed: '+str(error))
+                elif text.split()[0] in ('/admin','/tool','/tools'):
+                    self.open_admin(text.split()[1:])
                 elif self.settings_command(text):
                     pass
                 elif text == '/signin':
@@ -735,6 +1200,8 @@ class Client:
                         except (OSError, ValueError):
                             self.lines.append('Could not verify the trusted host at that seat. Settings unchanged.')
                 elif text == '/signout':
+                    from .login_settings import pause_for_session
+                    pause_for_session()
                     if getattr(self, 'secure', False):
                         self.send(dict(type='command', text='/signout'))
                     else:
@@ -742,7 +1209,7 @@ class Client:
                 elif text == '/bot' or text.startswith('/bot '):
                     self.bot_command(text)
                 elif text=='/help':
-                    self.lines.extend(FORKNITE_HELP if self.game.get('game')=='forknite' else HELP)
+                    self.show_help()
                 elif text.startswith('/notify'):
                     self.notify_enabled = text=='/notify on'
                     self.lines.append('Notifications '+('on' if self.notify_enabled else 'off'))
@@ -788,6 +1255,7 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
             try:
                 destination = curses.wrapper(client.run)
             finally:
+                if client.tracking_notifier:client.tracking_notifier.close()
                 try:
                     sock.shutdown(socket.SHUT_RDWR)
                 except OSError:

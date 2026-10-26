@@ -17,12 +17,16 @@ class API:
                 grant_type='client_credentials',
                 client_id=os.environ['INTRA_CLIENT_ID'],
                 client_secret=os.environ['INTRA_CLIENT_SECRET'])).encode()
+            from .api_pacing import wait
+            wait()
             req = urllib.request.Request('https://api.intra.42.fr/oauth/token',data=payload)
             with urllib.request.urlopen(req,timeout=8) as response:
                 result = json.load(response)
             self.token = result['access_token']
             self.expires = time.time()+max(0,int(result['expires_in'])-60)
             time.sleep(.6)
+        from .api_pacing import wait
+        wait()
         req = urllib.request.Request(
             'https://api.intra.42.fr/v2/users/'+urllib.parse.quote(login,safe=''),
             headers={'Authorization':'Bearer '+self.token})

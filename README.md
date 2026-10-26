@@ -1,11 +1,93 @@
 # Ryker's 42SG Campus LAN Server
 
-A terminal hangout for a few friends at 42 Singapore. See who's online and where
-they're sitting, chat, and invite each other to co-op Tetris or a round of
-**Who Said That?**, or program a C army for **Hex Wars**.
+Student-built terminal LAN lobby for 42 Singapore: discover online peers and
+campus seats via read-only 42 API data, chat, invite players, and coordinate
+locally hosted minigames and useful scripts.
+
+Built by **Ryker (hnah)** as a public learning and portfolio project. The name
+and description above match the Intra application's public profile. New features
+stay under this campus LAN initiative; experiments are identified separately
+rather than presented as independent products.
+
+**Source, issues and contributions:** https://github.com/CrispyNuggetD/42sg-campus-lan
+
+In the terminal, `/about` shows this purpose and source link. `/about repo` or
+`/repo` requests opening the public repository using your browser permissions.
+`/help` links the visual guide; `/roadmap koeldrop` shows file-sharing milestones.
+
+## What works, and what is parked
+
+| Area | State in this checkout |
+| --- | --- |
+| Guest peer discovery, chat and rooms | Implemented |
+| Verified 42 sign-in and TLS lobby | Implemented; requires owner setup |
+| Read-only campus maps and local relationships/lists | Implemented |
+| Direct messages, local notifications and browser consent | Implemented |
+| Tetris, Bluff, Hex Wars and FORKNITE | Implemented; game requirements apply |
+| KoelDrop: session-scoped LAN file sharing | Offline prototype under review; **execution disabled** |
+
+**KoelDrop — the uwu bird, but it brings files.** A little campus file courier
+inside LAN42: files in your nest, only if you say yes. Its scope is small,
+invited groups on campus. `/koel status` (also `/files status`) is
+read-only; creation, invitation delivery, directory watching and transfers are
+not available. See the [design, boundaries and test plan](docs/file-sharing-design.md).
+
+The public repository contains code, tests, diagrams and instructions. Private
+API credentials, certificate keys, sessions, campus directory exports, photos,
+file contents and activity databases are not public project assets.
 
 This is version **0.6.0**, a small LAN prototype. Start as a guest, or use `/signin` to enter a TLS-protected lobby with your
 verified 42 account. [Owner setup and student sign-in](docs/sign-in.md).
+
+## Visual guide and popup permissions
+
+Open the [LAN42 command cheat sheet](docs/quick-guide.html) in your browser for a
+searchable, printable guide with copy buttons. `/help` keeps the terminal guide
+and asks whether to open this HTML version. The page is self-contained: no
+external fonts, scripts, analytics or network requests.
+
+Browser categories inherit the global browser permission by default. On the
+first browser request, one approval covers inherited browser pages for the
+current LAN42 session, including app-opened game/photo-tool windows. It does not
+permanently save approval. Explicit category `ask`/`deny` settings still apply;
+notifications and new game terminals have separate permissions. **Enter means No.** Type `y` then Enter to allow once.
+After a successful launch, a separate **Always allow? [y/N]** question lets you
+save that category for your local login. Enter there keeps browser approval for this session only (other categories remain allow-once).
+If help is always allowed, `/help` immediately opens the visual guide without
+another prompt. Your existing input is preserved while a permission question is
+shown; it is not treated as a yes. Remote events cannot grant permission.
+
+```text
+/settings permissions
+/settings permissions browser allow
+/settings permissions help allow
+/settings permissions forknite ask
+/settings permissions notifications deny
+/settings permissions all ask
+```
+
+Categories: `browser` (global), `help`, `forknite`, `profiles`, `signin`, `tools`, `photos`,
+`notifications`, and `terminals`. Modes: `ask`, `allow` (always), `deny`, and `inherit` (remove an override).
+Browser actions inherit the global `browser` setting unless their category has
+an explicit override. A global `browser deny` blocks all browser actions even
+when a child category was previously allowed. Notifications and game terminals
+are separate. For example, set `browser allow` and `profiles ask` to open other
+browser pages immediately while still asking before profile tabs. Set
+`profiles inherit` to remove that exception. To reset older category settings
+and then allow all browser actions, use `all inherit` followed by `browser allow`.
+
+These settings are private to the current local login and are re-read before an
+action. `/notify off` still mutes desktop notices even when permission is allowed.
+Queued notifications stay in terminal history; the popup queue keeps only the
+latest waiting notice to avoid a flood of permission questions.
+
+FORKNITE room creation itself can proceed while browser consent waits. Each
+participant approves their own browser. Declining leaves the room available;
+`/browser` requests opening it later. Missing photos request the host's local
+photo tool rather than launching a browser from the room server. Tool panels
+and photo-tab/save batches have separate permissions. The extension still needs
+its normal one-time installation. LAN42 only opens requested new pages; these
+permissions do not give it access to existing Chrome tabs, profiles or cookies.
 
 ## Get started
 
@@ -385,7 +467,7 @@ clients reconnect after the FORKNITE server reloads and reclaim their slots.
 
 Use `/game forknite` in HQ and `/join ROOM_NUMBER`, exactly like the other games.
 The room server launches the bundled Node wrapper and opens each participant's
-browser automatically. Their philosopher slot, name, photo (when available) and
+browser only after that participant's local permission allows it. Their philosopher slot, name, photo (when available) and
 verified/guest status come from their existing LAN42 connection. Sign in once
 with `/signin` in LAN42; FORKNITE has no separate OAuth login or URL handoff command.
 Guests retain their LAN42 pseudonym and a silly avatar. The host uses `/start` in
@@ -446,3 +528,225 @@ Nothing reads or exports Chrome cookies/profiles. Cache files are kept outside
 Git at `~/.cache/42sg-campus-lan/avatars` with private permissions. Joined players
 receive same-origin image responses from the game server; see the game README
 for access control, HTTP transport limits, cache lifetime and import commands.
+
+`/clusters [1|2]` shows active Singapore campus API locations using the existing
+ASCII floor plan (even seats above odd seats), including the snapshot timestamp.
+Snapshots are fetched on demand, shared for 30 seconds, and are separate from
+LAN42 peers shown by `/map` or `/roster`. This represents reported logged-in
+computers, not everyone physically present. `/clusters` refreshes; `/next` and
+`/prev` page through the map and numbered login roster. The API host needs its
+private owner configuration. API reference:
+https://api.intra.42.fr/apidoc/2.0/locations/index.html
+
+`/profile thtay hnah` requests permission to open both Intra profiles in local browser tabs. `all` and
+`cohort4` expand from the local private campus cache. Selections above ten tabs
+show the count first; `/profile --open-many cohort4` explicitly opens a large
+selection. Parsing validates every login and deduplicates names before opening
+any tabs. Existing `/profile signin`/`signout` settings aliases remain available.
+
+The campus map overlays connected LAN42 peers: verified peers use green, guests
+keep their LAN42 name colour, and API-only students use white with an “API login”
+label. Matching a guest name never grants verified status. API seats remain the
+source of location information. Click a numbered login in the roster (or an
+occupied map marker) to switch to its cluster and page and blink its seat.
+`/locate LOGIN` provides the same action when terminal mouse reporting is not
+available. `Shift` plus mouse can still be used for ordinary terminal selection.
+Help/table rows stay together, with one blank line between separate messages,
+room changes and presence notifications.
+
+`/track dthoo thtay` saves a watch list privately on this computer, separately
+for your local LAN42 login. `/track` lists it; `/untrack dthoo` or `/untrack all`
+removes entries. Keep your HQ window running: it checks the shared campus API
+snapshot immediately and then every five minutes. The watch list is never sent
+to the lobby, other peers or Git. Campus API requests still share the global
+owner-machine pacing limit. An unavailable API leaves the last known state
+intact and reports a retry; it does not mark everybody offline.
+
+Campus notifications say “dthoo is online on campus” with cluster, row and seat
+on a separate line. LAN42 arrivals produce a separate “has joined the LAN42
+lobby — say hi!” notification immediately from normal lobby state updates.
+Each source notifies on an offline-to-online transition, including the first
+online observation after starting HQ. Repeated polling does not repeat a notice.
+Campus presence means an active reported computer login, rather than physical
+attendance. Tracking resumes from the saved list when HQ starts again.
+
+Notifications use an existing local cached photo when available. On desktops
+supporting notification actions, “Open Intra profile” opens the profile and
+“Say hi / write message” prepares `/dm LOGIN ` in your LAN42 input. Type the
+message and press Enter yourself. An unfinished input is preserved: `/compose`
+loads the waiting draft after you finish it. Desktop action support uses optional
+PyGObject/GIO; plain `notify-send` is the fallback. `/notify off` suppresses
+popups while keeping tracking text in the terminal.
+
+`/dm LOGIN MESSAGE` and `/alert LOGIN MESSAGE` deliver a targeted message and a
+desktop notification to that online user. They work within the current lobby
+and directly between known guest-mesh nodes. DMs are never broadcast as public
+chat or included in mesh gossip; verified lobbies refuse guest-mesh delivery.
+Guest sender names remain explicitly unverified. Multiple matching guest nodes
+require connecting to the intended node first. Message sends are limited to one
+per two seconds. Notification buttons prepare drafts only; they do not send.
+
+Relationships, lists and independent arrival rules are configured locally:
+
+```text
+/track dthoo thtay
+/track status friends dthoo
+/track status moots thtay
+/track status oomf another-login
+/track list lunch add dthoo thtay
+/track list lunch remove thtay
+/track alerts friends campus off
+/settings clusters include cohort4 cohort5
+/settings clusters exclude excluded-login
+/settings clusters c1
+/settings clusters on
+```
+
+Newly tracked people are acquaintances (`tracked`). A relationship is one local
+label: `tracked`, `friends`, `mutuals` (alias `moots`), or `oomf`. Labels do not
+claim reciprocal friendship or send requests to anyone. `friends` selects the
+friendly relationships (friends, mutuals and oomf); `tracked` selects only
+acquaintances; `alltracked` selects everyone in your relationship registry.
+`mutuals`/`moots` and `oomf` can also be selected individually. `login:friends`
+addresses a literal login that collides with a reserved selector name.
+
+Custom named lists can overlap and do not automatically track their members.
+Use `@lunch` to select a list explicitly; its bare name also works. Lists accept
+`add`, `remove` and `delete`. `/track help` shows the command guide and `/track
+config` shows the private, mode-600 JSON configuration. Existing watch lists
+migrate to schema version 2 as tracked acquaintances on the first edit. Invalid
+or newer configurations are preserved and must be repaired before changes save.
+
+```text
+/sabo friends
+/sabo @lunch
+/dm friends "do you all want lunch?"
+/dm @lunch "meet at noon?"
+/alert mutuals "game later?"
+```
+
+Selectors expand entirely on the sending computer. Only the resulting logins
+and the requested message reach LAN42; relationship labels, lists and rules are
+never uploaded. Group DMs send individual messages, spaced at least two seconds
+apart, and report delivered/unavailable recipients. There is no shared group
+thread and no offline mailbox. Quoted messages have their outer quotes removed;
+unquoted apostrophes are preserved. SABO accepts at most 50 selected people and
+DMs at most 100. A game terminal reloads the saved local selectors for each
+command, so changes in HQ take effect there immediately.
+
+Cluster arrival rules are a separate subscription system. Includes form a union
+of logins, relationship selectors, named lists and/or cohort selectors; excludes
+subtract from that union. Cohort rules use the local private campus cache and
+remain dynamic as that cache changes. `/settings clusters off` disables these
+rules without affecting personal relationship alerts. `/settings clusters clear
+[include|exclude]` clears selectors. Rule exclusions do not mute personally
+tracked friends; use `/track alerts LOGIN campus|lobby off` for personal alerts.
+
+A friend/mutual/oomf arrival has a warmer message. Someone matched only by a rule
+has a normal “Campus update” or “LAN42 update”. If both apply, only the personal
+notification is emitted. Per-person `alerts` preferences are keyed by event
+(`campus`, `lobby`) to allow future event types without conflating relationship
+labels, list membership and subscriptions. Game activity and friend-request
+workflows are not enabled by these labels.
+
+Tracking and DM popups use Python GIO over the desktop's
+`org.freedesktop.Notifications` D-Bus service. This supports cached-image hints
+and action buttons. `notify-send` is only the fallback for desktops without the
+GIO/service path; desktop support determines whether buttons are displayed.
+
+Use `/settings clusters c1`, `c2`, or `all` to limit arrival rules
+to a physical campus cluster. `C1`, `C2`, `cluster1` and `cluster2` are also accepted. The default is
+`all`, including for older saved configurations. This scope applies to both
+campus API and LAN42 lobby arrival rules and does not mute personal friend alerts.
+An unknown seat cannot match a single-cluster scope. `/settings clusters` shows
+the current location alongside includes, exclusions and the on/off switch.
+
+Cluster names can also appear alongside rule filters:
+`/settings clusters include cohort4 c1` or `/settings clusters C1 include cohort4`.
+In cluster settings, `c1`/`cluster1` and `c2`/`cluster2` select the location rather
+than being added as logins. The include/exclude lists still contain people or
+cohort selectors. `login:c1` addresses a literal login with that spelling.
+
+Bare `/profile` opens your personal Intra home at
+`https://profile-v3.intra.42.fr/`, using the account already signed in to that
+browser. Explicit `/profile hnah` opens the public page at
+`https://profile-v3.intra.42.fr/users/hnah`; multiple explicit names still open
+multiple public profiles. Both inherit the same browser permission by default.
+Once approved, inherited browser actions do not repeat the consent or
+always-allow question during that LAN42 session. Closing HQ ends its session
+grant. `/settings permissions browser ask` revokes a current session grant;
+`browser allow` makes it permanent, and `browser deny` blocks all browser pages.
+
+### Automatic login and closing the sign-in tab
+
+```text
+/settings autologin saved
+/settings autologin on
+/settings autologin off
+/settings signin-close on
+/settings signin-close off
+```
+
+Automatic login is **off by default**. `saved` attempts to reuse a valid LAN42
+session when HQ connects, without ever opening a browser. `on` tries the same
+reuse first, then requests normal browser authorization when no session can be
+reused. Browser sign-in still obeys the inherited browser/`signin` permissions.
+`off` leaves login manual. `/signin` also checks for a reusable session before
+requesting a browser. Explicit sign-out pauses automatic login for the rest of
+that app process, so logging out does not immediately log you back in.
+
+The client validates a saved session with the pinned TLS broker before joining.
+This does not read Chrome cookies or store new 42 credentials. LAN42 sessions
+still expire after one hour and are invalidated if the broker restarts; there
+is no automatic extension of their lifetime. These local preferences live in
+private `login-settings.json` alongside the existing LAN42 configuration.
+
+`signin-close` defaults to on. After OAuth returns, the local completion page
+tries to close only itself. Browser rules may reject `window.close()` for tabs
+opened through an external application; a manual-close message then remains.
+The page says to check LAN42 for the final result because exchanging the
+returned authorization code can still fail. Turning this setting off leaves
+the completion tab open.
+
+For reliable Chrome tab closing, reload version 1.2 of the optional
+[browser helper](browser-tools/avatar-saver/README.md). Its completion-page
+script runs only at `http://localhost:31415/signin-complete` and requests closing
+only when the local callback explicitly opted in. The background worker closes
+that sending tab ID; it never lists or reads other tabs. Without the extension,
+the normal best-effort page behaviour is retained.
+
+## KoelDrop — the uwu bird, but it brings files
+
+A little campus file courier inside LAN42. **Files in your nest, only if you say
+yes.** The planned receive notice is `🔊 uwu, dthoo sent you funny.txt`.
+
+**The sharing experiment is disabled.** `/koel status` or `/roadmap koeldrop`
+shows the offline implementation and remaining work. No file-sharing listener,
+watcher, invitation delivery or automatic transfer starts. `/koel create`,
+`invite`, `accept`, `dir` and `sync` remain blocked, with no activation setting.
+The [design notes](docs/file-sharing-design.md) explain the scope, invitation and
+folder permissions, tested safeguards and the limits that need campus review.
+
+What is testable offline: current-session admission policy, recipient-bound
+one-use invites, owner-only member folders, collaborative root files,
+versioned writes/deletes, audit history, per-file receive approval, explicit
+folder-pointer changes, bounded scans/one-pass sync and a bounded native HTTPS dispatcher. The production
+transport, desktop action wiring and two-computer sync are not connected yet.
+
+The project name and public Intra description remain **Ryker's 42SG Campus LAN
+Server** and the student-built campus LAN purpose at the top of this README.
+KoelDrop is a sub-feature of that project.
+
+### Optional uwu bird
+
+The licensed `koel.ogg` recording is included with [attribution](assets/sounds/ATTRIBUTION.md).
+Sound is **off by default**. At each fresh LAN42 launch, `y` enables it for this
+session, `a` requests always-on, and Enter leaves it off. Always-on requires:
+
+```text
+Always uwu? Are you SURE? ಠ_ಠ [y/N]
+```
+
+You can also use `/settings koel-sound on|off|always`. `off` clears any saved
+always-on choice. Enabling sound never enables file sharing. D-Bus sound hints
+respect desktop support and sound settings; no separate player is started.

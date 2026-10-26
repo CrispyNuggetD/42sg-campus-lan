@@ -12,6 +12,7 @@ class HQ(unittest.TestCase):
         c.game_target=('127.0.0.1',32102)
         c.lines=collections.deque()
         c.peer_callback=Mock()
+        c.request_popup=lambda category,description,action:action()
         return c
 
     def test_link_stays_home_and_game_uses_selected_peer(self):
@@ -51,7 +52,7 @@ class HQ(unittest.TestCase):
             c.inbox.put(dict(message,reopen=True,ticket='fresh'))
             c.consume()
             self.assertEqual(thread.call_count,2)
-            self.assertEqual(thread.call_args.kwargs['args'],('http://127.0.0.1:4242/#lan42=fresh',))
+            self.assertEqual(c.browser_room,('7','http://127.0.0.1:4242'))
         self.assertIn('http://127.0.0.1:4242',c.lines[-1])
         self.assertNotIn('fresh',c.lines[-1])
 

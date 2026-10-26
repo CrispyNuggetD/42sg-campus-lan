@@ -5,6 +5,7 @@ module.exports=function(root){
  function filename(login){if(!root||!/^[a-zA-Z0-9_.-]{1,32}$/.test(login))return null;return path.join(root,crypto.createHash('sha256').update(login.toLowerCase()).digest('hex')+'.img');}
  function read(login){const file=filename(login);if(!file)throw Error('No cache');const fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW);try{const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size>1048576)throw Error('Invalid cache');const bytes=fs.readFileSync(fd);const type=mime(bytes);if(!type)throw Error('Invalid image');return {bytes,type};}finally{fs.closeSync(fd);}}
  function has(login){try{read(login);return true;}catch(e){return false;}}
- return {read,has};
+ function version(login){try{return String(fs.statSync(filename(login)).mtimeMs);}catch(e){return '0';}}
+ return {read,has,version};
 };
 module.exports.mime=mime;

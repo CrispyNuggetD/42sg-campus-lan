@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import random
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -26,10 +27,25 @@ def load():
     except (OSError, ValueError):return None
 
 
-def random_profiles(number, excluded):
+def matches_filters(student, filters):
+    # Whitelisted comparisons only: no SQL execution, eval, joins or file access.
+    for expression in filters:
+        match=re.fullmatch(r'(cohort|level|status|active|login)(>=|<=|!=|=|>|<)([A-Za-z0-9_.-]{1,32})',expression,re.I)
+        if not match:raise ValueError('Filters: cohort=4 level>=2 status=ALUMNI active=true login=hnah; combine with AND.')
+        field,op,value=match.groups();field=field.lower();actual=student.get(field)
+        if field in ('cohort','level'):
+            try:value=float(value);actual=float(actual)
+            except (ValueError,TypeError):return False
+        else:actual=str(actual).lower();value=value.lower()
+        if not {'=':lambda:actual==value,'!=':lambda:actual!=value,'>':lambda:actual>value,'<':lambda:actual<value,'>=':lambda:actual>=value,'<=':lambda:actual<=value}[op]():return False
+    return True
+
+
+def random_profiles(number, excluded, cohorts=(), filters=()):
     data=load()
     if not data:raise ValueError('Campus cache missing. Run python3 -m campus_lan.campus_info refresh on the API host.')
-    candidates=[s for s in data['students'] if s['login'].lower() not in {x.lower() for x in excluded}]
+    candidates=[s for s in data['students'] if s['login'].lower() not in {x.lower() for x in excluded} and (not cohorts or s.get('cohort') in cohorts) and matches_filters(s,filters)]
+    if number is None:number=min(50,len(candidates))
     if not 1<=number<=50 or number>len(candidates):raise ValueError('Not enough cached students, or count outside 1–50.')
     return [dict(login=s['login'],avatar=None) for s in random.sample(candidates,number)]
 
@@ -49,7 +65,8 @@ class API:
             result=self.request('https://api.intra.42.fr/oauth/token',body,False)
             self.token=result['access_token'];self.expires=time.monotonic()+float(result.get('expires_in',300))-30
         for attempt in range(5):
-            time.sleep(max(0,1.1-(time.monotonic()-self.last)))
+            from .api_pacing import wait
+            wait()
             self.last=time.monotonic()
             headers={'Accept':'application/json','User-Agent':'LAN42-campus-directory/1.0'}
             if authenticated:headers['Authorization']='Bearer '+self.token

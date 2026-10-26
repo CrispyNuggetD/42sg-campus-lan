@@ -20,12 +20,14 @@ class ForkniteRoom:
         self.avatar_cache=AvatarCache()
         self.avatar_jobs=set()
         self.avatar_names=set()
+        self.tool_pending=set()
+        self.tool_task=None
+        self.tool_ready=[]
         self.avatar_gate=asyncio.Semaphore(1)
         node=shutil.which('node')
-        local=ROOT/'minigames/forknite/philo'
-        binary=os.environ.get('LAN42_PHILO_BINARY') or (str(local) if local.is_file() else shutil.which('philo'))
-        if not node or not binary:
-            raise ValueError('FORKNITE needs Node.js and minigames/forknite/philo (or LAN42_PHILO_BINARY).')
+        from .forknite import ensure_binary
+        binary=await asyncio.to_thread(ensure_binary)
+        if not node:raise ValueError('FORKNITE needs Node.js.')
         with socket.socket() as sock:
             sock.bind(('0.0.0.0',0));self.port=sock.getsockname()[1]
         self.secret=secrets.token_hex(32)
@@ -48,16 +50,28 @@ class ForkniteRoom:
 
     async def prepare_avatar(self,name,url):
         async with self.avatar_gate:
-            await asyncio.to_thread(self.avatar_cache.fetch,name,url)
-            await asyncio.sleep(1)
+            if url:result=await asyncio.to_thread(self.avatar_cache.fetch,name,url)
+            else:
+                try:self.avatar_cache.read(name);result=dict(status='cached')
+                except (OSError,ValueError):result=dict(status='missing')
+            if result.get('status')!='cached':
+                self.tool_pending.add(name)
+                if not self.tool_task or self.tool_task.done():
+                    self.tool_task=asyncio.create_task(self.open_tools())
+
+    async def open_tools(self):
+        # Coalesce missing photos into one local owner-only batch panel.
+        while self.avatar_jobs:await asyncio.sleep(.5)
+        self.tool_ready=sorted(set(self.tool_ready)|self.tool_pending)
+        self.tool_pending.clear()
 
     async def control(self,data):
         records=data.get('members',[]) if data.get('action')=='members' else data.get('profiles',[]) if data.get('action')=='sabo_profiles' else []
         for record in records:
             name=record.get('name') or record.get('login')
-            if name and record.get('avatar') and name not in self.avatar_names:
+            if name and (record.get('avatar') or record.get('login') or record.get('verified')) and name not in self.avatar_names:
                 self.avatar_names.add(name)
-                task=asyncio.create_task(self.prepare_avatar(name,record['avatar']))
+                task=asyncio.create_task(self.prepare_avatar(name,record.get('avatar')))
                 self.avatar_jobs.add(task)
                 task.add_done_callback(self.avatar_jobs.discard)
         def request():
@@ -78,4 +92,5 @@ class ForkniteRoom:
             process.terminate()
             try:await asyncio.to_thread(process.wait,5)
             except subprocess.TimeoutExpired:process.kill();await asyncio.to_thread(process.wait)
-        self.output.close()
+        if getattr(self,'tool_task',None):self.tool_task.cancel()
+        if getattr(self,'output',None):self.output.close()

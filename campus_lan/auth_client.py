@@ -168,7 +168,18 @@ def post(trust, route, payload):
         connection.close()
 
 
-def sign_in(home, open_browser=webbrowser.open):
+def resume_session():
+    """Validate an existing LAN42 session over pinned TLS, with no browser/API OAuth."""
+    trust=load_trust();session=load_session(trust)
+    if not session:return None
+    result=post(trust,'/resume',dict(session=session['session']))
+    if (result.get('login')!=session.get('login') or result.get('uid')!=session.get('uid')
+            or type(result.get('expires')) not in (int,float) or result['expires']<=time.time()):
+        raise AuthError('Saved LAN42 session was not confirmed; use /signin.')
+    return endpoint(trust)
+
+
+def sign_in(home, open_browser=webbrowser.open, close_tab=True):
     if home[0] not in ('127.0.0.1', 'localhost') or home[1] != 31415:
         raise AuthError('42 sign-in needs your local LAN42 node on port 31415 for its registered callback.')
     from .auth_locator import refresh
@@ -188,7 +199,7 @@ def sign_in(home, open_browser=webbrowser.open):
         raise AuthError('Unexpected authorization URL; refusing to open it.')
     with socket.create_connection(home, timeout=5) as sock:
         sock.settimeout(FLOW_TTL + 5)
-        sock.sendall((json.dumps(dict(type='oauth_wait', protocol=PROTOCOL, state=state)) + '\n').encode())
+        sock.sendall((json.dumps(dict(type='oauth_wait', protocol=PROTOCOL, state=state,close_tab=bool(close_tab))) + '\n').encode())
         with sock.makefile('rb') as stream:
             ready = json.loads(stream.readline(2048))
             if ready.get('type') != 'callback_ready':

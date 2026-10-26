@@ -59,7 +59,7 @@ class BrowserImports:
         with self.lock:
             now=time.time()
             self.jobs={k:v for k,v in self.jobs.items() if now-v['created']<600}
-            if len(self.jobs)>=20:raise ValueError('Too many pending imports')
+            if sum(v['status']=='waiting_for_browser_save' for v in self.jobs.values())>=20:raise ValueError('Too many pending imports')
             job=secrets.token_hex(16);self.jobs[job]=dict(login=login,created=now,status='waiting_for_browser_save')
             return dict(job=job,expected_directory=str(self.root))
 

@@ -14,8 +14,8 @@ this tool does not change enterprise policy.
 Permissions are `activeTab`, `scripting`, and `downloads`. The first two allow a
 user-invoked action on the active tab. `downloads` permits saving the captured
 PNG; Chrome grants broader download-management capability with that permission,
-but this code never queries or modifies unrelated downloads. There are no host,
-cookies, browsing-history, webRequest, debugger or native-messaging permissions.
+but this code never queries or modifies unrelated downloads. Automatic batches additionally run a content script scoped to `https://cdn.intra.42.fr/*`.
+There are no cookies, browsing-history, webRequest, debugger or native-messaging permissions.
 
 ## Use
 
@@ -43,3 +43,20 @@ an error rather than attempting to bypass browser security. Top-level PNG/JPEG
 navigation with ordinary same-origin canvas export was verified in real Chrome
 using a local intercepted fixture. Saving an actual 42 photo requires the user
 to open it successfully in their normal browser and install this extension.
+
+Version 1.1 adds automatic batch saving. Reload the unpacked extension after
+updating it. `/tool LOGIN...` prepares each requested job and opens its photo;
+the content script exports only CDN photo tabs carrying the job's 32-character
+identifier. The background worker saves to the same exact job filename used by
+the importer. No cookie or browser-storage access is requested. Challenges must
+finish normally; no image means no export. The panel reports batch progress and
+waits for actual cache import before advancing.
+
+Version 1.2 also supports `/settings signin-close on`. Reload the unpacked
+extension to enable the added content script, scoped to
+`http://localhost:31415/signin-complete*`. It closes only the tab that sends an
+opted-in local sign-in completion message. It never enumerates other tabs,
+reads Intra pages, or reads cookies. Turning `signin-close off` prevents that
+message. This allows the helper to close a completed sign-in tab even when
+ordinary page JavaScript is not allowed to close it. No `tabs`, history or
+cookies permission is added.

@@ -75,6 +75,27 @@ class MeshChecks(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(any(e.get('text')=='stale' for e in self.events[1]))
         a.clients.clear()
 
+    async def test_direct_message_crosses_only_recipient_node(self):
+        import json
+        from campus_lan import PROTOCOL
+        a,b,other=self.nodes
+        await self.link(0,1);await self.link(0,2)
+        reader,writer=await asyncio.open_connection('127.0.0.1',b.port)
+        try:
+            writer.write((json.dumps(dict(type='hello',protocol=PROTOCOL,name='thtay',hostname='test'))+'\n').encode())
+            await writer.drain()
+            while json.loads(await asyncio.wait_for(reader.readline(),2))['type']!='welcome':pass
+            self.assertTrue(await a.mesh.direct('hnah','thtay','recipient-only message'))
+            while True:
+                message=json.loads(await asyncio.wait_for(reader.readline(),2))
+                if message['type']=='direct_message':break
+            self.assertEqual(message['text'],'recipient-only message');self.assertFalse(message['verified'])
+            self.assertFalse(any(e.get('type')=='direct_message' for e in self.events[2]))
+            for node in self.nodes:
+                self.assertFalse(any(e['text']=='recipient-only message' for e in node.mesh.events.values()))
+        finally:
+            writer.close();await writer.wait_closed();await asyncio.sleep(.05)
+
     def test_seats_are_local_not_api_polling(self):
         self.assertEqual(seat_label('10.12.4.9'),'Cluster 2, row 4, seat 9')
 

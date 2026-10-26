@@ -29,11 +29,28 @@ def plain(text):
     return [(text, 0)]
 
 
+def player_style(player):
+    if player.get('api_presence') and not player.get('lan42_peer'):return 7
+    return 1 if player.get('verified') else guest_style(player.get('name','guest'))
+
+
+def overlay_campus(players, peers):
+    by_name={}
+    for peer in peers:
+        name=peer.get('name','').lower()
+        if name not in by_name or peer.get('verified'):by_name[name]=peer
+    result=[]
+    for player in players:
+        peer=by_name.get(player.get('name','').lower())
+        result.append(dict(player,api_presence=True,lan42_peer=peer is not None,verified=bool(peer and peer.get('verified'))))
+    return result
+
+
 def player_line(number, player, location):
     label = f'c{location[0]}r{location[1]}s{location[2]}' if location else 'Unknown / off campus'
     name = str(player.get('name','guest'))[:24]
-    return [(f'{number:>3}. {name:<24}', 1 if player.get('verified') else guest_style(name)),
-            (f" {label:<22} {'42 Verified' if player.get('verified') else 'Guest'}", 0)]
+    status=('LAN42 verified' if player.get('verified') else 'LAN42 guest') if player.get('lan42_peer') else 'API login' if player.get('api_presence') else '42 Verified' if player.get('verified') else 'Guest'
+    return [(f'{number:>3}. {name:<24}', player_style(player)),(f' {label:<22} {status}',0)]
 
 
 def lobby_lines(players, view='roster', cluster=1):
@@ -67,7 +84,7 @@ def lobby_lines(players, view='roster', cluster=1):
                 if members:
                     n,p = members[0]
                     token = '[++]' if len(members)>1 else (f'[#{n}]' if n<10 else f'[{n:02}]' if n<100 else '[**]')
-                    style = 1 if p.get('verified') else guest_style(p.get('name','guest'))
+                    style = player_style(p)
                 line.append((token,style))
             lines.append(line)
     lines += [plain(''), plain('CURRENTLY ONLINE - map markers match these roster numbers')]

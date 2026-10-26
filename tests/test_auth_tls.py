@@ -184,6 +184,16 @@ class TLSFlow(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('test-secret', auth_client.session_path().read_text())
         self.assertEqual(self.provider.identify.call_args.args[0], 'one-time-code')
 
+    async def test_cached_session_resumes_over_pinned_tls_without_browser(self):
+        token=self.make_session()
+        session=dict(self.broker.sessions[digest(token)],session=token)
+        auth_client.save_session(self.trust,session)
+        with patch('webbrowser.open') as browser:
+            destination=await asyncio.to_thread(auth_client.resume_session)
+        self.assertEqual(destination,('127.0.0.1',self.lobby.port));browser.assert_not_called()
+        self.broker.logout(digest(session['session']))
+        with self.assertRaises(AuthError):await asyncio.to_thread(auth_client.resume_session)
+
     async def test_browser_origin_http_endpoint_is_rejected(self):
         reader, writer = await asyncio.open_connection('127.0.0.1', self.web.sockets[0].getsockname()[1],
             ssl=auth_client.tls_context(self.trust), server_hostname='127.0.0.1')

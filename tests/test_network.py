@@ -196,7 +196,7 @@ class Network(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             binary=Path(tmp)/'philo';binary.write_text('#!/bin/sh\nsleep 2\n');binary.chmod(0o700)
             (Path(tmp)/'singapore.json').write_text(json.dumps({'students':[{'login':'student'+str(i)} for i in range(8)]+[{'login':'host'}]}))
-            with patch.dict(os.environ,{'LAN42_PHILO_BINARY':str(binary),'LAN42_FORKNITE_LOGDIR':tmp,'LAN42_CAMPUS_DATA':tmp}):
+            with patch.dict(os.environ,{'LAN42_PHILO_BINARY':str(binary),'LAN42_FORKNITE_LOGDIR':tmp,'LAN42_CAMPUS_DATA':tmp}),patch('campus_lan.forknite_room.ForkniteRoom.open_tools'),patch('campus_lan.auth.config_dir',return_value=Path(tmp)/'config'):
                 host,_=await self.connect('host');friend,_=await self.connect('friend')
                 await self.cmd(host,'/game forknite')
                 await self.receive(host,lambda m:m['type']=='browser_game')
@@ -222,6 +222,44 @@ class Network(unittest.IsolatedAsyncioTestCase):
                 await self.receive(host,lambda m:m['type']=='event' and 'Use /stop' in m.get('text',''))
                 await self.cmd(friend,'/leave');await self.cmd(host,'/leave')
                 await self.receive(host,lambda m:m['type']=='game' and not m.get('game'))
+
+    async def test_direct_message_is_targeted_and_alert_is_an_alias(self):
+        sender,_=await self.connect('sender');target,_=await self.connect('target');other,_=await self.connect('other')
+        await self.cmd(sender,'/dm target hello privately')
+        message=await self.receive(target,lambda m:m['type']=='direct_message')
+        self.assertEqual(message['sender'],'sender');self.assertEqual(message['text'],'hello privately')
+        self.assertFalse(message['verified'])
+        await self.receive(sender,lambda m:m['type']=='event' and m.get('text','').startswith('DM to target:'))
+        with self.assertRaises(asyncio.TimeoutError):
+            await asyncio.wait_for(self.receive(other,lambda m:m['type']=='direct_message'),.1)
+        await self.cmd(target,'/alert sender hi back')
+        reply=await self.receive(sender,lambda m:m['type']=='direct_message')
+        self.assertEqual(reply['text'],'hi back')
+        self.assertFalse(any(e['text']=='hello privately' for e in self.lobby.mesh.events.values()))
+
+    async def test_campus_tracking_uses_shared_snapshot_without_watch_names(self):
+        peer,_=await self.connect('tracker')
+        with patch('campus_lan.clusters.snapshot',return_value=([dict(name='campus-user',seat='c1r3s6')],123)) as snapshot:
+            await self.cmd(peer,'/campus-presence')
+            result=await self.receive(peer,lambda m:m['type']=='campus_presence')
+            self.assertEqual(result['players'][0]['seat'],'c1r3s6')
+            await self.cmd(peer,'/campus-presence')
+            await self.receive(peer,lambda m:m['type']=='campus_presence')
+            self.assertEqual(snapshot.call_count,1)
+
+    async def test_group_dm_partial_delivery_deduplication_and_summary(self):
+        sender,_=await self.connect('sender');target,_=await self.connect('target');other,_=await self.connect('other')
+        await self.send(sender,type='direct_batch',targets=['target','TARGET','missing'],text='Want lunch?')
+        message=await self.receive(target,lambda m:m['type']=='direct_message')
+        self.assertEqual(message['text'],'Want lunch?')
+        summary=await self.receive(sender,lambda m:m['type']=='dm_summary')
+        self.assertEqual((summary['delivered'],summary['failed']),(1,1));self.assertEqual(summary['unavailable'],['missing'])
+        with self.assertRaises(asyncio.TimeoutError):
+            await asyncio.wait_for(self.receive(other,lambda m:m['type']=='direct_message'),.1)
+        await self.send(sender,type='direct_batch',targets=['target','bad/name'],text='Do not send any')
+        await self.receive(sender,lambda m:m['type']=='event' and 'valid recipients' in m.get('text',''))
+        with self.assertRaises(asyncio.TimeoutError):
+            await asyncio.wait_for(self.receive(target,lambda m:m['type']=='direct_message'),.1)
 
 if __name__=='__main__':
     unittest.main()

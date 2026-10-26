@@ -220,3 +220,25 @@ class CallbackTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(b'secret', writer.write.call_args.args[0])
         await callback(f'state={state}&code=another')
         self.assertIn(b'400 Bad Request', writer.write.call_args.args[0])
+
+
+class CompletionPage(unittest.IsolatedAsyncioTestCase):
+    async def test_close_is_opt_in_and_callback_html_has_no_auth_values(self):
+        relay=CallbackRelay();writer=Mock();writer.drain=unittest.mock.AsyncMock()
+        for query,closes in (('',False),('?close=1',True)):
+            reader=asyncio.StreamReader();reader.feed_data(b'Host: localhost:31415\r\n\r\n');reader.feed_eof()
+            await relay.handle(reader,writer,('GET /signin-complete'+query+' HTTP/1.1\r\n').encode())
+            body=writer.write.call_args.args[0]
+            self.assertIn(b'text/html',body);self.assertIn(b'Back to LAN42',body)
+            self.assertEqual(b'window.close()' in body,closes)
+            self.assertIn(b"frame-ancestors 'none'",body)
+            self.assertNotIn(b'access_token',body)
+
+    async def test_close_option_is_forwarded_only_for_valid_authorization(self):
+        relay=CallbackRelay();writer=Mock();writer.drain=unittest.mock.AsyncMock()
+        state=secrets.token_hex(32);future=asyncio.get_running_loop().create_future()
+        relay.waiters[state]=future;relay.close_tabs[state]=True
+        reader=asyncio.StreamReader();reader.feed_data(b'Host: localhost:31415\r\n\r\n');reader.feed_eof()
+        await relay.handle(reader,writer,('GET /callback?state='+state+'&code=test-code HTTP/1.1\r\n').encode())
+        reply=writer.write.call_args.args[0]
+        self.assertIn(b'Location: /signin-complete?close=1',reply);self.assertNotIn(b'test-code',reply)

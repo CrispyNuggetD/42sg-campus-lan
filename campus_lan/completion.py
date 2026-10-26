@@ -2,7 +2,7 @@
 import os
 
 GAMES = ('bluff', 'forknite', 'hexwars', 'tetris')
-COMMANDS = ('/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
+COMMANDS = ('/about','/repo','/koel','/koeldrop','/roadmap','/experimental','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
             '/help', '/info', '/info_campus', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
             '/lobby', '/map', '/next', '/meals', '/notify', '/practice', '/prev', '/preset', '/profile', '/quit', '/settings',
             '/restart', '/roster', '/rooms', '/signin', '/start', '/stop', '/status', '/storm', '/timings',
@@ -25,7 +25,31 @@ def complete(text):
         elif command in ('/game', '/host') and parts[1:2] == ['bluff'] and len(parts) <= 3:
             choices = ('free', 'prompt')
         elif command in ('/settings','/profile') and (len(parts)==1 or (len(parts)==2 and not text.endswith(' '))):
-            choices = ('signin','signout','notifications')
+            choices = ('signin','signout','notifications','clusters','permissions','autologin','signin-close','koel-sound') if command=='/settings' else ('signin','signout','notifications')
+        elif command=='/settings' and parts[1:2]==['autologin'] and len(parts)<=3:
+            choices=('off','saved','on')
+        elif command=='/settings' and parts[1:2]==['koel-sound'] and len(parts)<=3:
+            choices=('on','off','always')
+        elif command=='/settings' and parts[1:2]==['signin-close'] and len(parts)<=3:
+            choices=('on','off')
+        elif command=='/settings' and parts[1:2]==['permissions'] and len(parts)<=3:
+            choices=('all','browser','help','forknite','profiles','signin','tools','photos','notifications','terminals')
+        elif command=='/settings' and parts[1:2]==['permissions'] and len(parts)<=4:
+            choices=('ask','allow','deny','inherit')
+        elif command in ('/roadmap','/experimental') and len(parts)<=2:
+            choices=('koeldrop','files')
+        elif command in ('/files','/koel','/koeldrop') and len(parts)<=2:
+            choices=('status',)
+        elif command=='/track' and len(parts)<=2:
+            choices=('help','status','list','lists','alerts','clusters','config')
+        elif command=='/track' and parts[1:2]==['status'] and len(parts)<=3:
+            choices=('tracked','friends','mutuals','moots','oomf')
+        elif command=='/settings' and parts[1:2]==['clusters'] and len(parts)<=3:
+            choices=('c1','c2','all','on','off','include','exclude','clear')
+        elif command=='/settings' and parts[1:3]==['clusters','scope'] and len(parts)<=4:
+            choices=('1','2','all')
+        elif command in ('/dm','/alert','/sabo') and len(parts)<=2:
+            choices=('friends','tracked','alltracked','mutuals','moots','oomf')
         elif command in ('/settings','/profile') and parts[1:2]==['notifications'] and len(parts)<=3:
             choices = ('on','off')
         elif command == '/storm' and (len(parts)==1 or (len(parts)==2 and not text.endswith(' '))):

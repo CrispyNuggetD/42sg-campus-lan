@@ -10,7 +10,8 @@ HELP=[
  '/storm step MS — reduce death deadline each round | /storm pause MS — gap',
  '/meals N — meal goal per storm round | /preset chill|chaos',
  '/sabo RANDOM N — add N cached campus students, excluding seated people',
- '/sabo LOGIN... — explicitly add offline stand-ins | /admin — owner photo tools',
+ '/sabo LOGIN... | /sabo 4 random cohort4 | /sabo cohort4 cohort5',
+ '/sabo history — selections | /tool LOGIN... — batch private photo cache',
  '/help — this guide | /leave — leave room; last departure closes game',
  'Stop before changing settings. At least two diners are needed; no filler bots.',
 ]

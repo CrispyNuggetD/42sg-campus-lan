@@ -169,3 +169,41 @@ Only students with a 42cursus enrollment are included. Intake dates come from
 cursus begin_at and are not certified cohort numbers. Missing status information
 is UNKNOWN; account activity and a blackhole deadline do not prove ACTIVE,
 BLACKHOLED or FREEZE enrollment status. The export keeps those API facts separate.
+
+### Local build, batch photos and directory selections
+
+`LAN42_PHILO_DIR` selects the C project directory; `LAN42_PHILO_BINARY` selects
+an executable explicitly and takes precedence. If it is missing, launching a
+room runs `make -C` in that directory, checks the executable, then launches the
+normal browser game automatically. `/make` also performs this check/build from
+the local terminal. Build failures leave the room unopened so it can be retried.
+
+`/tool thtay hnah` (also `/tools`) opens the local owner photo panel and starts a
+sequential batch, with “Saving X of Y” progress. Missing room photos open this
+same panel automatically, coalesced into a batch. Install/reload the unpacked
+avatar-saver extension once and configure Chrome's download folder in the panel.
+The extension now automatically exports a loaded CDN image only when its URL
+contains an explicit, short-lived LAN42 import job. No extension click is needed
+per photo. Browser challenges or download-policy restrictions still need local
+attention; the panel waits and reports timeout instead of caching a challenge.
+
+Supported selections include `/sabo RANDOM 5`, `/sabo 4 random cohort4`,
+`/sabo cohort4 cohort5`, and `/sabo 4 random cohort4 level>=2 active=true`.
+Cohort shortcuts form a union; comparisons form an AND. Optional WHERE and AND
+words are accepted. Whitelisted fields are cohort, level, status, active and login;
+operators are =, !=, >, <, >= and <=, written without spaces. SQL is never executed.
+Room capacity is 50; seated students are excluded. Cohorts remain inferred from
+shared cursus start dates, rather than official cohort labels. Explicit login
+batches accept up to 50 names, processed ten at a time.
+
+The directory source is exactly `$LAN42_CAMPUS_DATA/singapore.json`, defaulting to
+`~/Documents/42_Singapore_SUTD_hnah_private/42/data/campus/singapore.json`.
+Missing directories refresh on demand using the owner's private API settings.
+Only selected logins/photo URLs enter the game. `/sabo history` lists this room's
+selections; the last 500 selection events are also saved privately under the
+LAN42 config directory as `sabo-history.json`, never in this repository.
+
+All Python 42 API clients share an owner-local, cross-process file lock and space
+request starts by at least 0.51 seconds, including token requests. Queue delays
+are reported to the executing terminal/log. This limit spans this machine's
+LAN42 processes; it cannot coordinate other machines or unrelated applications.

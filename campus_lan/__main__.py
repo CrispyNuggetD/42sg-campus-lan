@@ -110,8 +110,16 @@ class Owner:
 
 def main():
     if sys.argv[1:2] == ['admin']:
+        from .popup_permissions import ensure_session
+        ensure_session()
         from .avatar_admin import launch
-        launch()
+        parser=argparse.ArgumentParser()
+        parser.add_argument('--approved',action='store_true')
+        parser.add_argument('--photos-approved',action='store_true')
+        parser.add_argument('--owner',default=None)
+        parser.add_argument('logins',nargs='*')
+        options=parser.parse_args(sys.argv[2:])
+        launch(options.logins,approved=options.approved,photos_approved=options.photos_approved,owner=options.owner)
         return
     if sys.argv[1:2] == ['forknite']:
         from .forknite import launch

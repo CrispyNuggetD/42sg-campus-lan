@@ -77,7 +77,7 @@ class Mesh:
                 rooms.append(dict(id=text(r.get('id',''),12),name=text(r.get('name',''),20),
                                   host=text(r.get('host',''),24),members=text(r.get('members',0),3),
                                   address=host,port=key[1]))
-        self.peers[key] = dict(seen=time.monotonic(),players=players,rooms=rooms,failures=0)
+        self.peers[key] = dict(seen=time.monotonic(),players=players,rooms=rooms,failures=0,last_dm=old.get('last_dm',-1000))
         for player in players:
             if player['name'] not in old_names:
                 await self.lobby.broadcast(dict(type='online',text=
@@ -122,6 +122,22 @@ class Mesh:
         finally:
             writer.close()
             await writer.wait_closed()
+
+    async def direct(self,sender,target,message):
+        # Send to the known recipient node only; never put DMs in gossip/events.
+        candidates=[key for key,peer in self.peers.items() if any(p['name'].lower()==target.lower() for p in peer.get('players',[]))]
+        if len(candidates)>1:raise ValueError('Ambiguous guest login across nodes; connect to their node first.')
+        if not candidates:return False
+        host,port=endpoint(*candidates[0])
+        try:
+            reader,writer=await asyncio.wait_for(asyncio.open_connection(host,port,limit=8192),2)
+            try:
+                payload=dict(type='direct_message',protocol=PROTOCOL,port=self.lobby.port,sender=sender,target=target,text=message)
+                writer.write((json.dumps(payload)+'\n').encode());await asyncio.wait_for(writer.drain(),2)
+                reply=json.loads(await asyncio.wait_for(reader.readline(),3))
+                return reply.get('type')=='direct_ack' and reply.get('delivered') is True
+            finally:writer.close();await writer.wait_closed()
+        except (OSError,ValueError,asyncio.TimeoutError):return False
 
     async def connect(self,host,port):
         async with self.lock:

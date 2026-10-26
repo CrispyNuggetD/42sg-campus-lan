@@ -81,6 +81,7 @@ class ClientChecks(unittest.TestCase):
     def test_chat_notifications_respect_mute_without_dropping_bursts(self):
         c = Client.__new__(Client)
         c.notify_enabled, c.last_notice = True, 100
+        c.request_popup=lambda category,description,action:action()
         with patch('campus_lan.client.time.monotonic', return_value=101), \
              patch('campus_lan.client.shutil.which', return_value=None), \
              patch('campus_lan.client.curses.beep') as beep:

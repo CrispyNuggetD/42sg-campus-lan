@@ -27,3 +27,10 @@ class Settings(unittest.TestCase):
         self.assertEqual(complete('/settings signo')[0],'/settings signout ')
         self.assertEqual(complete('/settings notifications of')[0],'/settings notifications off ')
         self.assertIn('signout',complete('/settings ')[1])
+
+    def test_profile_home_is_distinct_from_explicit_public_profile(self):
+        c=self.client();c.open_urls=Mock()
+        self.assertTrue(c.settings_command('/profile'))
+        self.assertEqual(c.open_urls.call_args.args[1],['https://profile-v3.intra.42.fr/'])
+        c.settings_command('/profile hnah')
+        self.assertEqual(c.open_urls.call_args.args[1],['https://profile-v3.intra.42.fr/users/hnah'])

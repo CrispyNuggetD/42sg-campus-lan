@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import unittest
 import urllib.request
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 from campus_lan.forknite_room import ForkniteRoom
 
 
@@ -19,6 +19,7 @@ class RoomIdentity(unittest.IsolatedAsyncioTestCase):
             binary.chmod(0o700)
             with patch.dict(os.environ,{'LAN42_PHILO_BINARY':str(binary),'LAN42_FORKNITE_LOGDIR':tmp,'XDG_CACHE_HOME':tmp}):
                 room=await ForkniteRoom.create()
+                room.open_tools=AsyncMock()
             try:
                 result=await room.control(dict(action='members',members=[dict(id='1',name='hnah',verified=True,avatar=None),dict(id='2',name='sillyguest',verified=False,avatar=None)]))
                 self.assertEqual([e['slot'] for e in result['entries']],[1,2])

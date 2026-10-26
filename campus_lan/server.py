@@ -2,6 +2,8 @@
 import asyncio
 import base64
 import binascii
+import contextlib
+import shlex
 import hashlib
 import json
 import re
@@ -22,6 +24,7 @@ class Lobby:
     def __init__(self, round_seconds=45, auth_broker=None):
         self.clients, self.rooms = {}, {}
         self.auth_broker = auth_broker
+        self.koeldrop=None
         self.callbacks = CallbackRelay()
         self.sequence = self.room_sequence = 0
         self.round_seconds = round_seconds
@@ -53,6 +56,43 @@ class Lobby:
 
     async def event(self, text, ids=None):
         await self.broadcast(dict(type='event',text=text), ids)
+
+    async def deliver_direct(self,sender,target,message,verified=False):
+        recipients={pid for pid,c in self.clients.items() if c['name'].lower()==target.lower()}
+        if not recipients:return False
+        await self.broadcast(dict(type='direct_message',sender=clean(sender,32),verified=verified,
+                                  text=clean(message,400)),recipients)
+        return True
+
+    async def route_direct(self,client,target,message):
+        delivered=await self.deliver_direct(client['name'],target,message,bool(self.auth_broker))
+        if not delivered and not self.auth_broker:delivered=await self.mesh.direct(client['name'],target,message)
+        return delivered
+
+    def start_direct_batch(self,pid,message):
+        client=self.clients[pid];targets=message.get('targets');body=message.get('text')
+        if (not isinstance(targets,list) or not 1<=len(targets)<=100
+                or any(not isinstance(n,str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',n) for n in targets)
+                or not isinstance(body,str) or not 1<=len(body)<=400 or not clean(body).strip()):
+            raise ValueError('Use 1–100 valid recipients and a message of 1–400 characters.')
+        if client.get('dm_task') and not client['dm_task'].done():raise ValueError('A message batch is already running; wait for its delivery summary.')
+        client['dm_task']=asyncio.create_task(self.direct_batch(client,list(dict.fromkeys(n.lower() for n in targets)),clean(body)))
+
+    async def direct_batch(self,client,targets,body):
+        unavailable=[];delivered_count=0
+        for index,target in enumerate(targets):
+            await asyncio.sleep(max(0,2.05-(time.monotonic()-client.get('last_dm',-1000))))
+            if self.auth_broker and not self.auth_broker.active(client['session_key']):
+                unavailable.extend(targets[index:]);break
+            client['last_dm']=time.monotonic()
+            error=''
+            try:delivered=await self.route_direct(client,target,body)
+            except (OSError,ValueError,asyncio.TimeoutError) as failure:
+                delivered=False;error=str(failure) if isinstance(failure,ValueError) else 'Recipient unavailable.'
+            if delivered:delivered_count+=1
+            else:unavailable.append(target)
+            await self.send(client,dict(type='dm_delivery',target=target,delivered=delivered,error=error))
+        await self.send(client,dict(type='dm_summary',delivered=delivered_count,failed=len(unavailable),unavailable=unavailable))
 
     async def state(self):
         if self.auth_broker:
@@ -147,7 +187,38 @@ class Lobby:
                         break
         if cmd in ('/info','/info_campus'):
             from .campus_info import info_lines
-            for line in info_lines(arg):await self.event(line,{pid})
+            await self.event('\n'.join(info_lines(arg)),{pid})
+        elif cmd == '/campus-presence':
+            from .clusters import snapshot
+            now=time.monotonic()
+            if now-c.get('presence_check',-1000)<60 and c.get('presence_snapshot'):
+                await self.send(c,c['presence_snapshot'])
+                return
+            c['presence_check']=now
+            try:players,stamp=await asyncio.to_thread(snapshot)
+            except (OSError,ValueError,KeyError):
+                await self.send(c,dict(type='campus_presence',error='Campus tracking unavailable; retrying in five minutes.'))
+                return
+            c['presence_snapshot']=dict(type='campus_presence',players=players,updated_at=stamp)
+            await self.send(c,c['presence_snapshot'])
+        elif cmd in ('/dm','/alert'):
+            target,separator,message=arg.partition(' ')
+            if not separator or not message.strip() or not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',target):raise ValueError('Use /dm LOGIN MESSAGE (or /alert LOGIN MESSAGE).')
+            if message.lstrip().startswith(('\"',"'")):message=' '.join(shlex.split(message))
+            if not message.strip():raise ValueError('A direct message cannot be empty.')
+            if c.get('dm_task') and not c['dm_task'].done():raise ValueError('Wait for the current group message to finish.')
+            if time.monotonic()-c.get('last_dm',-1000)<2:raise ValueError('Wait two seconds before sending another message.')
+            c['last_dm']=time.monotonic()
+            delivered=await self.route_direct(c,target,message)
+            if not delivered:raise ValueError('That user is not reachable in this LAN42 lobby/mesh.')
+            await self.send(c,dict(type='event',text='DM to '+target+': '+message))
+        elif cmd == '/clusters':
+            if arg not in ('','1','2'):raise ValueError('Use /clusters [1|2].')
+            from .clusters import snapshot
+            await self.event('Loading campus API seats (cached for 30 seconds); API calls may queue.',{pid})
+            try:players,stamp=await asyncio.to_thread(snapshot)
+            except (OSError,ValueError,KeyError):raise ValueError('Campus seats unavailable. Check the API host configuration; retry later.') from None
+            await self.send(c,dict(type='clusters',players=players,updated_at=stamp,cluster=int(arg or '1')))
         elif cmd == '/browser':
             if not room or room['game'] != 'forknite':
                 raise ValueError('Join a FORKNITE room first with /game forknite or /join ROOM.')
@@ -226,21 +297,48 @@ class Lobby:
         elif cmd == '/sabo':
             if not room or room['game']!='forknite' or room['host']!=pid:
                 raise ValueError('Only the FORKNITE room host can use /sabo LOGIN...')
+            if arg.lower()=='history':
+                await self.event('SABO this room: '+', '.join(room.get('sabo_history',[])),{pid})
+                return
             bits=arg.split()
-            if bits and bits[0].upper()=='RANDOM':
-                if len(bits)!=2 or not bits[1].isdecimal():raise ValueError('Use /sabo RANDOM 5.')
-                from .campus_info import random_profiles
+            cohorts=[];counts=[];filters=[];random_selection=False
+            for bit in bits:
+                if bit.lower().startswith('cohort') and bit[6:].isdecimal():cohorts.append(int(bit[6:]))
+                elif bit.lower()=='random':random_selection=True
+                elif bit.isdecimal():counts.append(int(bit))
+                elif any(op in bit for op in ('=','>','<')):filters.append(bit)
+            if cohorts or random_selection or filters:
+                if len(counts)>1 or any(not (x.lower() in ('random','where','and') or x in filters or x.isdecimal() or (x.lower().startswith('cohort') and x[6:].isdecimal())) for x in bits):
+                    raise ValueError('Use /sabo [COUNT] random [cohort4 cohort5] or /sabo cohort4 cohort5.')
+                from .campus_info import random_profiles,load,refresh
+                if not load():
+                    await self.event('Campus cache missing; fetching private campus directory. Please wait.',{pid})
+                    await asyncio.to_thread(refresh)
                 seated=await room['web'].control(dict(action='roster'))
-                requested=int(bits[1])
-                if requested>50-len(seated['players']):raise ValueError('Not enough empty seats (50 maximum).')
-                profiles=random_profiles(requested,[p['name'] for p in seated['players']])
+                requested=counts[0] if counts else None
+                available=50-len(seated['players'])
+                if requested is not None and requested>available:raise ValueError('Not enough empty seats (50 maximum).')
+                profiles=random_profiles(requested,[p['name'] for p in seated['players']],cohorts,filters)[:available]
                 errors=[]
             else:
-                profiles, errors = await self.profile_lookup.lookup_many(bits)
+                if not 1<=len(bits)<=50 or any(not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',bit) for bit in bits):
+                    raise ValueError('Use /sabo LOGIN... (1–50), or /sabo [COUNT] random cohort4.')
+                profiles=[];errors=[]
+                for offset in range(0,len(bits),10):
+                    await self.event('Loading profiles '+str(offset+1)+'–'+str(min(offset+10,len(bits)))+' of '+str(len(bits))+'; API requests may queue.',{pid})
+                    batch,failed=await self.profile_lookup.lookup_many(bits[offset:offset+10])
+                    profiles.extend(batch);errors.extend(failed)
             if profiles:
                 if rid not in self.rooms or self.rooms[rid] is not room:
                     raise ValueError('Room closed while profiles were loading.')
                 result = await room['web'].control(dict(action='sabo_profiles',profiles=profiles))
+                room.setdefault('sabo_history',[]).extend(result.get('added',[]))
+                from .auth import config_dir,private_read,private_write
+                history_path=config_dir()/'sabo-history.json'
+                try:history=json.loads(private_read(history_path))
+                except (OSError,ValueError):history=[]
+                history.append(dict(at=time.time(),room=rid,added=result.get('added',[])))
+                private_write(history_path,json.dumps(history[-500:]))
                 await self.event('SABO: '+', '.join(result.get('added',[])) if result.get('added') else 'No new sabo slots added (already present or room full).',room['members'])
             if errors:
                 await self.event('Could not load: '+', '.join(errors)+'. Check logins, credentials or API rate limits.',{pid})
@@ -445,7 +543,7 @@ class Lobby:
             if isinstance(hello, dict) and hello.get('type') == 'oauth_wait' and hello.get('protocol') == PROTOCOL:
                 if self.auth_broker or not ipaddress.ip_address(source).is_loopback:
                     raise ValueError('Callback registration is loopback-only.')
-                await self.callbacks.wait(hello.get('state'), reader, writer)
+                await self.callbacks.wait(hello.get('state'), reader, writer,close_tab=hello.get('close_tab') is True)
                 return
             if isinstance(hello,dict) and hello.get('protocol')==PROTOCOL:
                 if hello.get('type')=='mesh':
@@ -453,6 +551,22 @@ class Lobby:
                     await self.mesh.merge(source,hello)
                     await self.send(dict(writer=writer),self.mesh.snapshot())
                     await self.state()
+                    return
+                if hello.get('type')=='direct_message':
+                    if self.auth_broker:raise ValueError('Guest mesh messages cannot enter a verified lobby.')
+                    from .mesh import endpoint
+                    peer=self.mesh.peers.get(endpoint(source,hello.get('port')))
+                    sender=hello.get('sender');target=hello.get('target');message=hello.get('text')
+                    if (not peer or not peer.get('seen') or not isinstance(sender,str)
+                            or not any(p['name']==sender for p in peer.get('players',[]))
+                            or not isinstance(target,str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',target)
+                            or not isinstance(message,str) or not message.strip() or len(message)>400):
+                        raise ValueError('Known LAN42 peer and valid direct message required.')
+                    now=time.monotonic()
+                    if now-peer.get('last_dm',-1000)<2:raise ValueError('Wait two seconds before sending another message.')
+                    peer['last_dm']=now
+                    delivered=await self.deliver_direct(sender,target,message)
+                    await self.send(dict(writer=writer),dict(type='direct_ack',delivered=delivered))
                     return
                 if hello.get('type') in ('owner','connect_peer'):
                     if not ipaddress.ip_address(source).is_loopback:
@@ -537,6 +651,11 @@ class Lobby:
                 try:
                     if msg.get('type')=='command':
                         await self.command(pid,msg.get('text',''))
+                    elif msg.get('type')=='koel_deliver':
+                        if not self.auth_broker or not self.koeldrop:raise ValueError('KoelDrop requires the verified host service.')
+                        await self.koeldrop.deliver_invite(self,pid,msg)
+                    elif msg.get('type')=='direct_batch':
+                        self.start_direct_batch(pid,msg)
                     elif msg.get('type') == 'hex_bot':
                         await self.upload_bot(pid, msg)
                     elif msg.get('type')=='move':
@@ -554,6 +673,10 @@ class Lobby:
                 if not self.owners:
                     self.shutdown.set()
             if pid is not None:
+                task=self.clients[pid].get('dm_task')
+                if task:
+                    task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):await task
                 name = self.clients[pid]['name']
                 role = self.clients[pid].get('role','lobby')
                 await self.leave(pid)
@@ -585,6 +708,10 @@ class Lobby:
                             room['last_status']=status
                             await self.broadcast(dict(type='forknite_status',status=status),room['members'])
                     except (OSError,ValueError):pass
+                if room['game']=='forknite' and getattr(room['web'],'tool_ready',[]):
+                    names=room['web'].tool_ready;room['web'].tool_ready=[]
+                    host=self.clients.get(room['host'])
+                    if host:await self.send(host,dict(type='tools_required',logins=names))
                 if not engine:
                     continue
                 if room['game']=='tetris' and not engine.over and time.monotonic()-room['last']>=.65:

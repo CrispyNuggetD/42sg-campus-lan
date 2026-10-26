@@ -12,8 +12,10 @@ REPO = Path(__file__).resolve().parents[1]
 def terminal_command(repo, platform=sys.platform, which=shutil.which, args=()):
     launcher = str(repo / 'lan42.sh')
     invocation = ['sh', launcher, *args]
-    if args:
-        invocation = ['env', 'LAN42_NO_UPDATE=1', *invocation]
+    environment=['LAN42_NO_UPDATE=1'] if args else []
+    for name in ('LAN42_POPUP_SESSION','LAN42_POPUP_OWNER_PID'):
+        if os.environ.get(name):environment.append(name+'='+os.environ[name])
+    if environment:invocation=['env',*environment,*invocation]
     helper = os.environ.get('DAILY_TMUX_HELPER')
     if helper and platform != 'darwin':
         if not Path(helper).is_file():

@@ -38,7 +38,7 @@ function emit(type, data) {
  clients.forEach(res => { if (res.writableLength > 1048576) { res.destroy(); clients.delete(res); } else res.write(frame); });
  return event;
 }
-function roster() { return Array.from(players, ([id,p]) => ({id,name:p.name,verified:Boolean(p.userId),avatar:(p.avatar||avatarCache.has(p.name))?'/avatars/'+id:null,sabo:Boolean(p.sabo)})); }
+function roster() { return Array.from(players, ([id,p]) => ({id,name:p.name,verified:Boolean(p.userId),avatar:(p.avatar||avatarCache.has(p.name))?'/avatars/'+id+'?v='+avatarCache.version(p.name):null,sabo:Boolean(p.sabo)})); }
 function line(raw) {
  const m = raw.replace(/\x1b\[[0-9;]*m/g, '').match(/^\s*(\d+)\s+(\d+)\s+(has taken a fork|is eating|is sleeping|is thinking|died)\s*$/);
  if (!m || Number(m[2]) < 1 || Number(m[2]) > count) { emit('raw',{round,line:raw}); return; }
@@ -212,8 +212,10 @@ const server = http.createServer(async (req,res) => {
  }
  json(res,404,{error:'Not found'});
 });
+let avatarRosterSignature='';
+const avatarRefresh=setInterval(()=>{const current=roster(),signature=JSON.stringify(current);if(signature!==avatarRosterSignature){avatarRosterSignature=signature;if(players.size)emit('players',{players:current});}},2000);
 const heartbeat=setInterval(()=>clients.forEach(res=>res.write(': heartbeat\n\n')),15000);
-function shutdown() { if(killed)return; killed=true; clearTimeout(timer); clearInterval(heartbeat); if(child)child.kill('SIGTERM'); clients.forEach(r=>r.end()); server.close(); log.end(); }
+function shutdown() { if(killed)return; killed=true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(avatarRefresh); if(child)child.kill('SIGTERM'); clients.forEach(r=>r.end()); server.close(); log.end(); }
 process.on('SIGINT',shutdown); process.on('SIGTERM',shutdown);
 server.listen(port,opt('--host','0.0.0.0'),()=>{
  console.error('\nFORKNITE → http://localhost:'+port+' | LAN: http://<this-machine-IP>:'+port+'\nLogs: '+logdir+'\n'+(piped?'Watching stdin; browsers can replay when it ends.':'Players join first. Type start + Enter here to run. Type stop to stop.'));

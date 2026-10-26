@@ -30,3 +30,14 @@ class BrowserSave(unittest.TestCase):
                 imports.consume(job);self.assertEqual(imports.status(job)['status'],'invalid_file')
                 with self.assertRaises(FileNotFoundError):cache.read('hnah')
             finally:imports.close()
+
+    def test_completed_imports_do_not_exhaust_batch_pending_limit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cache=AvatarCache(Path(tmp)/'cache');imports=BrowserImports(cache,Path(tmp)/'Downloads')
+            try:
+                for i in range(25):
+                    job=imports.prepare('u'+str(i))['job']
+                    (imports.root/(job+'.png')).write_bytes(b'\x89PNG\r\n\x1a\nfixture')
+                    imports.consume(job)
+                    self.assertEqual(imports.status(job)['status'],'cached')
+            finally:imports.close()

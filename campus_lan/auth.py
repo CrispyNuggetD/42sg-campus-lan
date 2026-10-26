@@ -94,6 +94,8 @@ def provider_tls_context():
 
 def request_json(url, data=None, headers=None, context=None, empty_ok=False):
     """TLS verification stays on. Refuse redirects rather than forward secrets."""
+    from .api_pacing import wait
+    wait()
     request = urllib.request.Request(url, data=data,
         headers={'User-Agent': 'LAN42/0.6.0', 'Accept': 'application/json', **(headers or {})})
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),
@@ -279,12 +281,13 @@ async def http_request(reader, first=None):
     return method, target, headers
 
 
-async def http_response(writer, status, body, extra=''):
+async def http_response(writer, status, body, extra='',content_type='application/json; charset=utf-8',csp=None):
     body = body.encode()
-    writer.write((f'HTTP/1.1 {status}\r\nContent-Type: application/json; charset=utf-8\r\n'
+    policy=csp or "default-src 'none'; frame-ancestors 'none'"
+    writer.write((f'HTTP/1.1 {status}\r\nContent-Type: {content_type}\r\n'
         f'Content-Length: {len(body)}\r\nConnection: close\r\nCache-Control: no-store\r\n'
         'Referrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\n'
-        "Content-Security-Policy: default-src 'none'; frame-ancestors 'none'\r\n" + extra + '\r\n').encode() + body)
+        f"Content-Security-Policy: {policy}\r\n" + extra + '\r\n').encode() + body)
     await asyncio.wait_for(writer.drain(), 3)
 
 
@@ -292,12 +295,14 @@ class CallbackRelay:
     """Loopback-only, one-shot callback forwarding to the initiating client."""
     def __init__(self):
         self.waiters = {}
+        self.close_tabs = {}
 
-    async def wait(self, state, reader, writer):
+    async def wait(self, state, reader, writer,close_tab=False):
         if not nonce(state) or state in self.waiters or len(self.waiters) >= 8:
             raise AuthError('Invalid or duplicate callback registration.')
         future = asyncio.get_running_loop().create_future()
         self.waiters[state] = future
+        self.close_tabs[state]=bool(close_tab)
         disconnected = asyncio.create_task(reader.read(1))
         try:
             writer.write(b'{"type":"callback_ready"}\n')
@@ -309,6 +314,7 @@ class CallbackRelay:
                 await writer.drain()
         finally:
             self.waiters.pop(state, None)
+            self.close_tabs.pop(state,None)
             disconnected.cancel()
             await asyncio.gather(disconnected, return_exceptions=True)
 
@@ -320,8 +326,17 @@ class CallbackRelay:
             parsed = urllib.parse.urlsplit(target)
             if parsed.scheme or parsed.netloc or parsed.fragment:
                 raise AuthError('Invalid callback target.')
-            if parsed.path == '/signin-complete' and not parsed.query:
-                await http_response(writer, '200 OK', '{"message":"Return to LAN42 to check sign-in status."}')
+            if parsed.path == '/signin-complete' and parsed.query in ('','close=1'):
+                close=parsed.query=='close=1';script_nonce=secrets.token_hex(16)
+                script="setTimeout(()=>{window.close();document.getElementById('status').textContent='Your browser kept this tab open. You can close it manually.';},700);" if close else ''
+                page=('<!doctype html><meta charset="utf-8"><title>Return to LAN42</title>'
+                      '<style>body{max-width:620px;margin:12vh auto;padding:30px;font:18px/1.6 system-ui;background:#edf4f8;color:#19364d}main{background:white;padding:30px;border-radius:16px}small{color:#61778a}</style>'
+                      '<main><h1>Back to LAN42</h1><p>Authorization returned. Check your LAN42 terminal for the final sign-in result.</p>'
+                      '<p id="status">'+('Trying to close this sign-in tab…' if close else 'You may close this tab and return to the terminal.')+'</p>'
+                      '<small>Change this behaviour: /settings signin-close on|off</small></main>'
+                      '<script nonce="'+script_nonce+'">history.replaceState(null,"","/signin-complete");'+script+'</script>')
+                policy="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-"+script_nonce+"'; frame-ancestors 'none'; base-uri 'none'"
+                await http_response(writer,'200 OK',page,content_type='text/html; charset=utf-8',csp=policy)
                 return
             if parsed.path != '/callback':
                 raise AuthError('Unknown callback path.')
@@ -332,6 +347,7 @@ class CallbackRelay:
             future = self.waiters.get(state)
             if not nonce(state) or not future or future.done():
                 raise AuthError('Unknown or expired sign-in.')
+            close_tab=self.close_tabs.get(state,False) and 'error' not in params
             code = params.get('code', [''])[0]
             if 'error' in params:
                 future.set_result(dict(error='Sign-in was declined or cancelled.'))
@@ -339,7 +355,7 @@ class CallbackRelay:
                 future.set_result(dict(code=code))
             else:
                 raise AuthError('Missing authorization code.')
-            await http_response(writer, '303 See Other', '{}', 'Location: /signin-complete\r\n')
+            await http_response(writer, '303 See Other', '{}', 'Location: /signin-complete'+('?close=1' if close_tab else '')+'\r\n')
         except (ValueError, OSError, asyncio.TimeoutError):
             await http_response(writer, '400 Bad Request', '{"error":"Invalid or expired sign-in callback."}')
 
@@ -348,13 +364,17 @@ class AuthHTTP:
     def __init__(self, broker, authority):
         self.broker, self.authority = broker, authority
         self.connections = 0
+        self.koeldrop=None
 
     async def handle(self, reader, writer):
         self.connections += 1
         try:
             if self.connections > 32:
                 raise AuthError('Authentication service busy.')
-            method, target, headers = await asyncio.wait_for(http_request(reader), 10)
+            first=await asyncio.wait_for(reader.readline(),5)
+            if self.koeldrop and b' /v1/' in first:
+                await self.koeldrop.handle(reader,writer,first);return
+            method, target, headers = await asyncio.wait_for(http_request(reader,first), 10)
             if method != 'POST' or headers.get('host') != self.authority or 'origin' in headers:
                 raise AuthError('Native client requests only.')
             if headers.get('content-type') != 'application/json':
@@ -367,6 +387,9 @@ class AuthHTTP:
                 raise AuthError('Expected an object.')
             if target == '/begin':
                 result = self.broker.begin(data.get('proof'), writer.get_extra_info('peername')[0])
+            elif target == '/resume':
+                record=self.broker.authenticate(data.get('session'))
+                result={key:record[key] for key in ('uid','login','expires')}
             elif target == '/exchange':
                 result = await self.broker.exchange(data.get('state'), data.get('proof'), data.get('code'))
             else:
