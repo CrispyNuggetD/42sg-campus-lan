@@ -89,3 +89,9 @@ if it affects basic use. README credit entries and AI disclosure flow to home
 automatically. Keep contributor, roadmap, source and help links discoverable.
 Build and check both beginner and reference journeys; preserve the offline HELP
 generation check. Python/docs/site changes here alone do not bump server version.
+
+Command search presents matching rows immediately below its input, with a live
+count, nearby empty state and Clear/Escape reset. Keep results visible without
+scrolling through introductory material; cloned command rows retain copy actions.
+Check both narrow and desktop widths when changing this interaction. The same
+self-contained file powers the online reference and local help.
