@@ -147,6 +147,9 @@ operator/admin/host enrollment and bounded capacity. Discovery metadata via the
 pinned host never grants anonymous membership or certificate trust. Always-join
 needs explicit directory/upload consent, scoped per trusted host/user/computer;
 it cannot approve receiving/deleting files or replace another active group.
+Offer the default home-to-personal-sgoinfre convenience symlink only with local
+yes/no consent; never replace existing paths. Store/use the approved real target
+so transfer traversal continues to reject symlinks.
 Reuse one marked daily folder (SGT) per trusted host, student and group across
 reconnects/host epochs. Validate its private ownership and scope marker; never
 import unrecognized existing folders, rename them or recursively remove them.

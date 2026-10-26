@@ -19,7 +19,7 @@ with friends.
 <!-- shell-installer-features:start -->
 - **Campus HQ:** `lan42` opens a separate tmux workspace for your lobby, games and tools.
 - **Find your people:** `/who`, `/join`, private DMs and `/track` lists; `/clusters` shows current SG seats while the approved campus host is online.
-- **KoelDrop:** `/koel flock` — the host starts a **42 Singapore flock**; choose join once, always join or never show again. Join-folder and incoming-file consent stay separate; copies survive shutdown. `/uwu` introduces your bird courier.
+- **KoelDrop:** `/koel flock` joins the host’s 42 Singapore flock: once, always or never. Daily folders survive reconnects; optional sgoinfre link saves home quota. Upload/receive consent stays separate. `/uwu` introduces your courier.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
 - **Easy controls:** clickable footer or F2 sign in/out; F3 mute, F4 output 0/30%, F5 uwu once, F6 automatic uwu; Up/Down history and !COMMAND for your local shell.
 - **Useful alerts:** moderated `/broadcast`, pinned host arrival and exam-time LAN42-only audio quiet. `/notify` separates alerts from DMs/pokes; release popups are coalesced and daily-limited.

@@ -190,6 +190,42 @@ class FlockUITests(unittest.TestCase):
         accept();self.worker.submit.assert_called_once_with('flock','b'*32,'hnah','c'*32,str(self.root/'service'),'a'*64)
         self.assertEqual(FlockPreferences('a'*64,2).mode,'always')
 
+    def test_default_storage_offers_sgoinfre_link_with_explicit_yes_no(self):
+        home=self.root/'home';home.mkdir();target=self.root/'nas'/'KoelDrop'
+        self.preferences.base=str(home/'KoelDrop')
+        with patch('pathlib.Path.home',return_value=home),patch('campus_lan.file_sharing.flock.sgoinfre_target',return_value=target):
+            self.c.flock_join('always',approved=True)
+            self.worker.submit.assert_not_called()
+            description,yes,no=self.c.popup_prompts().confirm.call_args.args
+            self.assertIn('[y/N]',description)
+            self.assertFalse((home/'KoelDrop').exists())
+            yes()
+            self.assertTrue((home/'KoelDrop').is_symlink())
+            self.assertEqual((home/'KoelDrop').resolve(),target)
+            self.assertEqual(self.preferences.base,str(target))
+            self.assertTrue(self.preferences.storage_chosen)
+            self.worker.submit.assert_called_once_with('flock','b'*32,'hnah','c'*32,str(target),'a'*64)
+            self.assertEqual(FlockPreferences('a'*64,2).base,str(target))
+
+    def test_declining_sgoinfre_keeps_home_and_remembers_choice(self):
+        home=self.root/'home';home.mkdir();self.preferences.base=str(home/'KoelDrop')
+        with patch('pathlib.Path.home',return_value=home),patch('campus_lan.file_sharing.flock.sgoinfre_target',return_value=self.root/'nas'/'KoelDrop'):
+            self.c.flock_join('once',approved=True)
+            description,yes,no=self.c.popup_prompts().confirm.call_args.args
+            no()
+            self.assertFalse((home/'KoelDrop').is_symlink())
+            self.assertEqual(self.preferences.base,str(home/'KoelDrop'))
+            self.assertTrue(FlockPreferences('a'*64,2).storage_chosen)
+            self.worker.submit.assert_called_once()
+
+    def test_storage_link_never_replaces_existing_destination(self):
+        from campus_lan.file_sharing.flock import link_sgoinfre
+        home=self.root/'home';home.mkdir();alias=home/'KoelDrop';alias.mkdir()
+        (alias/'keep').write_text('mine');self.preferences.base=str(alias)
+        with patch('pathlib.Path.home',return_value=home):
+            with self.assertRaises(Denied):link_sgoinfre(self.preferences,self.root/'nas')
+        self.assertEqual((alias/'keep').read_text(),'mine')
+
     def test_always_rejoins_without_reasking_but_does_not_replace_private_group(self):
         c=self.c;self.preferences.save(mode='always')
         c.flock_status(dict(flock=self.info));c.flock_status(dict(flock=self.info))

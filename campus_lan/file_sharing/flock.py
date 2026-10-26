@@ -1,5 +1,6 @@
 """A host-owned campus flock. Its local service identity is never a login token."""
 import json
+import getpass
 import os
 from pathlib import Path
 import re
@@ -52,7 +53,7 @@ class FlockPreferences:
         if not re.fullmatch('[a-f0-9]{64}',fingerprint) or type(uid) is not int or uid<0:raise Denied('Invalid flock preference scope.')
         self.fingerprint=fingerprint;self.uid=uid
         self.path=local_path('flock-'+fingerprint+'-'+str(uid))
-        self.mode='ask';self.base=str(Path.home()/'KoelDrop')
+        self.mode='ask';self.base=str(Path.home()/'KoelDrop');self.storage_chosen=False
         if uid:
             guest=FlockPreferences(fingerprint,0)
             self.base=guest.base
@@ -60,7 +61,7 @@ class FlockPreferences:
         try:
             data=json.loads(private_read(self.path))
             if not isinstance(data,dict) or data.get('mode') not in ('ask','always','never') or not isinstance(data.get('base'),str):raise ValueError()
-            self.mode=data['mode'];self.base=data['base']
+            self.mode=data['mode'];self.base=data['base'];self.storage_chosen=data.get('storage_chosen') is True
         except FileNotFoundError:pass
         except (OSError,ValueError):self.mode='never'
 
@@ -72,7 +73,31 @@ class FlockPreferences:
             path=Path(base).expanduser().absolute()
             if path==Path('/') or path==Path.home() or '..' in path.parts or any(p.startswith('.') for p in path.parts[1:]):raise Denied('Choose a dedicated KoelDrop service directory.')
             self.base=str(path)
-        private_write(self.path,json.dumps(dict(mode=self.mode,base=self.base)))
+        private_write(self.path,json.dumps(dict(mode=self.mode,base=self.base,storage_chosen=self.storage_chosen)))
+
+
+def sgoinfre_target():
+    """Offer only an existing local user's campus storage, never create a NAS mount."""
+    name=getpass.getuser()
+    if not re.fullmatch(r'[a-zA-Z0-9_-]+',name):return None
+    for parent in (Path('/sgoinfre/goinfre/Perso')/name,Path('/sgoinfre')/name):
+        try:
+            info=parent.lstat()
+            if stat.S_ISDIR(info.st_mode) and info.st_uid==os.getuid():return parent/'KoelDrop'
+        except OSError:pass
+    return None
+
+
+def link_sgoinfre(preferences,target):
+    """Create a convenience link only after local consent; workers use its real target."""
+    alias=Path(preferences.base)
+    if alias!=Path.home()/'KoelDrop' or os.path.lexists(alias):raise Denied('KoelDrop already exists; it was left unchanged. Choose storage manually.')
+    if target!=sgoinfre_target():raise Denied('Campus storage changed; choose storage again.')
+    fd=private_directory(target,create=True)
+    os.close(fd)
+    os.symlink(str(target),alias,target_is_directory=True)
+    preferences.storage_chosen=True
+    preferences.save(base=str(target))
 
 
 def fresh_folder(base,fingerprint,epoch,uid=0,group=''):

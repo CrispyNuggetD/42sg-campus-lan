@@ -1,5 +1,7 @@
 """Local consent for the host's public campus flock, discovered only through pinned TLS."""
 import re
+import os
+from pathlib import Path
 import secrets
 from .security import Denied
 from .flock import FlockPreferences, LABEL
@@ -85,6 +87,22 @@ class FlockUI:
                 ('Always join this trusted host’s ' if mode=='always' else 'Join once: ')+LABEL+'? Service directory: '+preferences.base+
                 '/42-singapore/<trusted-host>/<student-id>/<SGT-date>/. Same-day reconnects reuse this folder. Files left or added there upload to admitted SG flock members and remain on the host across restarts, subject to quotas. Incoming files and deletions need separate approval. Only LAN42-marked daily folders for this host/account/group are reused; other existing folders are refused. Folders are never renamed or erased; local copies survive shutdown and remain until you remove them yourself.',
                 lambda:self.flock_join(mode,approved=True))
+            return
+        from .flock import sgoinfre_target,link_sgoinfre
+        target=sgoinfre_target()
+        if (not preferences.storage_chosen and target is not None
+                and Path(preferences.base)==Path.home()/'KoelDrop' and not os.path.lexists(preferences.base)):
+            def choose(use_nas):
+                try:
+                    if use_nas:link_sgoinfre(preferences,target)
+                    else:
+                        preferences.storage_chosen=True;preferences.save()
+                    self.flock_join(mode,approved=True)
+                except (OSError,ValueError) as error:self.lines.append('KoelDrop: '+str(error))
+            self.popup_prompts().confirm(
+                'Save KoelDrop in campus sgoinfre to spare your small home quota? Create '+preferences.base+
+                ' as a symlink to '+str(target)+'? [y/N] No keeps files in home. sgoinfre availability/retention follows campus policy; local copies are not backups. Existing paths are never replaced.',
+                lambda:choose(True),lambda:choose(False))
             return
         preferences.save(mode='always' if mode=='always' else 'ask')
         self.flock_attempt=info['epoch']

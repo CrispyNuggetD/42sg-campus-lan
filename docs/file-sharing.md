@@ -45,6 +45,14 @@ or grants automatic file receipt/deletion. `/koel flock ask` stops future automa
 joins; `/koel leave` stops current uploads. Never suppresses future invitations
 but does not leave a group you already joined.
 
+On campus, the default setup offers **[y/N]** to put KoelDrop in your existing
+personal `sgoinfre` storage and create `~/KoelDrop` as a convenience symlink.
+Yes saves home quota; No keeps home storage. This choice is remembered.
+Existing paths are never replaced. Workers use the approved real target directly;
+other symlinks inside shared folders remain refused. If personal sgoinfre is not
+available, normal home/custom-directory setup remains available. Campus storage
+availability and retention follow campus policy; these copies are not backups.
+
 The chosen service root can already contain files: those files are not scanned.
 The first join each Singapore calendar day creates a dedicated subdirectory:
 
