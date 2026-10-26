@@ -20,9 +20,11 @@ ordinary game hosting and SG sign-in do not approve an authentication/API host.
 See [access-policy.md](access-policy.md) for independent roles and server-enforced
 read-only Singapore scope.
 
-Existing credential owners must run `python3 -m campus_lan.access enroll-local`
-on each intended machine before starting/upgrading the service. New setups run
-this after `setup`. Keep the private policy/operator files outside Git. Default
+The existing managed hnah school host migrates automatically on its next normal
+start after updating. LAN42 runs owner initialization after its launcher update;
+there is no one-off script or manual upgrade command. Existing policy/revocations
+are preserved. New hosts still run `python3 -m campus_lan.access enroll-local`
+after `setup` and explicit approval. Keep private policy/operator files outside Git. Default
 foreground binding is localhost; use an explicit LAN bind only for a deliberately
 shared approved host. The dailylogin service binds its approved detected seat.
 

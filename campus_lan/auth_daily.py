@@ -95,7 +95,8 @@ def start():
     if not (root / 'auth-server.json').exists():
         # Ordinary students never receive the app secret or start a broker.
         return None
-    from .access import Policy
+    from .access import Policy,migrate_legacy_host
+    migrate_legacy_host()
     Policy().require_host()
     host = current_seat()
     fd = os.open(root / 'auth-move.lock', os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)

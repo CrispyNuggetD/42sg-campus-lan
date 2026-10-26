@@ -127,3 +127,10 @@ cache/export/download permission. Use isolated config roots and mocked provider
 responses in tests; never load the owner's actual credentials in a test.
 Run test_access_policy.py, auth/announcements, profile lookup, client/network,
 tracking, mesh, KoelDrop, shell feature and website checks for policy changes.
+
+Legacy startup migration is explicitly owner-authorized for the pre-policy managed
+hnah campus host. Keep it in normal LAN42 initialization after launcher updates;
+never restore the shell's blocking pre-update auth_daily call. Do not create a
+one-shot dailylogin script. Migration must skip existing policies, preserve
+revocations and TLS/credentials, reject new setups/other OS users, and validate
+campus plus SG owner proof. Include test_access_migration.py in startup checks.

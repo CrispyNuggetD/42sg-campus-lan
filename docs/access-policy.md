@@ -33,8 +33,25 @@ mesh advertisement. Signing in never automatically trusts another service host.
 
 ## Upgrade / enroll an existing owner machine
 
-An old credential file alone no longer starts the official service. On the
-owner-controlled machine that already holds the existing protected credentials:
+For the existing school host, startup now performs a narrow, one-time legacy
+migration automatically. The shell launches LAN42 first; after the launcher's Git
+update, LAN42 initializes the campus auth service. Older `dailylogin` calls to
+`auth_daily` also use the same migration when that module has been updated.
+
+Migration requires the real OS account `hnah`, an actual locally assigned campus
+seat, the previous managed campus configuration/generation, matching private TLS
+key/certificate and pinned trust, and a successful scoped verification of hnah's
+SG account. It preserves credentials, certificate and generation. Missing/broken
+proof leaves the auth host stopped while ordinary guest HQ can still open.
+
+Once an access policy exists, migration never overwrites it or reapproves a
+revoked/new machine. A completed version marker also prevents reenrollment if the
+policy is later missing. New setups carry that marker from creation and require
+explicit enrollment. Interrupted pre-policy writes may safely retry. There is no
+temporary script to remove; subsequent startup performs no migration API lookup.
+
+For new approved machines, or an explicit owner-controlled setup, manual enrollment
+remains available using the existing protected credentials:
 
 ```sh
 python3 -m campus_lan.access enroll-local
@@ -47,7 +64,7 @@ The first enrollment assumes the local account already holding the app secret
 is trusted. Possession of that secret is a powerful authority; this cannot
 constrain an attacker who has compromised the credential-owning account.
 
-The default policy file starts with **no approved hosts**. Once a policy exists,
+The default policy starts with **no approved hosts**; only the constrained legacy upgrade or explicit owner enrollment changes that. Once a policy exists,
 `enroll-local` cannot reapprove a revoked machine; an existing approved admin must
 approve it. The machine fingerprint hashes a local OS device identifier; raw
 hardware identifiers never enter policy exports or the public repository.

@@ -121,6 +121,15 @@ class Owner:
             pass
         self.socket.close()
 
+def initialize_owner_host():
+    """Run after the launcher's update, including when an older launcher pulled new Python."""
+    if not sys.platform.startswith('linux'):return
+    from .auth_daily import start
+    try:start()
+    except (OSError,ValueError,subprocess.SubprocessError):
+        print('LAN42 campus sign-in host could not initialize; guest HQ remains available. Check the private host configuration or user service.',file=sys.stderr)
+
+
 def main():
     from .release import banner
     if '--version' not in sys.argv:
@@ -172,6 +181,7 @@ def main():
     args = parser.parse_args(argv)
     if not 1<=args.port<=65535:
         parser.error('Port must be between 1 and 65535')
+    if args.mode in ('lobby','host','join'):initialize_owner_host()
     if args.mode=='server':
         # Hold the lock for the entire server lifetime; never overwrite another PID.
         lock = (runtime_dir()/f'server-{args.port}.pid').open('a+')

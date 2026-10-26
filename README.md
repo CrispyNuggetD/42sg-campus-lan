@@ -30,7 +30,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
 - `/dm` / `/uwu LOGIN`: messages and sound pokes; `/volume` for audio; `/koel` for approved group file sharing.
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE; Up/Down history and !COMMAND for the local shell.
-- `/signin`: verified SG members get selected API views; guests retain chat/games; trusted hosts require enrollment.
+- `/signin`: SG API views; guests keep chat/games; legacy owner-host approval migrates on startup.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
 - Pinned host discovery: keep guest nodes running offline, then discover and reconnect when the API host returns.
 <!-- shell-installer-features:end -->
@@ -815,9 +815,11 @@ SG-scoped data; ordinary students cannot trigger bulk directory refreshes.
 Admins, API operators and approved service machines are independent allowlists.
 A game host does not become an official authentication/API host.
 
-**Existing API host upgrade:** run `python3 -m campus_lan.access enroll-local`
-on each owner-controlled credential-bearing machine before restarting the trusted
-service. Missing enrollment fails closed. This Mac's operator can then use local
+**Existing school API host upgrade:** the next normal LAN42 start after updating
+migrates hnah’s existing managed campus host automatically. `dailylogin` delegates
+to LAN42 after its update; no manual enrollment command or temporary script is
+needed for that legacy host. Existing policies and revocations are never replaced.
+New hosts still need explicit approval/enrollment. This Mac's operator can use local
 `/clusters` and tracking offsite without opening internet ports. Offsite defaults
 are localhost; existing listeners change binding only on restart. KoelDrop keeps
 its separate physical-campus checks, consent and pinned transport. Tailscale is

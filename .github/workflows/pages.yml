@@ -24,6 +24,7 @@ jobs:
         run: python tools/release.py
       - run: python -m unittest discover -s tests -p test_release.py
       - run: python -m unittest discover -s tests -p test_access_policy.py
+      - run: python -m unittest discover -s tests -p test_access_migration.py
       - run: PYTHONPATH=tests python -m unittest test_auth test_announcements test_profile_lookup test_client test_network test_tracking test_mesh test_file_sharing test_koeldrop_live
       - run: python -m unittest discover -s tests -p test_shell_features.py
       - run: python -m unittest discover -s tests -p test_about.py

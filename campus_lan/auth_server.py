@@ -47,7 +47,7 @@ def setup(credentials, host, broker_port=31416, lobby_port=31417):
         serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
     private_write(root / 'auth-cert.pem', cert_pem)
     private_write(root / 'auth-server.json', json.dumps(dict(app, host=host,
-        broker_port=broker_port, lobby_port=lobby_port)))
+        broker_port=broker_port, lobby_port=lobby_port,access_policy_version=1)))
     trust = dict(broker_url=f'https://{host}:{broker_port}', lobby_host=host,
                  lobby_port=lobby_port, certificate=cert_pem)
     private_write(root / 'auth-trust.json', json.dumps(trust, indent=2))
@@ -91,7 +91,8 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     from .server import Lobby
     root = config_dir()
     settings = json.loads(private_read(root / 'auth-server.json'))
-    from .access import Policy
+    from .access import Policy,migrate_legacy_host
+    migrate_legacy_host()
     Policy().require_host()
     if current_seat:
         from .auth_daily import current_seat as detect_seat

@@ -48,8 +48,9 @@ Beta checks on 27 October 2026 (SGT), version 2.0.0-beta.1:
 The credential-owning maintainer Mac was explicitly enrolled using hnah's verified
 Singapore identity (UID 234449, campus 64); the private approval files remain
 outside Git. No campus machine was automatically enrolled, and no VPN or public
-forwarding was installed. Existing campus API hosts must complete enrollment
-before restarting this version.
+forwarding was installed. At this initial implementation stage, existing campus API hosts required manual
+enrollment. The subsequent startup-migration update below supersedes that step
+for the legacy managed hnah campus host.
 
 The access-policy change passed 110 targeted tests (one platform skip), including
 real loopback/TLS announcement checks, guest socket denials before API/cache
@@ -60,3 +61,13 @@ six skips and the same two previously documented Mac failures: 127.0.0.2 binding
 and the native FORKNITE death assertion. Provider responses were mocked in tests;
 config/temp roots were isolated from owner credentials. Bootstrap verification
 was a separate explicit live owner lookup, not a test of the campus deployment.
+
+## Legacy startup migration — 27 October 2026 SGT
+
+LAN42 now initializes the owner host after launcher updates. The shell no longer
+runs a potentially stale auth module before the launcher can pull. The legacy
+managed school host can initialize policy automatically under the real hnah OS
+account and verified campus/TLS/SG conditions; existing or revoked policies and
+new installations are never automatically approved. Migration/startup tests use
+isolated configs with fake credentials and mocked provider/system operations;
+this Mac is not evidence that migration ran on the school terminal.

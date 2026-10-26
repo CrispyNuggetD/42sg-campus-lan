@@ -75,6 +75,66 @@ def sg_member(user):
                                        for c in (user.get('campus_users') or []))
 
 
+def migrate_legacy_host():
+    """Owner-authorized upgrade of a pre-policy, managed campus host; never sign-in enrollment."""
+    import fcntl
+    import os
+    import pwd
+    import ssl
+    import stat
+    root=config_dir()
+    if not (root/'auth-server.json').exists():return False
+    info=root.lstat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid!=os.getuid() or info.st_mode & 0o077:
+        raise AuthError('Legacy host configuration must be private and owned by the current user.')
+    fd=os.open(root/'access-init.lock',os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600)
+    with os.fdopen(fd,'r+') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        private_read(root/'access-init.lock')  # Validate existing lock ownership/mode too.
+        settings=json.loads(private_read(root/'auth-server.json'))
+        if not isinstance(settings,dict):raise AuthError('Invalid legacy host configuration.')
+        if (root/'access-policy.json').exists() or (root/'access-policy.json').is_symlink():
+            Policy()  # An invalid/revoked policy is never replaced by migration.
+            if settings.get('access_policy_version') is None:
+                settings['access_policy_version']=1
+                private_write(root/'auth-server.json',json.dumps(settings))
+            return False
+        if settings.get('access_policy_version') is not None:
+            raise AuthError('This host already uses explicit access policy; missing policy cannot be auto-approved.')
+        if pwd.getpwuid(os.getuid()).pw_name!='hnah':return False
+        from .auth_daily import current_seat
+        current_seat()  # Checks both the campus hostname and actual local address.
+        import ipaddress
+        try:old=ipaddress.IPv4Address(settings.get('host',''))
+        except (ValueError,TypeError):raise AuthError('Legacy campus host address is invalid.') from None
+        if old.packed[:2] not in (b'\x0a\x0b',b'\x0a\x0c'):
+            raise AuthError('Only an existing campus host can use the automatic upgrade.')
+        if (settings.get('owner_login') not in (None,'hnah')
+                or not isinstance(settings.get('host_generation'),str)
+                or not re.fullmatch('[a-f0-9]{32}',settings['host_generation'])):
+            raise AuthError('Automatic upgrade requires the existing managed hnah host.')
+        from .auth_client import validate_trust
+        trust=validate_trust(json.loads(private_read(root/'auth-trust.json')))
+        certificate=private_read(root/'auth-cert.pem').decode()
+        if trust['certificate'].strip()!=certificate.strip():raise AuthError('Legacy certificate and trust disagree.')
+        private_read(root/'auth-key.pem')
+        context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(root/'auth-cert.pem',root/'auth-key.pem')
+        from .campus_info import API
+        person=API(enrollment=True).member_profile(str(INITIAL_OWNER_UID))
+        if person.get('id')!=INITIAL_OWNER_UID or person.get('login')!='hnah' or not sg_member(person):
+            raise AuthError('The initial Singapore owner could not be verified.')
+        policy=Policy();policy.data['approved_hosts']=[host_id()]
+        # Write operator identity first: interruption before the policy commit can
+        # safely retry. Once a policy exists, this upgrade never approves again.
+        private_write(root/'local-operator.json',json.dumps(dict(uid=INITIAL_OWNER_UID)))
+        policy.save()
+        settings['access_policy_version']=1
+        private_write(root/'auth-server.json',json.dumps(settings))
+        print('LAN42 upgraded the existing hnah campus host access policy. Future starts reuse it.')
+        return True
+
+
 def main():
     import argparse
     parser=argparse.ArgumentParser(description='Private local policy management; never exposed as a guest/network command.')
