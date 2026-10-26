@@ -83,7 +83,8 @@ class Watch(unittest.TestCase):
              patch('campus_lan.announcement_client.auth_client.load_trust',return_value=trust), \
              patch('campus_lan.announcement_client.auth_client.post',side_effect=[AuthError('offline'),result,result]) as post:
             settings.return_value.data=dict(discovery=True,auto_join=True,interval=120)
-            watch.step();now[0]=60;watch.step();self.assertEqual(post.call_count,1)
+            watch.step();offline=inbox.get_nowait();self.assertFalse(offline['online']);self.assertTrue(offline['configured'])
+            now[0]=60;watch.step();self.assertEqual(post.call_count,1);self.assertTrue(inbox.empty())
             now[0]=120;watch.step();self.assertTrue(inbox.get_nowait()['recovered'])
             now[0]=125;watch.step();self.assertFalse(inbox.get_nowait()['recovered'])
 

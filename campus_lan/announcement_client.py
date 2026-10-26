@@ -69,7 +69,7 @@ class HostWatch:
     def __init__(self,inbox,clock=time.monotonic):
         self.inbox,self.clock=inbox,clock
         self.closed=threading.Event();self.online=False;self.cursor=0;self.epoch=None
-        self.next_locator=0;self.next_poll=0
+        self.next_locator=0;self.next_poll=0;self.reported_offline=None
         self.thread=threading.Thread(target=self.run,daemon=True)
 
     def start(self):self.thread.start()
@@ -82,8 +82,9 @@ class HostWatch:
     def step(self):
         settings=HostSettings().data;now=self.clock()
         if now<self.next_poll:return
+        configured=False
         try:
-            trust=auth_client.load_trust()
+            trust=auth_client.load_trust();configured=True
             if settings['discovery'] and now>=self.next_locator:
                 self.next_locator=now+settings['interval'];auth_locator.refresh();trust=auth_client.load_trust()
             payload=credentials(trust);payload['cursor']=self.cursor
@@ -92,7 +93,7 @@ class HostWatch:
             changed=self.epoch!=data['epoch']
             if changed:self.cursor=0
             recovered=not self.online or changed
-            self.online=True;self.epoch=data['epoch'];self.next_poll=now+5
+            self.online=True;self.reported_offline=None;self.epoch=data['epoch'];self.next_poll=now+5
             entries=data.get('announcements',[])
             if not isinstance(entries,list):raise ValueError()
             valid=[]
@@ -106,8 +107,9 @@ class HostWatch:
                      auto_join=settings['auto_join'],auto_connect=settings['discovery'],retry_interval=settings['interval'],
                      data=dict(data,announcements=valid))
         except (OSError,ValueError,TypeError,KeyError):
-            if self.online:self.put(online=False)
-            self.online=False;self.next_poll=now+settings['interval']
+            if self.online or self.reported_offline is not configured:
+                self.put(online=False,configured=configured,retry_interval=settings['interval'])
+            self.reported_offline=configured;self.online=False;self.next_poll=now+settings['interval']
 
     def run(self):
         while not self.closed.is_set():

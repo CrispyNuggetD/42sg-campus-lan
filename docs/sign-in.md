@@ -20,6 +20,13 @@ sign-in and fresh API-backed cluster views are unavailable; guest chat/games can
 still run. Stable, always-on hosting is a future improvement. The owner's local
 API-only mode is separate and does not provide a shared service to students.
 
+On-campus guest HQs show sign-in/cluster guidance at startup. With the owner's
+public trust installed, they check for the unavailable host every 120 seconds by
+default and report its return, with a per-computer desktop alert when permitted.
+These are LAN42 endpoint checks, not 42 API calls. Missing trust is explained and
+never replaced with an automatically accepted certificate. Returning-host notices
+do not open OAuth or play a sound automatically.
+
 ## Host approval and Singapore admission
 
 Only OAuth-verified Singapore members enter the official secure lobby. Guest

@@ -32,7 +32,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE—a multiplayer visualiser/game for the legacy 42 C Philosophers project; Up/Down history and !COMMAND for the local shell.
 - `/signin`: SG API views need a running approved on-campus host (currently hnah); guests keep chat/games.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
-- Pinned host discovery: keep guest nodes running offline, then discover and reconnect when the API host returns.
+- Pinned host discovery: on-campus guest guidance, quiet offline checks, and one host-arrival alert per computer.
 <!-- shell-installer-features:end -->
 
 The public dailylogin shell installer reads this block directly from this README
@@ -888,6 +888,18 @@ They are **guest nodes**, not replacement API administrators. No app-wide 404
 occurs: sign-in/API-backed operations wait for the trusted service. Existing
 public certificate trust is required before a client can recognize that host;
 see [one-time trust and owner setup](docs/sign-in.md).
+
+On-campus guest HQs explain this at startup: use `/signin` and `/clusters` when
+the approved host is available. The initial offline state is shown too, rather
+than silently waiting. Missing/invalid public trust gets a setup message; LAN42
+cannot securely recognize or watch an arriving host until that trust is installed.
+
+When the trusted host comes online, waiting clients show its login/seat and an
+invitation to `/signin` for `/clusters`. Arrival desktop alerts respect the
+recipient’s notification settings and are deduplicated per computer for that host
+session. No automatic OAuth browser or unsolicited sound is triggered. A valid
+saved session may resume according to the existing auto-join setting; guest HQs
+and ongoing games are preserved.
 
 While offline, clients retry the pinned endpoint and opt-in public seat locator
 every **120 seconds**, configurable within **60–300 seconds**. This uses LAN42's

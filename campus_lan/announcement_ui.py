@@ -12,6 +12,18 @@ from .announcement_client import HostWatch,HostSettings,act,claim,credentials
 class AnnouncementUI:
     def announcement_tick(self):
         if not getattr(self,'connected',False) or not getattr(self,'id',None):return
+        if (getattr(self,'role','lobby')=='lobby' and not getattr(self,'secure',False)
+                and not getattr(self,'guest_host_intro_checked',False)):
+            self.guest_host_intro_checked=True
+            from .auth_daily import current_seat
+            try:current_seat()
+            except (OSError,ValueError):pass
+            else:
+                self.lines.extend([
+                    'You are on campus in guest mode. With the approved campus host online, /signin unlocks /clusters and /clusters 2.',
+                    'If the host is away, your guest HQ keeps working. With its public trust configured, LAN42 checks for its return and can notify you.',
+                    '/announce status shows availability; /settings host-poll controls the offline check interval.',
+                ])
         if not getattr(self,'host_watch',None):
             self.host_watch=HostWatch(self.inbox);self.host_watch.start()
 
@@ -118,13 +130,16 @@ class AnnouncementUI:
         if kind!='local_host_update':return False
         if not event.get('online'):
             self.announcement_status=dict(online=False)
-            self.lines.append('API host unavailable; your local guest lobby keeps running. Retrying on the configured interval.')
+            if event.get('configured') is False:
+                self.lines.append('Trusted API host is not configured or its trust is invalid. Get the owner-approved public trust file/fingerprint first; LAN42 cannot recognize an arriving host without it.')
+            else:
+                self.lines.append('API host unavailable; your guest HQ keeps running. Checking the pinned host again in '+str(event.get('retry_interval',120))+' seconds; /signin and fresh /clusters views need it online.')
             return True
         data=event['data'];self.announcement_status=dict(data,online=True)
         self.link_api_guest_node(event)
         if event.get('recovered'):
             from .network import seat_label
-            text=data['owner']+' (API host) has come online at '+seat_label(event['host'])+' ('+event['host']+').'
+            text=data['owner']+' (API host) is online at '+seat_label(event['host'])+' ('+event['host']+'). Use /signin, then /clusters or /clusters 2 for current campus seats.'
             self.lines.append(text)
             if getattr(self,'notify_enabled',False) and claim(data['epoch']+':online'):
                 self.desktop_notice('LAN42 API host online',text,data['owner'])
@@ -134,7 +149,7 @@ class AnnouncementUI:
                     try:
                         trust=auth_client.load_trust()
                         if auth_client.load_session(trust):self.start_signin(saved_only=True)
-                        else:self.lines.append('Guest mesh can link now. Use /signin for verified/API privileges.')
+                        else:self.lines.append('The trusted host is ready. Use /signin to unlock API-backed /clusters views; guest chat/games stay available.')
                     except (OSError,ValueError):pass
         states=getattr(self,'announcement_request_states',{})
         for item in data.get('statuses',[]):
