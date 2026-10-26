@@ -34,12 +34,13 @@ class ReceivePolicy:
 
 
 class Mirror:
-    def __init__(self,path,uid,login,policy=None):
+    def __init__(self,path,uid,login,policy=None,*,resume=False):
         path=Path(path).expanduser()
         if path==Path.home() or path==Path('/') or any(p.startswith('.') for p in path.parts[1:]):raise Denied('Choose a dedicated non-hidden empty folder.')
         self.fd=private_directory(path,create=True)
-        if os.listdir(self.fd):os.close(self.fd);raise Denied('Choose an empty folder; existing personal files are never imported implicitly.')
+        if os.listdir(self.fd) and not resume:os.close(self.fd);raise Denied('Choose an empty folder; existing personal files are never imported implicitly.')
         if any((p/'.git').exists() for p in (path,*path.parents)):os.close(self.fd);raise Denied('Sync folders must be outside Git.')
+        self.resume=resume
         self.path=path;self.uid=uid;self.login=login;self.policy=policy or ReceivePolicy()
         self.known={};self.members=set();self.backup_bytes=0
 
@@ -57,7 +58,10 @@ class Mirror:
         for path,data in (('welcome.md',welcome.encode()),('logs/activity.json',log)):
             parent,name=self._parent(path,True)
             try:
-                fd=os.open(name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o400,dir_fd=parent)
+                try:fd=os.open(name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o400,dir_fd=parent)
+                except FileExistsError:
+                    if self.resume:continue
+                    raise
                 with os.fdopen(fd,'wb') as output:output.write(data)
             finally:os.close(parent)
 

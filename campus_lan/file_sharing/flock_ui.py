@@ -26,7 +26,7 @@ class FlockUI:
         requested_epoch=getattr(worker,'flock_epoch',None) or getattr(self,'flock_attempt',None)
         if public_worker and (not info or requested_epoch!=info['epoch']):
             worker.stop();self.courier=None;self.koel_offers={};self.flock_attempt=None
-            self.lines.append('42 Singapore flock paused: host unavailable or session changed. Uploads stopped; your local folder and downloads are kept. A fresh join uses a new folder.')
+            self.lines.append('42 Singapore flock paused: host unavailable or session changed. Uploads stopped; your local folder and downloads are kept. Same-day reconnects reuse your daily folder (SGT).')
         if not info:
             self.flock_seen=None;self.flock_attempt=None
             return
@@ -53,7 +53,7 @@ class FlockUI:
         # Anonymous campus clients can see the invitation, never claim eligibility.
         # The join request itself requires verified membership + real socket proof.
         self.lines.extend([LABEL+' is available from '+info['host']+'. Verified 42SG sign-in and an active campus seat are required.',
-                           '/koel flock once | always | never. Joining uploads only a fresh dedicated folder; incoming files need approval. Local copies are never automatically deleted.'])
+                           '/koel flock once | always | never. Joining shares today’s dedicated folder, including retained contents; incoming files need approval. Local copies are never automatically deleted.'])
         if not self.important_notification_allowed('flock'):return
         from ..announcement_client import claim
         if not claim(preferences.fingerprint+':flock:'+info['epoch']+':'+str(preferences.uid)):return
@@ -64,7 +64,7 @@ class FlockUI:
             from ..desktop_notifications import Notifications
             self.tracking_notifier=Notifications(self.inbox)
         self.tracking_notifier.flock(LABEL+' is open',
-            'Verified 42SG users on campus only. Join a fresh upload folder; approve incoming files separately. Local files are kept.',key)
+            'Verified 42SG users on campus only. Join today’s upload folder (reused on reconnect); approve incoming files separately. Local files are kept.',key)
 
     def flock_join(self,mode,approved=False):
         info=getattr(self,'flock_info',None)
@@ -83,7 +83,7 @@ class FlockUI:
         if not approved:
             self.popup_prompts().confirm(
                 ('Always join this trusted host’s ' if mode=='always' else 'Join once: ')+LABEL+'? Service directory: '+preferences.base+
-                '/42-singapore/<trusted-host>/<fresh-session>/. Files added there upload to admitted SG flock members and remain on the host across restarts, subject to quotas. Incoming files and deletions need separate approval. Existing folders are never reused, renamed or erased; local copies survive shutdown and remain until you remove them yourself.',
+                '/42-singapore/<trusted-host>/<student-id>/<SGT-date>/. Same-day reconnects reuse this folder. Files left or added there upload to admitted SG flock members and remain on the host across restarts, subject to quotas. Incoming files and deletions need separate approval. Only LAN42-marked daily folders for this host/account/group are reused; other existing folders are refused. Folders are never renamed or erased; local copies survive shutdown and remain until you remove them yourself.',
                 lambda:self.flock_join(mode,approved=True))
             return
         preferences.save(mode='always' if mode=='always' else 'ask')
@@ -100,7 +100,7 @@ class FlockUI:
             if action=='flock-dir':
                 if len(args)!=1:raise Denied('Use /koel flock-dir "DEDICATED SERVICE DIRECTORY"')
                 path=args[0]
-                self.popup_prompts().confirm('Use '+path+' as the KoelDrop service directory? Only fresh 42-singapore subfolders will sync. Existing files are not imported or deleted.',lambda:preferences.save(base=path))
+                self.popup_prompts().confirm('Use '+path+' as the KoelDrop service directory? Only marked daily 42-singapore subfolders will sync. Same-day reconnects share their retained contents. Other existing files are not imported or deleted.',lambda:preferences.save(base=path))
             else:
                 mode=args[0] if len(args)==1 else 'status' if not args else None
                 if mode in ('once','always'):self.flock_join(mode)

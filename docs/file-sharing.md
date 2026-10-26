@@ -46,22 +46,25 @@ joins; `/koel leave` stops current uploads. Never suppresses future invitations
 but does not leave a group you already joined.
 
 The chosen service root can already contain files: those files are not scanned.
-Each join creates a new empty subdirectory such as:
+The first join each Singapore calendar day creates a dedicated subdirectory:
 
 ```text
-~/KoelDrop/42-singapore/<trusted-host-fingerprint>/
-  2026-10-27_12-30-00-<host-session>-<unique-suffix>/
+~/KoelDrop/42-singapore/<trusted-host-fingerprint>/<student-id>/
+  2026-10-27/
 ```
 
-If a destination exists, LAN42 allocates another unique directory. It never
-reuses/imports it, renames it, follows symlinks, or recursively removes it. A
+Same-day reconnects, including after lunch or a host restart, reuse that folder.
+Files left there remain eligible for upload while joined. Only LAN42-created,
+privately owned folders with a matching host/student/group marker are reused.
+An unrecognized existing destination blocks joining rather than importing it or
+creating more folders. LAN42 never renames folders, follows symlinks, or recursively removes them. A
 configured root must support private directories, be non-hidden and outside Git.
 Changing `flock-dir` affects future joins; it does not move the active folder.
 
 **Shutdown retention:** sharing pauses when the host/flock becomes unavailable.
 Uploads stop; your folder, downloads and unuploaded work stay on disk. On return,
-Always can join a fresh directory. Previous copies are not automatically uploaded
-into that new session. **Local copies have no expiry or automatic cleanup: you
+Always can rejoin the same daily folder; a new day gets a new folder. Previous
+days’ copies are not automatically uploaded into the new day. **Local copies have no expiry or automatic cleanup: you
 remove them yourself when finished.** Uploaded host copies and audit history are
 also retained across host restarts, subject to existing quotas. Fresh session
 membership is required before anyone can read those retained files again. The

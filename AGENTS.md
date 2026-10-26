@@ -147,8 +147,10 @@ operator/admin/host enrollment and bounded capacity. Discovery metadata via the
 pinned host never grants anonymous membership or certificate trust. Always-join
 needs explicit directory/upload consent, scoped per trusted host/user/computer;
 it cannot approve receiving/deleting files or replace another active group.
-Allocate a new empty no-follow directory for each join; never import, rename or
-recursively remove existing folders. Host stop/restart keeps local copies and
+Reuse one marked daily folder (SGT) per trusted host, student and group across
+reconnects/host epochs. Validate its private ownership and scope marker; never
+import unrecognized existing folders, rename them or recursively remove them.
+Host stop/restart keeps local copies and
 host-retained objects; new membership/epoch is required. No expiry cleanup is
 authorized. Run test_koel_flock.py with file-sharing/auth/access/notification
 checks, and mock all native notifications, campus evidence and transfers.

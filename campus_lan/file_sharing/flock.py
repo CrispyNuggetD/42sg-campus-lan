@@ -3,7 +3,10 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import secrets
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import time
 from ..auth import private_read, private_write
 from ..local_console import local_path
@@ -72,17 +75,35 @@ class FlockPreferences:
         private_write(self.path,json.dumps(dict(mode=self.mode,base=self.base)))
 
 
-def fresh_folder(base,fingerprint,epoch):
+def fresh_folder(base,fingerprint,epoch,uid=0,group=''):
+    """Reuse only our marked daily folder, scoped to host, student and group."""
     if not re.fullmatch('[a-f0-9]{64}',fingerprint) or not re.fullmatch('[a-f0-9]{32}',epoch):raise Denied('Invalid flock session.')
+    if type(uid) is not int or uid<0 or not isinstance(group,str):raise Denied('Invalid flock folder scope.')
     base=Path(base).expanduser().absolute()
     if base in (Path('/'),Path.home()) or '..' in base.parts or any(p.startswith('.') for p in base.parts[1:]):raise Denied('Choose a dedicated service directory.')
-    root=base/SCOPE/fingerprint[:16]
+    root=base/SCOPE/fingerprint[:16]/str(uid)
     if any((p/'.git').exists() for p in (root,*root.parents)):raise Denied('Flock folders must be outside Git.')
     fd=private_directory(root,create=True)
+    name=datetime.now(ZoneInfo('Asia/Singapore')).date().isoformat()
+    expected=json.dumps(dict(host=fingerprint,uid=uid,group=group,day=name),sort_keys=True).encode()
     try:
-        for _ in range(10):
-            name=time.strftime('%Y-%m-%d_%H-%M-%S')+'-'+epoch[:8]+'-'+secrets.token_hex(4)
-            try:os.mkdir(name,0o700,dir_fd=fd);return root/name
-            except FileExistsError:continue
-        raise Denied('Could not allocate a fresh flock directory.')
+        try:os.mkdir(name,0o700,dir_fd=fd);created=True
+        except FileExistsError:created=False
+        folder=root/name
+        daily=private_directory(folder)
+        try:
+            marker='.lan42-flock'
+            if created:
+                entry=os.open(marker,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=daily)
+                with os.fdopen(entry,'wb') as output:output.write(expected)
+            else:
+                try:entry=os.open(marker,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK,dir_fd=daily)
+                except OSError:raise Denied('Daily flock folder is unrecognized; choose another service root or review it manually.') from None
+                with os.fdopen(entry,'rb') as source:
+                    info=os.fstat(source.fileno())
+                    if (not stat.S_ISREG(info.st_mode) or info.st_nlink!=1 or info.st_uid!=os.getuid()
+                            or stat.S_IMODE(info.st_mode)&0o077 or source.read(4097)!=expected):
+                        raise Denied('Daily flock folder belongs to another scope or has changed; no files imported.')
+            return folder
+        finally:os.close(daily)
     finally:os.close(fd)

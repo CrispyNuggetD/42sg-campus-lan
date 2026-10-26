@@ -105,9 +105,21 @@ class FlockTests(unittest.TestCase):
         fp='a'*64;epoch='b'*32
         first=fresh_folder(base,fp,epoch);(first/'retained.txt').write_bytes(b'previous')
         second=fresh_folder(base,fp,epoch)
-        self.assertNotEqual(first,second);self.assertEqual(list(second.iterdir()),[])
+        self.assertEqual(first,second)
         self.assertEqual((first/'retained.txt').read_bytes(),b'previous')
         self.assertEqual((old/'personal.txt').read_bytes(),b'private')
+        self.assertEqual(fresh_folder(base,fp,'c'*32),first)
+        with patch('campus_lan.file_sharing.flock.datetime') as date:
+            date.now.return_value.date.return_value.isoformat.return_value='2099-01-01'
+            tomorrow=fresh_folder(base,fp,epoch)
+        self.assertNotEqual(first,tomorrow)
+        self.assertFalse((tomorrow/'retained.txt').exists())
+        account=fresh_folder(base,fp,epoch,2,'group-a')
+        self.assertNotEqual(account,first)
+        with self.assertRaises(Denied):fresh_folder(base,fp,epoch,2,'group-b')
+        marker=first/'.lan42-flock';marker.unlink()
+        with self.assertRaises(Denied):fresh_folder(base,fp,epoch)
+        self.assertEqual((first/'retained.txt').read_bytes(),b'previous')
         link=self.root/'linked';link.symlink_to(base,target_is_directory=True)
         with self.assertRaises(OSError):fresh_folder(link,fp,epoch)
 
@@ -140,6 +152,13 @@ class FlockTests(unittest.TestCase):
             folder=worker.sync.mirror.path;self.assertEqual((folder/'download.txt').read_bytes(),b'needs approval')
             worker.perform('leave',())
             self.assertTrue((folder/'download.txt').exists());self.assertIsNone(worker.sync)
+            worker.perform('flock',(info['group'],'hnah',info['epoch'],str(base),'a'*64))
+            self.assertEqual(worker.sync.mirror.path,folder)
+            before=store.db.execute('SELECT count(*) FROM versions').fetchone()[0]
+            worker.perform('sync',())
+            self.assertEqual(store.db.execute('SELECT count(*) FROM versions').fetchone()[0],before)
+            self.assertEqual((folder/'download.txt').read_bytes(),b'needs approval')
+            worker.perform('leave',())
             paths=[r['path'] for r in store.db.execute('SELECT path FROM versions')]
             self.assertNotIn('personal.txt',paths)
 
@@ -166,7 +185,8 @@ class FlockUITests(unittest.TestCase):
         self.worker.submit.assert_not_called();self.assertEqual(self.preferences.mode,'ask')
         description,accept=c.popup_prompts().confirm.call_args.args
         self.assertIn('Incoming files and deletions need separate approval',description)
-        self.assertIn('never reused, renamed or erased',description)
+        self.assertIn('Same-day reconnects reuse this folder',description)
+        self.assertIn('other existing folders are refused',description)
         accept();self.worker.submit.assert_called_once_with('flock','b'*32,'hnah','c'*32,str(self.root/'service'),'a'*64)
         self.assertEqual(FlockPreferences('a'*64,2).mode,'always')
 
@@ -242,6 +262,7 @@ class FlockUITests(unittest.TestCase):
         screen=Screen();c.draw_permission_prompt(screen)
         visible=' '.join(' '.join(screen.rows[y].split()) for y in sorted(screen.rows))
         self.assertIn('remain on the host across restarts',visible)
-        self.assertIn('never reused, renamed or erased',visible)
+        self.assertIn('Same-day reconnects reuse this folder',visible)
+        self.assertIn('never renamed or erased',visible)
         self.assertIn('until you remove them yourself',visible)
         self.assertIn('[y/N] Enter = no',visible)

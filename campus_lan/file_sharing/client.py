@@ -1,5 +1,6 @@
-"""Opt-in KoelDrop worker. Only a deliberately joined, empty folder is polled."""
+"""Opt-in KoelDrop worker. Only a deliberately joined dedicated folder is polled."""
 import queue
+import hashlib
 import re
 import threading
 import time
@@ -44,12 +45,20 @@ class Courier:
 
     def _join(self,gid,host,invite=None,flock_epoch=None):
         if self.sync:raise Denied('Leave the current KoelDrop group before joining another.')
-        mirror=Mirror(self.folder or default_folder(host,gid),self.uid,self.login)
+        mirror=Mirror(self.folder or default_folder(host,gid),self.uid,self.login,resume=bool(flock_epoch))
         try:
             if flock_epoch:self.remote.join_flock(gid,flock_epoch)
             elif invite:self.remote.accept(gid,invite)
             manifest=self.remote.manifest(None,gid)
-            mirror.offers(manifest)
+            offers=mirror.offers(manifest)
+            if flock_epoch:
+                # Resume matching copies without re-uploading or re-offering them.
+                # Changed files keep the ordinary conflict/receive approval rules.
+                for offer in offers:
+                    if offer.deleted:continue
+                    local=mirror._read(offer.path)
+                    if local is not None and hashlib.sha256(local).hexdigest()==offer.digest:
+                        mirror.known[offer.path]=dict(version=offer.version,digest=offer.digest)
             mirror.initialize_info(manifest['welcome'],self.remote.history(None,gid)[:200])
             self.sync=SyncSession(self.remote,None,gid,mirror)
         except Exception:
@@ -84,10 +93,10 @@ class Courier:
             gid,host,epoch,base,fingerprint=args
             self.flock_epoch=epoch
             from .flock import fresh_folder
-            self.folder=fresh_folder(base,fingerprint,epoch)
+            self.folder=fresh_folder(base,fingerprint,epoch,self.uid,gid)
             self._join(gid,host,flock_epoch=epoch)
             self.flock_epoch=epoch
-            self.emit(flock_joined=True,lines=['Joined the 42 Singapore flock. This folder is kept on leave/shutdown. No automatic local cleanup or deletion.'])
+            self.emit(flock_joined=True,lines=['Joined the 42 Singapore flock. Same-day reconnects reuse this folder (SGT). Its contents remain shared while joined. This folder is kept on leave/shutdown. No automatic local cleanup or deletion.'])
         elif operation=='accept':self._join(*args)
         elif operation=='dir':
             path=Path(args[0]).expanduser().absolute()
