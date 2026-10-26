@@ -1,8 +1,16 @@
 {
-  "version": "2.3.1-beta.1",
-  "date": "2026-10-27T03:08:54+08:00",
-  "source": "ac96f7c4bc5f1d7692df34dd01dffb955bea6f60",
+  "version": "2.4.0-beta.1",
+  "date": "2026-10-27T03:14:08+08:00",
+  "source": "13f32da92c73066ad8450d09972c30fd38fe50b6",
   "history": [
+    {
+      "version": "2.4.0-beta.1",
+      "date": "2026-10-27T03:14:08+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: separate important notifications from social alerts"
+      ]
+    },
     {
       "version": "2.3.1-beta.1",
       "date": "2026-10-27T03:08:54+08:00",
@@ -127,5 +135,5 @@
       ]
     }
   ],
-  "runtime_sha256": "5717f5ef5bc83b8103ff99c925797fb0f8d540804c3f623db84b4521b333af33"
+  "runtime_sha256": "584e1f99f15c0cc92d0089870baf7cff22dd51d98fe7d61b972d1e2359e201ac"
 }

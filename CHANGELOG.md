@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.4.0-beta.1 · 2026-10-27T03:14:08+08:00
+
+- feat: separate important notifications from social alerts
+
 ## 2.3.1-beta.1 · 2026-10-27T03:08:54+08:00
 
 - fix: keep automatic uwu quiet after shortcut mute
