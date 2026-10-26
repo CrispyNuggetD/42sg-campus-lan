@@ -1,7 +1,6 @@
 """Open LAN42 in another terminal without occupying the dailylogin shell."""
 from pathlib import Path
 import os
-import shlex
 import shutil
 import subprocess
 import sys
@@ -16,42 +15,20 @@ def terminal_command(repo, platform=sys.platform, which=shutil.which, args=()):
     for name in ('LAN42_POPUP_SESSION','LAN42_POPUP_OWNER_PID'):
         if os.environ.get(name):environment.append(name+'='+os.environ[name])
     if environment:invocation=['env',*environment,*invocation]
-    helper = os.environ.get('DAILY_TMUX_HELPER')
-    if helper:
-        if not Path(helper).is_file():
-            raise RuntimeError('Daily tmux helper missing: ' + helper)
-        # Separate game launches must not steal the lobby's window.
-        role = ('lan42-admin-' if args and args[0]=='admin' else 'lan42-game-') + str(os.getpid()) if args else 'lan42'
-        return [sys.executable, helper, 'open', '--cwd', str(repo), role, '--', *invocation]
-    if platform == 'darwin':
-        script = '''on run argv
-    tell application "Terminal"
-        do script (item 1 of argv)
-        activate
-    end tell
-end run'''
-        return ['osascript', '-e', script, shlex.join(invocation)]
-    for name, flags in (
-        ('gnome-terminal', ['--window', '--title=LAN42', '--']),
-        ('konsole', ['--separate', '-e']),
-        ('xfce4-terminal', ['--disable-server', '-x']),
-        ('xterm', ['-T', 'LAN42', '-e']),
-    ):
-        program = which(name)
-        if program:
-            return [program, *flags, *invocation]
-    raise RuntimeError('No supported desktop terminal found. Open a terminal and run lan42.')
+    helper = os.environ.get('DAILY_TMUX_HELPER') or str(repo / 'useful-scripts/tmux_workspace.py')
+    if not Path(helper).is_file():
+        raise RuntimeError('Tmux workspace helper missing: ' + helper)
+    role = ('lan42-admin-' if args and args[0]=='admin' else 'lan42-game-') + str(os.getpid()) if args else 'lan42'
+    return [sys.executable, helper, 'open', '--cwd', str(repo), role, '--', *invocation]
 
 
 def main():
-    command = terminal_command(REPO, args=sys.argv[1:])
-    if sys.platform == 'darwin' or os.environ.get('DAILY_TMUX_HELPER'):
-        subprocess.run(command, check=True)
-    else:
-        subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, start_new_session=True)
-    print('LAN42 is in tmux; use dailyterm to return.' if os.environ.get('DAILY_TMUX_HELPER') else
-          'Requested a LAN42 terminal window. Leave it open while playing.')
+    if not shutil.which('tmux'):
+        install = 'brew install tmux' if sys.platform == 'darwin' else 'sudo apt install tmux'
+        raise RuntimeError('tmux is required for LAN42 workspaces. Install it: ' + install +
+                           '. Use lan42_here to run directly in this terminal meanwhile.')
+    subprocess.run(terminal_command(REPO, args=sys.argv[1:]), check=True)
+    print('LAN42 is in its tmux workspace; run lan42_window to reconnect.')
 
 
 if __name__ == '__main__':

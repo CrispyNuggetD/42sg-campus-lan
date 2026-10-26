@@ -9,6 +9,13 @@ esac
 [ "$#" -le 1 ] || { echo 'Usage: sh setup.sh [--no-zsh]' >&2; exit 1; }
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 command -v git >/dev/null || { echo "Git is required."; exit 1; }
+if ! command -v tmux >/dev/null; then
+    case "$(uname -s)" in
+        Darwin) echo 'Install tmux for LAN42 workspaces: brew install tmux' ;;
+        *) echo 'Install tmux for LAN42 workspaces: sudo apt install tmux' ;;
+    esac
+    echo 'Setup can continue; lan42_here remains available without tmux.'
+fi
 command -v python3 >/dev/null || { echo "Python 3.9+ is required."; exit 1; }
 python3 - "$repo_dir" <<'PYSETUP'
 import sys

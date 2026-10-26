@@ -15,6 +15,22 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 `/repo` requests opening the public repository using your browser permissions.
 `/help` links the visual guide; `/roadmap koeldrop` shows file-sharing milestones.
 
+## LAN42 in your daily workspace
+
+<!-- shell-installer-features:start -->
+- `lan42` / `lan42_window`: open your campus HQ in its own tmux workspace.
+- `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
+- `/map` / `/track`: read-only campus seating maps and your own local people lists.
+- `/dm`: message connected peers directly.
+- `/games`: find locally hosted Tetris, Bluff, Hex Wars and FORKNITE rooms.
+- `/signin`: optionally verify your 42 identity; the secure service requires owner setup.
+<!-- shell-installer-features:end -->
+
+The public dailylogin shell installer reads this block directly from this README
+when recommending LAN42. Maintainers: update it when commands or availability
+change; see [the contribution workflow](AGENTS.md). KoelDrop transfers remain
+excluded while execution is disabled.
+
 ## What works, and what is parked
 
 | Area | State in this checkout |
@@ -91,10 +107,16 @@ permissions do not give it access to existing Chrome tabs, profiles or cookies.
 
 ## Get started
 
-You'll need Git, Python 3.9 or newer with curses support, and a terminal at least
+You'll need Git, tmux, Python 3.9 or newer with curses support, and a terminal at least
 **76 columns × 28 rows**. LAN42 asks compatible terminals to grow to that size
 when needed; terminals that do not support resize requests show a manual resize
 message instead. There are no pip packages to install.
+
+Install tmux with `sudo apt install tmux` on Ubuntu or `brew install tmux` on Mac.
+`lan42` uses a separate tmux workspace for HQ, games and tools, even without the
+larger dailylogin shell setup. Terminals default to maximized rather than OS
+fullscreen; set `DAILY_TMUX_MAXIMIZE=FALSE` to disable maximizing.
+`lan42_here` (or the direct `lan42.sh` launcher) runs in your current terminal.
 
 Each person clones the repo into their Documents folder:
 

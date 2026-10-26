@@ -13,12 +13,23 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class TerminalSetup(unittest.TestCase):
-    def test_mac_quotes_path_as_one_argument(self):
-        repo = Path("/tmp/a friend's $(echo nope) clone")
+    def test_standalone_uses_bundled_tmux_on_mac_and_linux(self):
         with patch.dict(os.environ, {'DAILY_TMUX_HELPER': ''}):
-            cmd = module.terminal_command(repo, 'darwin')
-        self.assertEqual(shlex.split(cmd[-1]), ['sh', str(repo/'lan42.sh')])
-        self.assertIn('do script', cmd[2])
+            for platform in ('darwin', 'linux'):
+                command = module.terminal_command(ROOT, platform)
+                self.assertEqual(command[1], str(ROOT/'useful-scripts/tmux_workspace.py'))
+                self.assertEqual(command[-2:], ['sh', str(ROOT/'lan42.sh')])
+                self.assertIn('lan42', command)
+
+    def test_paths_with_shell_metacharacters_are_literal_arguments(self):
+        with tempfile.TemporaryDirectory(prefix="friend's $(echo nope) ") as tmp:
+            repo = Path(tmp)
+            (repo/'useful-scripts').mkdir()
+            (repo/'useful-scripts/tmux_workspace.py').touch()
+            with patch.dict(os.environ, {'DAILY_TMUX_HELPER': ''}):
+                command = module.terminal_command(repo, 'darwin')
+            self.assertEqual(command[-1], str(repo/'lan42.sh'))
+            self.assertEqual(command[1], str(repo/'useful-scripts/tmux_workspace.py'))
 
     def test_mac_and_linux_use_shared_tmux_helper_for_games(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -32,12 +43,11 @@ class TerminalSetup(unittest.TestCase):
                     self.assertIn('LAN42_NO_UPDATE=1', command)
                     self.assertNotIn('osascript', command)
 
-    def test_linux_terminal_and_missing_desktop(self):
-        with patch.dict(os.environ, {'DAILY_TMUX_HELPER': ''}):
-            cmd = module.terminal_command(ROOT, 'linux', lambda n: '/usr/bin/xterm' if n=='xterm' else None)
-            self.assertEqual(cmd[-3:], ['-e', 'sh', str(ROOT/'lan42.sh')])
-            with self.assertRaises(RuntimeError):
-                module.terminal_command(ROOT, 'linux', lambda n: None)
+    def test_missing_tmux_has_platform_install_hint(self):
+        for platform, hint in [('linux', 'sudo apt install tmux'), ('darwin', 'brew install tmux')]:
+            with patch.object(module.sys, 'platform', platform), patch.object(module.shutil, 'which', return_value=None):
+                with self.assertRaisesRegex(RuntimeError, hint):
+                    module.main()
 
     def test_setup_defaults_to_append_and_opt_out_leaves_rc(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""Named tmux windows for dailylogin and standalone terminal helpers."""
+import argparse
+from contextlib import contextmanager
+import fcntl
+import os
+from pathlib import Path
+import re
+import shutil
+import shlex
+import subprocess
+import sys
+import time
+
+# An explicit socket path is useful for isolated tests or a separate workspace.
+def tmux(*args, check=True):
+    command = ["tmux"]
+    if os.environ.get("DAILY_TMUX_SOCKET"):
+        command += ["-S", os.environ["DAILY_TMUX_SOCKET"]]
+    return subprocess.run(command + list(args), check=check, text=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+def session_name(role=None):
+    name = (os.environ.get("LAN42_TMUX_SESSION", "lan42") if role and role.startswith("lan42")
+            else os.environ.get("DAILY_TMUX_SESSION", "daily"))
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+        raise ValueError("DAILY_TMUX_SESSION must use letters, digits, underscores or hyphens.")
+    return name
+
+@contextmanager
+def launch_lock():
+    directory = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "daily-tmux"
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (directory / "launch.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield lock
+
+def exists(session):
+    return tmux("has-session", "-t", "=" + session, check=False).returncode == 0
+
+def find_window(session, role):
+    if not exists(session):
+        return None
+    rows = tmux("list-windows", "-t", "=" + session, "-F",
+                "#{window_id}\t#{@daily_role}").stdout.splitlines()
+    return next((row.split("\t")[0] for row in rows
+                 if row.partition("\t")[2] == role), None)
+
+def migrate_layout():
+    """Move managed legacy tabs without restarting their processes."""
+    work, lan = session_name(), session_name("lan42")
+    with launch_lock():
+        if not exists(work):
+            return
+        rows = tmux("list-windows", "-t", "=" + work, "-F",
+                    "#{window_id}\t#{@daily_role}").stdout.splitlines()
+        for row in rows:
+            window, _, role = row.partition("\t")
+            if role == "zsh" and not find_window(work, "current-project"):
+                tmux("set-option", "-w", "-t", window, "@daily_role", "current-project")
+                tmux("rename-window", "-t", window, "Current Project")
+            if role.startswith("lan42") and work != lan:
+                placeholder = None
+                if not exists(lan):
+                    placeholder = tmux("new-session", "-d", "-P", "-F", "#{window_id}",
+                                       "-s", lan, "-n", "migration", "/bin/sh").stdout.strip()
+                tmux("move-window", "-s", window, "-t", lan + ":")
+                if placeholder:
+                    tmux("kill-window", "-t", placeholder)
+
+
+def open_window(session, role, cwd, command):
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", role):
+        raise ValueError("Window role must use letters, digits, underscores or hyphens.")
+    if not Path(cwd).is_dir():
+        raise ValueError("Working directory missing: " + cwd)
+    with launch_lock():
+        window = find_window(session, role)
+        if window:
+            states = tmux("list-panes", "-t", window, "-F", "#{pane_dead}").stdout.splitlines()
+            if any(state == "0" for state in states):
+                print("Already open: " + session + " / " + role)
+                return window
+        else:
+            # Start a waiting shell, set retention first, then replace our shell.
+            # This also retains errors from commands that fail immediately.
+            if exists(session):
+                window = tmux("new-window", "-d", "-P", "-F", "#{window_id}",
+                              "-t", session + ":", "-n", "Current Project" if role == "current-project" else role, "-c", cwd,
+                              "/bin/sh").stdout.strip()
+            else:
+                window = tmux("new-session", "-d", "-P", "-F", "#{window_id}",
+                              "-s", session, "-n", "Current Project" if role == "current-project" else role, "-c", cwd,
+                              "/bin/sh").stdout.strip()
+            tmux("set-option", "-w", "-t", window, "@daily_role", role)
+        tmux("set-option", "-w", "-t", window, "remain-on-exit", "on")
+        tmux("set-option", "-w", "-t", window, "automatic-rename", "off")
+        # Refresh desktop connection details rather than using the server's old ones.
+        invocation = ["env"]
+        for key in ("DAILY_TMUX_BATCH", "GNOME_TERMINAL_SCREEN", "GNOME_TERMINAL_SERVICE",
+                    "GIO_LAUNCHED_DESKTOP_FILE", "GIO_LAUNCHED_DESKTOP_FILE_PID"):
+            invocation += ["-u", key]
+        for key in ("PATH", "DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY",
+                    "DBUS_SESSION_BUS_ADDRESS", "SSH_AUTH_SOCK", "DAILY_TMUX_HELPER",
+                    "DAILY_TMUX_SESSION", "LAN42_TMUX_SESSION", "DAILY_TMUX_MAXIMIZE", "ZSHRC_PORTABLE_SETTINGS_FILE",
+                    "ZSHRC_RUNTIME_ROOT", "ZSHRC_SETTINGS_FILE", "PROJECTS_ROOT", "current_proj",
+                    "LOGIN_ITEMS_SCRIPT", "LOGIN_ITEMS_TESTER", "LOGIN_ITEMS_TMUX_ROLE",
+                    "MAIN_REPO_ROOT", "MAC_REMOTE_ROOT",
+                    "STAYON_ROOT", "LAN42_CLONE"):
+            if key in os.environ:
+                invocation.append(key + "=" + os.environ[key])
+        tmux("set-option", "-t", session, "history-limit", "50000")
+        tmux("respawn-window", "-k", "-t", window, "-c", cwd, *invocation, *command)
+        print("Opened: " + session + " / " + role)
+        return window
+
+def attached(session):
+    rows = tmux("list-sessions", "-F", "#{session_name}\t#{session_attached}", check=False).stdout.splitlines()
+    for row in rows:
+        name, _, count = row.partition("\t")
+        if name == session:
+            return int(count)
+    return 0
+
+def maximize_enabled():
+    return os.environ.get("DAILY_TMUX_MAXIMIZE", "TRUE").lower() in ("1", "true", "yes", "on")
+
+
+def maximize_current_terminal():
+    if not maximize_enabled():
+        return
+    if sys.platform == "darwin":
+        subprocess.run(["osascript", "-e", 'tell application "Terminal" to set zoomed of front window to true'],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    elif sys.stdout.isatty():
+        print("\033[9;1t", end="", flush=True)
+
+
+def show(session, window=None, reuse_terminal=False):
+    if not exists(session):
+        print("No daily windows yet. Run start_codex, start_lan42, or dailylogin.")
+        return
+    # A standalone launch from tmux switches its existing client; never nest tmux.
+    if (os.environ.get("TMUX") and
+            tmux("display-message", "-p", "#S").stdout.strip() == session):
+        tmux("switch-client", "-t", "=" + session)
+        if window:
+            tmux("select-window", "-t", window)
+        return
+    with launch_lock() as lock_file:
+        if attached(session):
+            print("Already visible in a terminal. Use Prefix → w to choose a window.")
+            return
+        attach = ["tmux"]
+        if os.environ.get("DAILY_TMUX_SOCKET"):
+            attach += ["-S", os.environ["DAILY_TMUX_SOCKET"]]
+        attach += ["attach-session", "-t", "=" + session]
+        if window:
+            tmux("select-window", "-t", window)
+        if sys.platform != "darwin" and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+            print("Session is running. Reconnect: tmux attach -t " + session)
+            return
+        if reuse_terminal and sys.stdin.isatty() and not os.environ.get("TMUX"):
+            maximize_current_terminal()
+            # Release the launch lock before the blocking attachment.
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            subprocess.run(attach, check=True)
+            return
+        if sys.platform == "darwin":
+            script = ('on run argv\n tell application "Terminal"\n'
+                      ' do script (item 1 of argv)\n' +
+                      (' set zoomed of front window to true\n' if maximize_enabled() else '') +
+                      ' activate\n end tell\nend run')
+            desktop = ["osascript", "-e", script, shlex.join(attach)]
+        elif shutil.which("gnome-terminal"):
+            desktop = ["gnome-terminal", "--window", "--title=" + ("LAN42" if session == session_name("lan42") else "Work workspace"),
+                       *(["--maximize"] if maximize_enabled() else []), "--", *attach]
+        elif shutil.which("xterm"):
+            desktop = ["xterm", *(["-maximized"] if maximize_enabled() else []), "-T", "Daily workspace", "-e", *attach]
+        else:
+            print("No desktop terminal found. Reconnect: tmux attach -t " + session)
+            return
+        env = dict(os.environ)
+        for key in ("DAILY_TMUX_BATCH", "GNOME_TERMINAL_SCREEN", "GNOME_TERMINAL_SERVICE",
+                    "GIO_LAUNCHED_DESKTOP_FILE", "GIO_LAUNCHED_DESKTOP_FILE_PID"):
+            env.pop(key, None)
+        # Hold the launch lock until attached, preventing simultaneous GUI requests.
+        process = subprocess.Popen(desktop, env=env, start_new_session=True,
+                                   stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL)
+        for _ in range(40):
+            if attached(session):
+                return
+            if process.poll() not in (None, 0):
+                raise RuntimeError("Terminal launch failed. Reconnect: tmux attach -t " + session)
+            time.sleep(0.1)
+        raise RuntimeError("Terminal did not attach. Session is running; use: tmux attach -t " + session)
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    actions = parser.add_subparsers(dest="action", required=True)
+    opener = actions.add_parser("open")
+    opener.add_argument("role")
+    opener.add_argument("--cwd", default=os.getcwd())
+    opener.add_argument("command", nargs=argparse.REMAINDER)
+    actions.add_parser("show")
+    actions.add_parser("show-all")
+    actions.add_parser("list")
+    args = parser.parse_args()
+    if not shutil.which("tmux"):
+        raise RuntimeError("tmux is required. Install it before launching daily terminals.")
+    migrate_layout()
+    session = session_name(args.role if args.action == "open" else None)
+    if args.action == "list":
+        if exists(session):
+            print(tmux("list-windows", "-t", "=" + session, "-F",
+                       "#{window_index}: #{window_name} | panes: #{window_panes} | active: #{window_active}").stdout, end="")
+        else:
+            print("No daily windows yet.")
+    elif args.action == "show-all":
+        lan = session_name("lan42")
+        if lan != session and exists(lan):
+            show(lan)
+        show(session, reuse_terminal=True)
+    elif args.action == "show":
+        show(session)
+    else:
+        command = args.command
+        if command[:1] == ["--"]:
+            command = command[1:]
+        if not command:
+            parser.error("open requires a command after --")
+        window = open_window(session, args.role, args.cwd, command)
+        if os.environ.get("DAILY_TMUX_BATCH") != "1":
+            show(session, window)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+        detail = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) else str(error)
+        sys.exit("daily tmux: " + detail)
+
