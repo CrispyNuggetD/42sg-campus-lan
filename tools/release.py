@@ -20,6 +20,21 @@ def runtime_path(path):
         return False
     return path.startswith(('campus_lan/', 'minigames/', 'assets/', 'useful-scripts/', 'browser-tools/')) or path in ('lan42.sh', 'setup.sh', 'requirements-auth.txt')
 
+def canonical_ast(value):
+    # ast.dump formatting changed between Python 3.12 and 3.13. Serialize fields
+    # ourselves so changing the interpreter cannot release an unchanged server.
+    if isinstance(value, ast.AST):
+        result = {'node':type(value).__name__}
+        for key, item in ast.iter_fields(value):
+            if item is not None and item != []:
+                result[key] = canonical_ast(item)
+        return result
+    if isinstance(value, list):
+        return [canonical_ast(item) for item in value]
+    if isinstance(value, (bytes, complex)):
+        return {'literal':repr(value)}
+    return value
+
 def fingerprint():
     digest = hashlib.sha256()
     for name in sorted(git('ls-files').splitlines()):
@@ -34,7 +49,7 @@ def fingerprint():
                 if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
                     if node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant) and isinstance(node.body[0].value.value, str):
                         node.body.pop(0)
-            content = ast.dump(tree, include_attributes=False).encode()
+            content = json.dumps(canonical_ast(tree), sort_keys=True, separators=(',', ':')).encode()
         digest.update(name.encode()+b'\0'+content+b'\0')
     return digest.hexdigest()
 

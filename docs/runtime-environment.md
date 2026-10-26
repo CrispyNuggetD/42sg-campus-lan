@@ -42,4 +42,3 @@ Beta checks on 27 October 2026 (SGT), version 2.0.0-beta.1:
   symlink and the path safety checks intentionally refuse symlink traversal.
   Tests use isolated config/temp state; no students were poked.
 - Dependency environment: Python 3.14, website requirements and auth requirements.
-

@@ -8,7 +8,7 @@
       "date": "2026-10-27T01:27:38+08:00",
       "kind": "minor",
       "notes": [
-        "feat: graduate LAN42 to beta with automatic server releases and changelog"
+        "Administrative release: the first CI run misclassified Python 3.12 versus 3.14 AST formatting as a runtime change. No server functionality changed from 2.0.0-beta.1. The existing 2.1.0-beta.1 tag is retained for traceability; fingerprints now use interpreter-independent serialization."
       ]
     },
     {
@@ -71,5 +71,5 @@
       ]
     }
   ],
-  "runtime_sha256": "5cccf1962dec2b65a24dee7bf8791ec4e748e03e8922ade05b74389018e1b291"
+  "runtime_sha256": "c503c109045f33e17fe28be4d926de2765e578e044fe50d5daa042bc8c5b573d"
 }
