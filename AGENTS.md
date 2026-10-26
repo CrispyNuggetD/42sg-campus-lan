@@ -80,3 +80,17 @@ signed-in campus admission, pinned transport, group/folder consent and per-file
 receive/delete permissions. Tests use controlled campus evidence and temporary
 folders, never real students or live transfers. `lan42_restart` may send the
 literal `/restart` only to verified LAN42 client processes in tmux, never shells.
+
+
+## Public website and the /help guide
+
+`docs/quick-guide.html` is the canonical self-contained visual guide opened by
+`/help` and published as the GitHub Pages homepage. `website/build.py` generates
+its runtime HELP section from the AST of `client.py` and a full handbook from
+README.md. Keep curated guide cards aligned when commands change. Run
+`python3 website/build.py --refresh-guide` after editing HELP; do not hand-edit
+the generated runtime-help block. Update README and guide together. Run
+`test_website.py` with `website/requirements.txt` installed. `_site` is generated
+and ignored; never copy configs, caches or credentials into it. Pages rebuilds
+from main via `.github/workflows/pages.yml`; owner must enable Pages with
+Source: GitHub Actions once. Do not claim a deployment is live before verifying.

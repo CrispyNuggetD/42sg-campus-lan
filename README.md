@@ -1,5 +1,7 @@
 # Ryker's 42SG Campus LAN Server
 
+**[Open the visual guide & quick start ↗](https://CrispyNuggetD.github.io/42sg-campus-lan/)** · [Source repository](https://github.com/CrispyNuggetD/42sg-campus-lan)
+
 Student-built terminal LAN lobby for 42 Singapore: discover online peers and
 campus seats via read-only 42 API data, chat, invite players, and coordinate
 locally hosted minigames and useful scripts.
@@ -13,7 +15,7 @@ rather than presented as independent products.
 
 In the terminal, `/about` shows this purpose and source link. `/about repo` or
 `/repo` requests opening the public repository using your browser permissions.
-`/help` links the visual guide; `/roadmap koeldrop` shows file-sharing milestones.
+`/help` opens the same [visual guide](docs/quick-guide.html) used by the website; `/koel help` describes file sharing.
 
 ## LAN42 in your daily workspace
 
