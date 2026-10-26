@@ -57,16 +57,17 @@ class Lobby:
     async def event(self, text, ids=None):
         await self.broadcast(dict(type='event',text=text), ids)
 
-    async def deliver_direct(self,sender,target,message,verified=False):
+    async def deliver_direct(self,sender,target,message,verified=False,uwu=False):
         recipients={pid for pid,c in self.clients.items() if c['name'].lower()==target.lower()}
         if not recipients:return False
         await self.broadcast(dict(type='direct_message',sender=clean(sender,32),verified=verified,
-                                  text=clean(message,400)),recipients)
+                                  text=clean(message,400),uwu=uwu is True),recipients)
         return True
 
-    async def route_direct(self,client,target,message):
-        delivered=await self.deliver_direct(client['name'],target,message,bool(self.auth_broker))
-        if not delivered and not self.auth_broker:delivered=await self.mesh.direct(client['name'],target,message)
+    async def route_direct(self,client,target,message,uwu=False):
+        options={'uwu':True} if uwu else {}
+        delivered=await self.deliver_direct(client['name'],target,message,bool(self.auth_broker),**options)
+        if not delivered and not self.auth_broker:delivered=await self.mesh.direct(client['name'],target,message,**options)
         return delivered
 
     def start_direct_batch(self,pid,message):
@@ -201,6 +202,13 @@ class Lobby:
                 return
             c['presence_snapshot']=dict(type='campus_presence',players=players,updated_at=stamp)
             await self.send(c,c['presence_snapshot'])
+        elif cmd=='/uwu':
+            target=arg.strip()
+            if not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',target):raise ValueError('Use /uwu LOGIN')
+            if time.monotonic()-c.get('last_dm',-1000)<2:raise ValueError('Wait two seconds before another poke/message.')
+            c['last_dm']=time.monotonic()
+            if not await self.route_direct(c,target,'uwu!',uwu=True):raise ValueError('That user is not reachable in this LAN42 lobby/mesh.')
+            await self.send(c,dict(type='event',text='uwu sent to '+target))
         elif cmd in ('/dm','/alert'):
             target,separator,message=arg.partition(' ')
             if not separator or not message.strip() or not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',target):raise ValueError('Use /dm LOGIN MESSAGE (or /alert LOGIN MESSAGE).')
@@ -565,7 +573,7 @@ class Lobby:
                     now=time.monotonic()
                     if now-peer.get('last_dm',-1000)<2:raise ValueError('Wait two seconds before sending another message.')
                     peer['last_dm']=now
-                    delivered=await self.deliver_direct(sender,target,message)
+                    delivered=await self.deliver_direct(sender,target,message,uwu=hello.get('uwu') is True)
                     await self.send(dict(writer=writer),dict(type='direct_ack',delivered=delivered))
                     return
                 if hello.get('type') in ('owner','connect_peer'):

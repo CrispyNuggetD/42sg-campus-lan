@@ -44,6 +44,26 @@ class KoelSound(unittest.TestCase):
         with patch.dict(os.environ,{'LAN42_POPUP_SESSION':'d'*32}):self.assertTrue(SoundChoice('hnah').read()['enabled'])
         c.settings_command('/settings koel-sound off');self.assertFalse(SoundChoice('hnah').always_on());self.assertFalse(SoundChoice('hnah').read()['enabled'])
 
+    def test_uwu_asks_when_disabled_and_plays_only_after_accept(self):
+        c=self.client()
+        with patch('campus_lan.koel_sound.play') as play:
+            self.assertTrue(c.uwu_command('/uwu'))
+            play.assert_not_called()
+            c.permission_tick();c.permission_answer('')
+            play.assert_not_called()
+            c.uwu_command('/uwu');c.permission_tick();c.permission_answer('y')
+            play.assert_called_once()
+            c.uwu_command('/uwu');self.assertEqual(play.call_count,2)
+
+    def test_uwu_always_waits_for_separate_confirmation(self):
+        c=self.client()
+        with patch('campus_lan.koel_sound.play') as play:
+            c.uwu_command('/uwu');c.permission_tick();c.permission_answer('a')
+            play.assert_not_called()
+            c.permission_tick();c.permission_answer('y')
+            play.assert_called_once()
+            self.assertTrue(SoundChoice('hnah').always_on())
+
     def test_asset_and_sound_hints_are_bounded_and_default_silent(self):
         self.assertTrue(ASSET.read_bytes().startswith(b'OggS'));self.assertLess(ASSET.stat().st_size,128*1024)
         self.assertEqual(sound_hints(None),{});self.assertEqual(sound_hints(False),{'suppress-sound':True})

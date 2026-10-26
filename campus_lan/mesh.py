@@ -123,7 +123,7 @@ class Mesh:
             writer.close()
             await writer.wait_closed()
 
-    async def direct(self,sender,target,message):
+    async def direct(self,sender,target,message,uwu=False):
         # Send to the known recipient node only; never put DMs in gossip/events.
         candidates=[key for key,peer in self.peers.items() if any(p['name'].lower()==target.lower() for p in peer.get('players',[]))]
         if len(candidates)>1:raise ValueError('Ambiguous guest login across nodes; connect to their node first.')
@@ -133,6 +133,7 @@ class Mesh:
             reader,writer=await asyncio.wait_for(asyncio.open_connection(host,port,limit=8192),2)
             try:
                 payload=dict(type='direct_message',protocol=PROTOCOL,port=self.lobby.port,sender=sender,target=target,text=message)
+                if uwu:payload['uwu']=True
                 writer.write((json.dumps(payload)+'\n').encode());await asyncio.wait_for(writer.drain(),2)
                 reply=json.loads(await asyncio.wait_for(reader.readline(),3))
                 return reply.get('type')=='direct_ack' and reply.get('delivered') is True

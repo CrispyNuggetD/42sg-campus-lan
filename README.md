@@ -21,7 +21,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `lan42` / `lan42_window`: open your campus HQ in its own tmux workspace.
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
-- `/dm`: message connected peers directly.
+- `/dm` / `/uwu LOGIN`: message peers or send a two-second, opt-in sound poke.
 - `/games`: find locally hosted Tetris, Bluff, Hex Wars and FORKNITE rooms.
 - `/signin`: optionally verify your 42 identity; the secure service requires owner setup.
 <!-- shell-installer-features:end -->
@@ -54,6 +54,15 @@ file contents and activity databases are not public project assets.
 
 This is version **0.6.0**, a small LAN prototype. Start as a guest, or use `/signin` to enter a TLS-protected lobby with your
 verified 42 account. [Owner setup and student sign-in](docs/sign-in.md).
+
+`/uwu` plays the bundled koel sound on your own computer for the running joke
+or an audio test. If sound is off, it asks first; Enter keeps it off. `a` offers
+always-on with the existing second confirmation. Change it with
+`/settings koel-sound on|off|always`. `/uwu LOGIN` sends a private poke to a
+connected person. Their notification permission and their own sound choice apply;
+the toast closes after two seconds and is not resident in notification history.
+Only a poke message crosses the network; each client plays its own local asset.
+Pokes share the two-second direct-message rate limit.
 
 ## Visual guide and popup permissions
 

@@ -47,3 +47,21 @@ def sound_hints(enabled):
         if ASSET.stat().st_size>128*1024 or ASSET.read_bytes()[:4]!=b'OggS':return {'suppress-sound':True}
     except OSError:return {'suppress-sound':True}
     return {'sound-file':str(ASSET),'suppress-sound':False}
+
+
+def play():
+    """Play the bundled clip locally, without a shell or a desktop notification."""
+    import shutil
+    import subprocess
+    import sys
+    if 'sound-file' not in sound_hints(True):
+        raise OSError('The bundled koel sound is unavailable.')
+    choices = [('afplay', [])] if sys.platform == 'darwin' else [
+        ('paplay', []), ('pw-play', []), ('ffplay', ['-nodisp', '-autoexit', '-loglevel', 'quiet'])]
+    for name, flags in choices:
+        executable = shutil.which(name)
+        if executable:
+            subprocess.Popen([executable, *flags, str(ASSET)], stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            return
+    raise OSError('No local sound player found (afplay on Mac; paplay or pw-play on Linux).')

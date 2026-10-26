@@ -78,3 +78,58 @@ class Notifications:
             bus.signal_unsubscribe(subscription);context.pop_thread_default()
 
     def close(self):self.closed.set()
+
+    def poke(self,title,body,name,koel_sound=False):
+        """Short local toast; recipient permission is checked by the client first."""
+        def show():
+            import sys
+            import time
+            if koel_sound:
+                try:
+                    from .koel_sound import play
+                    play()
+                except OSError:pass
+            if sys.platform=='darwin':
+                # An app-owned panel can expire exactly, unlike Notification Center banners.
+                script='''ObjC.import('AppKit');
+function run(argv) {
+ $.NSApplication.sharedApplication;
+ const frame=$.NSScreen.mainScreen.visibleFrame;
+ const panel=$.NSPanel.alloc.initWithContentRectStyleMaskBackingDefer(
+   $.NSMakeRect(frame.origin.x+frame.size.width-350,frame.origin.y+frame.size.height-110,330,90),128,2,false);
+ panel.level=3; panel.hidesOnDeactivate=false;
+ const label=$.NSTextField.alloc.initWithFrame($.NSMakeRect(15,10,300,70));
+ label.stringValue=argv[0]+'\\n'+argv[1]; label.editable=false; label.selectable=false;
+ label.bezeled=false; label.drawsBackground=false;
+ panel.contentView.addSubview(label); panel.orderFrontRegardless;
+ $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(2));
+ panel.close;
+}'''
+                try:subprocess.run(['osascript','-l','JavaScript','-e',script,title,body],timeout=6,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                except (OSError,subprocess.SubprocessError):pass
+                return
+            try:
+                from gi.repository import Gio,GLib
+                bus=Gio.bus_get_sync(Gio.BusType.SESSION,None)
+                service='org.freedesktop.Notifications';path='/org/freedesktop/Notifications'
+                hints={'transient':GLib.Variant('b',True),'resident':GLib.Variant('b',False),
+                       'suppress-sound':GLib.Variant('b',True)}
+                args=GLib.Variant('(susssasa{sv}i)',('LAN42',0,'',title,html.escape(body),[],hints,2000))
+                ident=bus.call_sync(service,path,service,'Notify',args,None,Gio.DBusCallFlags.NONE,3000,None).unpack()[0]
+                time.sleep(2)
+                try:bus.call_sync(service,path,service,'CloseNotification',GLib.Variant('(u)',(ident,)),None,Gio.DBusCallFlags.NONE,3000,None)
+                except Exception:pass
+            except Exception:
+                if not shutil.which('notify-send'):return
+                try:
+                    result=subprocess.run(['notify-send','--print-id','--expire-time=2000','--hint=boolean:transient:true',
+                                           '--hint=boolean:suppress-sound:true','--',title,body],capture_output=True,text=True,timeout=4)
+                    ident=result.stdout.strip()
+                    if ident.isdecimal() and shutil.which('gdbus'):
+                        time.sleep(2)
+                        subprocess.run(['gdbus','call','--session','--dest','org.freedesktop.Notifications',
+                                        '--object-path','/org/freedesktop/Notifications','--method',
+                                        'org.freedesktop.Notifications.CloseNotification',ident],
+                                       stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=4)
+                except (OSError,subprocess.SubprocessError):pass
+        threading.Thread(target=show,daemon=True).start()

@@ -26,6 +26,7 @@ from .completion import complete
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    '/uwu: local koel sound test | /uwu LOGIN: 2-second poke (their sound settings apply)',
     '/about: project purpose + public source | /repo: request browser link | /roadmap files: experimental milestones',
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
     '/who /rooms /games | /game tetris | /game bluff free|prompt | /game hexwars | /game forknite',
@@ -125,12 +126,48 @@ class Client(KoelUI):
                                              lambda:choice.choose(False),lambda:not choice.read()['asked'],
                                              always=lambda:self.confirm_always_koel(choice))
 
-    def confirm_always_koel(self,choice):
+    def confirm_always_koel(self,choice,after_accept=None):
         def accept():
             choice.set_always(True)
             self.lines.append('uwu has been given permanent residency. /settings koel-sound off evicts it.')
+            if after_accept:after_accept()
         enabled_before=choice.read()['enabled']
         self.popup_prompts().session_question('Always uwu? Are you SURE? ಠ_ಠ [y/N]',accept,lambda:choice.choose(enabled_before))
+
+    def uwu_command(self,text):
+        if text.startswith('/uwu '):
+            target=text.split(maxsplit=1)[1].strip()
+            if not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',target):self.lines.append('Use /uwu LOGIN')
+            else:self.send(dict(type='command',text='/uwu '+target))
+            return True
+        if text!='/uwu':return False
+        from .koel_sound import SoundChoice,play
+        choice=SoundChoice(self.name)
+        def chirp():
+            if not choice.read()['enabled']:return
+            try:play();self.lines.append('uwu!')
+            except OSError as error:self.lines.append(str(error))
+        if choice.read()['enabled']:
+            chirp()
+        else:
+            self.sound_prompt_queued=True
+            def accept():choice.choose(True);chirp()
+            self.popup_prompts().session_question(
+                'Enable koel sound and uwu? y=once, a=always, Enter=off',accept,
+                lambda:choice.choose(False),lambda:not choice.read()['enabled'],
+                always=lambda:self.confirm_always_koel(choice,chirp))
+        return True
+
+    def uwu_notice(self,sender):
+        def show():
+            if not self.notify_enabled:return False
+            from .koel_sound import SoundChoice
+            if not getattr(self,'tracking_notifier',None):
+                from .desktop_notifications import Notifications
+                self.tracking_notifier=Notifications(self.inbox)
+            self.tracking_notifier.poke(sender+' says uwu!', 'You have been poked.',sender,
+                                        koel_sound=SoundChoice(self.name).read()['enabled'])
+        self.request_popup('notifications','Show uwu poke from '+sender+'?',show)
 
     def auto_login_tick(self):
         if getattr(self,'auto_login_checked',False) or getattr(self,'role','lobby')!='lobby':return
@@ -407,6 +444,10 @@ class Client(KoelUI):
                                    'Unavailable: '+(', '.join(safe(n) for n in msg.get('unavailable',[])) or 'none')])
             elif kind == 'direct_message':
                 sender=safe(msg.get('sender','unknown'))
+                if msg.get('uwu') is True:
+                    self.lines.append(sender+' poked you: uwu!')
+                    if self.notify_enabled:self.uwu_notice(sender)
+                    continue
                 title='DM from '+sender+(' [42 Verified]' if self.secure and msg.get('verified') else ' [Guest]')
                 self.lines.extend([title,safe(msg.get('text',''))])
                 if self.notify_enabled:
@@ -1149,6 +1190,8 @@ class Client(KoelUI):
                     self.open_game('/game forknite')
                 elif text.startswith('/game ') or (getattr(self,'role','lobby')=='lobby' and (text.startswith('/host ') or text.startswith('/join '))):
                     self.open_game(text)
+                elif self.uwu_command(text):
+                    pass
                 elif self.about_command(text):
                     pass
                 elif self.experimental_command(text):

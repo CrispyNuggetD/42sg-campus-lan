@@ -34,3 +34,12 @@ run its `test_daily_terminal.py`, then copy it here and run
 `open_terminal.py` prefers an explicitly configured shared helper and otherwise
 uses this bundled copy. Preserve separate LAN42 sessions and normal Mac/Linux
 maximizing; never nest tmux or inject commands into existing user shells.
+
+## Local uwu command
+
+`/uwu` is a local opt-in sound test; `/uwu LOGIN` is a private, rate-limited poke.
+A recipient controls notification permission and sound. Never let a sender enable
+another user's sound, and never make the poke resident/persistent: expiry is two
+seconds with explicit close on Linux and an app-owned transient panel on Mac.
+Tests must mock notifications/audio/network delivery; never poke a real student
+as a test. Keep the exported README feature excerpt current.
