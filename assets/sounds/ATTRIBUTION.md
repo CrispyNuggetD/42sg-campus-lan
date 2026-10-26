@@ -19,3 +19,40 @@
 The recording's license applies to this media asset; it does not imply the
 recorder endorses LAN42. Playback is off by default. Users may opt in for one launch, or explicitly
 confirm the optional always-on setting. Downloads, tests and setup do not play it.
+
+## Identifying the LAN42 edit
+
+Canonical attribution link (kept current on `main`):
+https://github.com/CrispyNuggetD/42sg-campus-lan/blob/main/assets/sounds/ATTRIBUTION.md
+
+This is the 0.85-second **LAN42 uwu edit**, distributed by **Christopher Nah
+(hnah)**, adapted from Philip Eapen’s recording credited above. The distributor
+identifier does not replace the original recording credit or CC BY-SA terms.
+
+Fingerprints of the bundled edit, recorded 27 October 2026 (SGT):
+
+- Exact-file SHA-256:
+  `5c8ffa6c399921e65d00117d0eca860dc69bfff67b640c67fbdb87196eadbdd8`
+- Decoded-audio SHA-256 (FFmpeg decode to mono, 44,100 Hz, signed 16-bit
+  little-endian PCM, no container):
+  `9aca6b777b4c8dcf66a8b45dec4c71c2a76894554a698e1d489e73fa5e292bdf`
+- Decoded length: 74,970 bytes / 37,485 samples / 0.85 seconds.
+
+Reproduce without playing the sound:
+
+```sh
+shasum -a 256 uwu.ogg
+ffmpeg -v error -i uwu.ogg -map 0:a:0 -ac 1 -ar 44100 \
+  -c:a pcm_s16le -f hash -hash sha256 -
+```
+
+The audio digest excludes filenames and container tags; it matches only when
+the decoded samples match exactly. Re-encoding, resampling, trimming or decoder
+rounding differences can change it. This is an exact recognition aid, not a
+perceptual watermark, ownership proof, forwarding log or automatic attribution
+lookup. No new watermark or hidden identifier was added to the sound.
+
+For sharing, keep a visible caption linking this page and crediting the original
+recording. Container comments or extra Ogg streams can carry text, but clients
+may ignore or discard them. A filename, fingerprint or hidden marker does not
+ensure attribution survives forwarding or re-uploading.
