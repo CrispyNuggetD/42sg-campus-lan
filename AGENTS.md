@@ -88,9 +88,10 @@ literal `/restart` only to verified LAN42 client processes in tmux, never shells
 ## Public website and the /help guide
 
 `docs/quick-guide.html` is the canonical self-contained visual guide opened by
-`/help` and published as the GitHub Pages homepage. `website/build.py` generates
-its runtime HELP section from the AST of `client.py` and a full handbook from
-README.md. Keep curated guide cards aligned when commands change. Run
+`/help` and published as commands.html. The Pages homepage is the separate
+one-minute starter; handbook.html is the task-based User guide from docs/README.md.
+`website/build.py` generates the reference’s runtime HELP section from the AST
+of `client.py`. Keep curated guide cards aligned when commands change. Run
 `python3 website/build.py --refresh-guide` after editing HELP; do not hand-edit
 the generated runtime-help block. Update README and guide together. Run
 `test_website.py` with `website/requirements.txt` installed. `_site` is generated
@@ -202,8 +203,10 @@ and `branded_page` in `website/build.py`; see `website/README.md`. Keep LAN42 BE
 the current public author identity and the guide’s navy/mint palette consistent.
 Preserve accessible links/status, mobile layout and no-script/network fallbacks.
 Darren’s contributor profile resolves GitHub account 222878446; never replace that
-identity with an unrelated username. README remains the handbook source; the
-self-contained command guide retains its separate offline/runtime-help workflow.
+identity with an unrelated username. README supplies shared homepage installation, credits and AI disclosure. The
+User guide at handbook.html comes from docs/README.md and mapped topic Markdown;
+commands.html serves the searchable reference. The self-contained command guide
+retains its separate offline/runtime-help workflow.
 
 ## Roadmap and collaborator website
 
@@ -217,3 +220,17 @@ local cross-page/anchor links, the generated contents and README collaborator
 call (global 42 Slack: hnah; other contributors: GitHub issues). Never assume
 GitHub email notifications are enabled. Run the site build and test_website.py
 after changes; see website/README.md for adding another generated plan page.
+
+
+## Website information architecture
+
+Home (index.html) is the shareable one-minute student starter: launch, guest/API
+host distinction, sign-in, basic actions, consent and quiet controls. Keep it
+concise. website/home.html is curated layout/copy; build.py injects README’s
+install snippet, contributors and collapsed AI disclosure. Maintain these source
+markers when restructuring README. The home must keep contributor and
+collaboration links visible. User guide (legacy handbook.html URL) renders
+docs/README.md as a task index, with topic Markdown pages mapped in DOCUMENT_PAGES.
+Do not turn it back into a README mirror. Full searchable help is commands.html;
+local /help still uses docs/quick-guide.html. Keep existing public URLs working,
+site-local topic links valid, and roadmap plans separate from instructions.

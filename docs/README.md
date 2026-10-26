@@ -1,8 +1,11 @@
-# LAN42 documentation
+# LAN42 user guide
 
 [← Project introduction and quick start](../README.md) ·
 [Searchable visual command guide](quick-guide.html) ·
-[Published guide ↗](https://crispynuggetd.github.io/42sg-campus-lan/)
+[Home: start in one minute ↗](https://crispynuggetd.github.io/42sg-campus-lan/)
+
+Choose the task you need below. For every command in one searchable page, use
+the [command reference](quick-guide.html).
 
 ## Using LAN42
 

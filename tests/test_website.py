@@ -1,4 +1,6 @@
 import html
+import re
+from urllib.parse import urlsplit
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -24,10 +26,19 @@ class Website(unittest.TestCase):
     def test_site_builds_both_guides_without_private_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             output=Path(tmp);site.build(output)
-            self.assertEqual({p.name for p in output.iterdir()},{'index.html','handbook.html','alpha-tester.html','roadmap.html','frontend-milestone.html','.nojekyll'})
+            self.assertEqual({p.name for p in output.iterdir()},{'index.html','commands.html','alpha-tester.html','.nojekyll'} | set(site.DOCUMENT_PAGES.values()))
             index=(output/'index.html').read_text();handbook=(output/'handbook.html').read_text()
             self.assertIn('href="handbook.html"',index)
-            self.assertIn('Christopher Nah',handbook)
+            self.assertIn('Christopher Nah',index)
+            self.assertIn('Darren',index)
+            self.assertIn('id="contributors"',index)
+            self.assertIn('LAN42 user guide',handbook)
+            self.assertIn('href="getting-started.html"',handbook)
+            self.assertNotIn('AI-assisted, human-directed',handbook)
+            self.assertNotIn('runtime-help:start',index)
+            self.assertIn('runtime-help:start',(output/'commands.html').read_text())
+            self.assertIn('Campus seats need an approved host running on campus',index)
+            self.assertIn('sh setup.sh',index)
             self.assertIn('api.github.com/user/222878446',(output/'alpha-tester.html').read_text())
             credit=(output/'alpha-tester.html').read_text()
             self.assertIn('Thank you, Darren · LAN42 BETA',credit)
@@ -42,6 +53,12 @@ class Website(unittest.TestCase):
             self.assertNotIn('href="docs/',handbook)
             self.assertNotIn('/home/hnah',index)
             self.assertNotIn('file://',index)
+            for page in output.glob('*.html'):
+                for href in re.findall(r'href="([^"]+)"',page.read_text()):
+                    link=urlsplit(html.unescape(href))
+                    if not link.scheme and not link.netloc and link.path:
+                        self.assertTrue((page.parent/link.path).exists(),(page.name,href))
+
             roadmap=(output/'roadmap.html').read_text()
             frontend=(output/'frontend-milestone.html').read_text()
             self.assertIn('Roadmap and collaboration',roadmap)

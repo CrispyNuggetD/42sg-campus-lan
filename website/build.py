@@ -33,13 +33,21 @@ def branded_page(title,description,content):
     return re.sub(r'{{(title|description|style|content)}}',lambda match:values[match[1]],template)
 
 
-DOCUMENT_PAGES = {'docs/roadmap.md':'roadmap.html',
-                  'docs/frontend-milestone.md':'frontend-milestone.html'}
+DOCUMENT_PAGES = {
+    'docs/README.md':'handbook.html',
+    'docs/roadmap.md':'roadmap.html',
+    'docs/frontend-milestone.md':'frontend-milestone.html',
+    **{'docs/'+name+'.md':name+'.html' for name in (
+        'getting-started','campus-guide','minigames','file-sharing','preferences',
+        'web-search','exam-quiet','sign-in','hosting','access-policy','versioning',
+        'runtime-environment','local-testing','protocol','file-sharing-design')},
+}
+
 
 def roadmap_page(source):
+    """Render a topic or plan directly from its canonical Markdown source."""
     import markdown
-    path=ROOT/source
-    title,body=path.read_text().split('\n',1)
+    title,body=(ROOT/source).read_text().split('\n',1)
     title=title.removeprefix('# ').strip()
     md=markdown.Markdown(extensions=['tables','fenced_code','toc'])
     document=md.convert(body)
@@ -49,33 +57,42 @@ def roadmap_page(source):
         target,mark,anchor=url.partition('#')
         target=posixpath.normpath(str(Path(source).parent/target))
         destination=DOCUMENT_PAGES.get(target)
-        if target=='README.md':destination='handbook.html'
+        if target=='README.md':destination=(REPO+'/blob/main/README.md' if mark else 'index.html')
+        if target=='docs/quick-guide.html':destination='commands.html'
         if destination is None:destination=REPO+'/blob/main/'+quote(target,safe='/')
         return key+'="'+destination+('#'+anchor if mark else '')+'"'
     document=re.sub(r'(href|src)="([^"]+)"',links,document)
-    content=('<section class="hero"><div class="eyebrow">Build the next chapter together</div><h1>'+escape(title)+
-             '</h1><p>Small steps, open questions, useful experiments. Student-built and unofficial.</p></section>'+
+    planning=source in ('docs/roadmap.md','docs/frontend-milestone.md')
+    eyebrow='Plan and collaborate' if planning else 'LAN42 user guide'
+    subtitle='Small steps, open questions, useful experiments.' if planning else 'Find a task, follow the steps, get back to campus life.'
+    content=('<section class="hero"><div class="eyebrow">'+eyebrow+'</div><h1>'+escape(title)+
+             '</h1><p>'+subtitle+' Student-built and unofficial.</p></section>'+
              '<div class="document-layout"><aside class="contents" aria-label="Page contents"><strong>On this page</strong>'+md.toc+
              '</aside><article class="document">'+document+'</article></div>'+
-             '<p class="muted">Generated from <a href="'+REPO+'/blob/main/'+source+'">the Markdown source</a>. Plans are proposals, not release commitments.</p>')
-    return branded_page(title,'LAN42 plans, frontend learning milestones and ways to collaborate.',content)
+             '<p class="muted">Generated from <a href="'+REPO+'/blob/main/'+source+'">the Markdown source</a>.'+
+             (' Plans are proposals, not release commitments.' if planning else '')+'</p>')
+    return branded_page(title,'LAN42 '+('plans and ways to collaborate.' if planning else 'task guides, commands and help.'),content)
+
+
+def home():
+    import markdown
+    readme=(ROOT/'README.md').read_text()
+    quickstart=re.search(r'```sh\n(.*?)```',readme,re.S).group(1).strip()
+    contributors=readme.split('## Contributors',1)[1]
+    credit='\n'.join(line for line in contributors.splitlines() if line.startswith('- '))
+    ai=readme.split('**AI-assisted, human-directed.**',1)[1].split('Beta since',1)[0]
+    fragment=(ROOT/'website/home.html').read_text()
+    values=dict(quickstart=escape(quickstart),contributors=markdown.markdown(credit),
+                ai=markdown.markdown('**AI-assisted, human-directed.**'+ai))
+    return branded_page('Good company. A few good commands.',
+        'LAN42 BETA: start in a minute. A student-built 42 Singapore community app for campus tools, chat, games and consent-based file sharing.',
+        re.sub(r'{{(quickstart|contributors|ai)}}',lambda m:values[m[1]],fragment))
 
 
 def build(output):
-    import markdown
     output.mkdir(parents=True,exist_ok=True)
-    (output/'index.html').write_text(guide().replace(REPO+'#readme','handbook.html'))
-    md=markdown.Markdown(extensions=['tables','fenced_code','toc'])
-    document=md.convert((ROOT/'README.md').read_text())
-    def links(match):
-        key,url=match.groups()
-        if urlsplit(url).scheme or url.startswith(('#','//')):return match[0]
-        if url=='docs/quick-guide.html':url='index.html'
-        else:url=(REPO+'/blob/main/' if key=='href' else 'https://raw.githubusercontent.com/CrispyNuggetD/42sg-campus-lan/main/')+quote(url,safe='/#?=&')
-        return key+'="'+url+'"'
-    document=re.sub(r'(href|src)="([^"]+)"',links,document)
-    style=(ROOT/'website/handbook.css').read_text()
-    (output/'handbook.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LAN42 · Start here</title><style>'+style+'</style></head><body><header><a href="index.html">← LAN42 quick guide</a><a href="'+REPO+'">GitHub ↗</a></header><div class="layout"><nav aria-label="Handbook contents">'+md.toc+'</nav><main>'+document+'</main></div></body></html>')
+    (output/'index.html').write_text(home())
+    (output/'commands.html').write_text(guide().replace(REPO+'#readme','handbook.html'))
     (output/'alpha-tester.html').write_text(branded_page('Thank you, Darren',
         'Darren (dthoo): LAN42 alpha testing credit, with a GitHub profile link that follows the account ID.',
         (ROOT/'website/alpha-tester.html').read_text()))

@@ -6,7 +6,7 @@ A student-built terminal HQ for **42 Singapore**: find your people, see campus
 seats, send a file with a koel, or turn your Philosophers project into dinner
 with friends.
 
-[Visual command guide ↗](https://crispynuggetd.github.io/42sg-campus-lan/) ·
+[Start in one minute ↗](https://crispynuggetd.github.io/42sg-campus-lan/) ·
 [All guides](docs/README.md) · [Release history](CHANGELOG.md) ·
 [Roadmap & collaboration](https://crispynuggetd.github.io/42sg-campus-lan/roadmap.html)
 

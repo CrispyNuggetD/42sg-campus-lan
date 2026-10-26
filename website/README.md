@@ -1,10 +1,18 @@
 # LAN42 website
 
-The shareable site uses the same `docs/quick-guide.html` opened by `/help`.
-The concise project introduction is generated from the repository README at
-`handbook.html` (the existing URL is kept). Its guide links lead to the topic
-pages in `docs/` on GitHub; `docs/README.md` is their contents page. No duplicate
-handbook copy is maintained. No API credentials, sessions or campus data go into the site.
+The shareable home (`index.html`) is a one-minute student starter, not a command
+encyclopedia. `website/home.html` defines its short journey; `build.py` injects
+the installation snippet, contributor entries and optional AI disclosure from
+README.md. Keep those shared facts canonical in the README. Curated home copy
+must match current behaviour and stay short; do not put every feature here.
+
+`handbook.html` keeps its old URL but is now the **User guide**, generated from
+`docs/README.md`. Its topic links open matching Markdown-generated HTML pages.
+`commands.html` contains the full searchable reference, built from the same
+self-contained `docs/quick-guide.html` opened locally by `/help`. The offline
+file and terminal command behaviour are unchanged. `roadmap.html` is the plans
+and collaboration entry point. The main GitHub README remains a useful repository
+introduction, not a second website homepage. No private data goes into the site.
 
 Build locally:
 
@@ -49,9 +57,9 @@ link text, accessible status messages, responsive cards and a usable no-script
 fallback. Reuse `.hero`, `.eyebrow`, `.cards`, `.card`, `.label`, `.button`, `.muted`
 and `.note` rather than copying page styles.
 
-The original offline command guide remains self-contained; the README is still
-the source for handbook content. Do not add a second manually maintained copy of
-either. Build and preview the generated page, then run `test_website.py`. Avoid
+The offline command guide remains self-contained. README provides shared home
+installation/credits/disclosure; docs/README.md and topic Markdown provide user
+documentation. Do not maintain a second manual HTML copy of those sources. Build and preview the generated page, then run `test_website.py`. Avoid
 new trackers, remote fonts or decorative dependencies. Darren’s page preserves
 the existing GitHub account-ID lookup and last-known-profile fallback.
 
@@ -66,3 +74,18 @@ push rebuilds both automatically. Keep statuses, collaborator-sized tasks and
 known limitations current when plans change or features ship. Add further
 published plan documents to `DOCUMENT_PAGES` in `build.py` and the output/link
 checks in `test_website.py`.
+
+## Topic guides and navigation
+
+`DOCUMENT_PAGES` maps canonical Markdown files to public HTML paths. Its links
+are resolved relative to each Markdown source, keeping mapped topics within the
+website and other sources on GitHub. README section anchors retain GitHub targets
+rather than pointing to unrelated homepage sections. Plans and help share the
+brand shell, but use different introductory language. `handbook.html` is always
+labelled User guide; never reintroduce the sequential README mirror.
+
+When behaviour changes, update the relevant topic Markdown and concise home copy
+if it affects basic use. README credit entries and AI disclosure flow to home
+automatically. Keep contributor, roadmap, source and help links discoverable.
+Build and check both beginner and reference journeys; preserve the offline HELP
+generation check. Python/docs/site changes here alone do not bump server version.
