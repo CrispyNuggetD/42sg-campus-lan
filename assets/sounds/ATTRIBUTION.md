@@ -1,5 +1,7 @@
 # LAN42 uwu sound
 
+Arrived here through a forwarded furry uwu? [Meet LAN42, the project behind this edit →](https://crispynuggetd.github.io/42sg-campus-lan/index.html)
+
 `uwu.ogg` is LAN42’s shortened adaptation of **Asian Koel.ogg** by **Philip Eapen**
 (Philip.eapen), recorded in Kochi, India, on 31 January 2022.
 
