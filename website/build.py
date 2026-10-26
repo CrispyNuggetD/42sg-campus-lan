@@ -49,7 +49,7 @@ def roadmap_page(source):
     import markdown
     title,body=(ROOT/source).read_text().split('\n',1)
     title=title.removeprefix('# ').strip()
-    md=markdown.Markdown(extensions=['tables','fenced_code','toc'])
+    md=markdown.Markdown(extensions=['tables','fenced_code','toc','md_in_html'])
     document=md.convert(body)
     def links(match):
         key,url=match.groups()

@@ -135,3 +135,7 @@ enables search and Print when loaded. No-JavaScript readers can use browser Find
 Verify desktop/mobile with JavaScript both enabled and disabled. Check narrow
 screen overflow, copy success/failure, source-synced setup/credits and navigation.
 Do not replace the functional HTML baseline with a client-rendered blank shell.
+
+Markdown inside HTML disclosure blocks needs `<details markdown="1">`; the
+renderer enables `md_in_html`. Keep a blank line after the summary and verify
+that links/code render inside expanded content rather than displaying Markdown.

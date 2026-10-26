@@ -34,6 +34,12 @@ class Website(unittest.TestCase):
             self.assertIn('id="contributors"',index)
             self.assertIn('LAN42 user guide',handbook)
             self.assertIn('href="getting-started.html"',handbook)
+            getting_started=(output/'getting-started.html').read_text()
+            self.assertIn('href="https://api.intra.42.fr/apidoc/guides/getting_started"',getting_started)
+            self.assertIn('<code>INTRA_CLIENT_ID</code>',getting_started)
+            self.assertNotIn("[42's getting-started guide]",getting_started)
+            self.assertIn('<summary>Optional 42 API lookup</summary>',getting_started)
+
             self.assertNotIn('AI-assisted, human-directed',handbook)
             self.assertNotIn('runtime-help:start',index)
             self.assertIn('runtime-help:start',(output/'commands.html').read_text())

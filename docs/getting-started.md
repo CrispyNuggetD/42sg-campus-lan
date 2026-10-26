@@ -112,7 +112,7 @@ and game windows and returns to guests. Read the **[setup, privacy, and security
 guide](sign-in.md)** for importing the existing app, distributing public
 trust information, and handling secret rotation.
 
-<details>
+<details markdown="1">
 <summary>Optional 42 API lookup</summary>
 
 The API adapter is optional and doesn't block startup. A trusted host can set
