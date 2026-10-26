@@ -25,6 +25,13 @@ def guide():
     return source.replace('</div><p id="empty"',section+'</div><p id="empty"',1)
 
 
+def branded_page(title,description,content):
+    template=(ROOT/'website/templates/page.html').read_text()
+    values=dict(title=escape(title,quote=True),description=escape(description,quote=True),
+                style=(ROOT/'website/page.css').read_text(),content=content)
+    return re.sub(r'{{(title|description|style|content)}}',lambda match:values[match[1]],template)
+
+
 def build(output):
     import markdown
     output.mkdir(parents=True,exist_ok=True)
@@ -40,7 +47,9 @@ def build(output):
     document=re.sub(r'(href|src)="([^"]+)"',links,document)
     style=(ROOT/'website/handbook.css').read_text()
     (output/'handbook.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LAN42 · Start here</title><style>'+style+'</style></head><body><header><a href="index.html">← LAN42 quick guide</a><a href="'+REPO+'">GitHub ↗</a></header><div class="layout"><nav aria-label="Handbook contents">'+md.toc+'</nav><main>'+document+'</main></div></body></html>')
-    (output/'alpha-tester.html').write_text((ROOT/'website/alpha-tester.html').read_text())
+    (output/'alpha-tester.html').write_text(branded_page('Thank you, Darren',
+        'Darren (dthoo): LAN42 alpha testing credit, with a GitHub profile link that follows the account ID.',
+        (ROOT/'website/alpha-tester.html').read_text()))
     (output/'.nojekyll').touch()
 
 

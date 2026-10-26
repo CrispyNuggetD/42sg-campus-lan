@@ -194,3 +194,13 @@ Keep 30-minute release coalescing and the per-computer rolling 24-hour popup cap
 persistent across HQ/game windows/restarts. Tests must use fake dates and mock
 all audio/volume/notifications. Run test_exam_quiet.py, existing auth/access/
 notification checks, and the FORKNITE campus-audio/fox-audio JS tests.
+
+## Public HTML branding
+
+For small public HTML pages, reuse `website/templates/page.html`, `website/page.css`
+and `branded_page` in `website/build.py`; see `website/README.md`. Keep LAN42 BETA,
+the current public author identity and the guide’s navy/mint palette consistent.
+Preserve accessible links/status, mobile layout and no-script/network fallbacks.
+Darren’s contributor profile resolves GitHub account 222878446; never replace that
+identity with an unrelated username. README remains the handbook source; the
+self-contained command guide retains its separate offline/runtime-help workflow.

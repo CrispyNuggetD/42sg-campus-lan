@@ -31,3 +31,26 @@ Actions (or push a new change). No token or private key needs to be added.
 Expected public URL: https://CrispyNuggetD.github.io/42sg-campus-lan/
 The `deploy` job reports the final live URL. Until Pages is enabled, GitHub can
 build the artifact but will reject deployment; do not describe the URL as live.
+
+## Branded small pages
+
+Use `templates/page.html` and `page.css` for new standalone credit, milestone or
+information pages. They follow the README/guide identity: **LAN42 BETA**, “Good
+company. A few good commands.”, navy `#13293c`, mint `#a8e6cf`, pale background
+`#eef3f7`, system fonts and rounded cards. Use Christopher Nah / hnah for current
+public attribution. Keep historical names inside clearly labelled archives.
+
+`alpha-tester.html` is an authored **content fragment**, not a standalone server
+page. In `build.py`, call `branded_page(title, description, fragment)` and write
+its output under the desired public filename. The renderer escapes metadata and
+inlines the shared CSS; content fragments are trusted repository HTML, never
+untrusted user input. Keep fragments semantic: one h1, labelled sections, visible
+link text, accessible status messages, responsive cards and a usable no-script
+fallback. Reuse `.hero`, `.eyebrow`, `.cards`, `.card`, `.label`, `.button`, `.muted`
+and `.note` rather than copying page styles.
+
+The original offline command guide remains self-contained; the README is still
+the source for handbook content. Do not add a second manually maintained copy of
+either. Build and preview the generated page, then run `test_website.py`. Avoid
+new trackers, remote fonts or decorative dependencies. Darren’s page preserves
+the existing GitHub account-ID lookup and last-known-profile fallback.

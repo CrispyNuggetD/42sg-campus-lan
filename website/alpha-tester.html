@@ -1,7 +1,31 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LAN42 BETA · Alpha testing credit</title></head><body><main><h1>Thank you for alpha testing LAN42</h1><p>Darren / dthoo (GitHub: <a id="profile" href="https://github.com/whatisthisbuffoonery">whatisthisbuffoonery</a>) helped LAN42 reach beta.</p><p id="status">Looking up the current GitHub profile for account #222878446…</p><p><a href="index.html">LAN42 BETA guide</a></p></main><script>
+<!-- Content fragment rendered through templates/page.html by build.py. -->
+<section class="hero" aria-labelledby="title">
+<div class="eyebrow">The people behind the beta</div>
+<h1 id="title">Good company.<br>Thanks, Darren.</h1>
+<p>Before LAN42 reached beta, someone had to try it. Thank you for being part of the alpha.</p>
+</section>
+<div class="cards">
+<section class="card" aria-labelledby="contributor">
+<div class="label">Alpha testing</div>
+<h2 id="contributor">Darren <span class="muted">/ dthoo</span></h2>
+<p>A fellow 42 Singapore student, credited for testing LAN42 before beta.</p>
+<a class="button" id="profile" href="https://github.com/whatisthisbuffoonery">whatisthisbuffoonery ↗</a>
+<p id="status" class="muted" role="status" aria-live="polite">Looking up the current GitHub profile… The button already links to the last known profile.</p>
+<noscript><p class="muted">JavaScript is off. The button uses the last known GitHub username.</p></noscript>
+</section>
+<section class="card" aria-labelledby="milestone">
+<div class="label">A little project history</div>
+<h2 id="milestone">Alpha → Beta</h2>
+<p>LAN42 entered beta on <time datetime="2026-10-27T00:48:00+08:00">27 October 2026, 00:48 SGT</time>.</p>
+<p>Campus tools, games, file sharing—and one little uwu.</p>
+<a href="https://github.com/CrispyNuggetD/42sg-campus-lan/blob/main/docs/alpha-history.md">Read the alpha development log ↗</a>
+</section>
+</div>
+<aside class="note"><p><strong>Same person. A lasting credit.</strong> This page looks up GitHub account <code>#222878446</code>, so the profile link can follow username changes. If GitHub is unavailable, the last known profile stays available.</p></aside>
+<script>
 const profile=document.getElementById('profile'),status=document.getElementById('status');
 fetch('https://api.github.com/user/222878446',{signal:AbortSignal.timeout(5000)})
 .then(response=>{if(!response.ok)throw new Error('lookup failed');return response.json();})
 .then(user=>{if(user.id!==222878446||!/^https:\/\/github\.com\/[A-Za-z0-9-]+$/.test(user.html_url))throw new Error('invalid profile');profile.href=user.html_url;profile.textContent=user.login;status.textContent='Current GitHub profile, resolved using the permanent account ID.';})
 .catch(()=>{status.textContent='GitHub lookup is unavailable. The link shows the last known username; account ID: 222878446.';});
-</script></body></html>
+</script>
