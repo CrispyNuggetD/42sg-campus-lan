@@ -14,10 +14,7 @@ Student-built terminal LAN lobby for 42 Singapore: discover online peers and
 campus seats via read-only 42 API data, chat, invite players, and coordinate
 locally hosted minigames and useful scripts.
 
-Built by **Ryker (hnah)** as a public learning and portfolio project. The name
-and description above match the Intra application's public profile. New features
-stay under this campus LAN initiative; experiments are identified separately
-rather than presented as independent products.
+Hi, I’m **Ryker** (**hnah** on Intra), a student at **42 Singapore**. Questions, ideas, or just saying hi? Find me on the **global 42 Slack**, or [here on GitHub](https://github.com/CrispyNuggetD).
 
 **Source, issues and contributions:** https://github.com/CrispyNuggetD/42sg-campus-lan
 
