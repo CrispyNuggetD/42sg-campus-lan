@@ -1,8 +1,16 @@
 {
-  "version": "2.4.1-beta.1",
-  "date": "2026-10-27T03:15:26+08:00",
-  "source": "510cf5295f3ec9a379074c70f3f8a67c0f67f0bc",
+  "version": "2.5.0-beta.1",
+  "date": "2026-10-27T03:41:54+08:00",
+  "source": "ae6a22579d070734894582581ea4a4a5eb785bf1",
   "history": [
+    {
+      "version": "2.5.0-beta.1",
+      "date": "2026-10-27T03:41:54+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: start an opt-in Singapore KoelDrop flock with the campus host"
+      ]
+    },
     {
       "version": "2.4.1-beta.1",
       "date": "2026-10-27T03:15:26+08:00",
@@ -143,5 +151,5 @@
       ]
     }
   ],
-  "runtime_sha256": "7a3112191c34655e1fc60927a0a9cbd2b6d26d08aff8f80a8baf270c98f39853"
+  "runtime_sha256": "e94e525c813c648280b59ab53032b7807afd25edd355d838d9f3e3e739ca64f4"
 }

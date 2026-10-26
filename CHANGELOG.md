@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.5.0-beta.1 · 2026-10-27T03:41:54+08:00
+
+- feat: start an opt-in Singapore KoelDrop flock with the campus host
+
 ## 2.4.1-beta.1 · 2026-10-27T03:15:26+08:00
 
 - fix: share notification preference changes across open windows
