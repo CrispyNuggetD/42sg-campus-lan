@@ -86,7 +86,7 @@ def home():
                 ai=markdown.markdown('**AI-assisted, human-directed.**'+ai))
     return branded_page('Good company. A few good commands.',
         'LAN42 BETA: start in a minute. A student-built 42 Singapore community app for campus tools, chat, games and consent-based file sharing.',
-        re.sub(r'{{(quickstart|contributors|ai)}}',lambda m:values[m[1]],fragment))
+        re.sub(r'{{(quickstart|contributors|ai)}}',lambda m:values[m[1]],fragment)+'<script>'+(ROOT/'website/home.js').read_text()+'</script>')
 
 
 def build(output):

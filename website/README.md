@@ -120,3 +120,18 @@ search and touch fallback. Check those flows when changing the pointer code.
 Meaningful website design milestones are maintained in docs/website-changelog.md,
 rendered as website-changelog.html. Update that source when interaction direction
 changes; server releases remain governed by the separate runtime fingerprint.
+
+
+## Home layout and no-JavaScript baseline
+
+Home uses CSS grid and media queries for its asymmetric install/access layout,
+command strip and contributor closing area. `home.js` only adds clipboard buttons
+when that API is available; hidden buttons stay absent without JavaScript.
+Commands are always selectable, links always navigate and native details/summary
+still works. Pointer effects are separate progressive enhancement. The reference
+search starts disabled with an explanation and all commands visible; its script
+enables search and Print when loaded. No-JavaScript readers can use browser Find.
+
+Verify desktop/mobile with JavaScript both enabled and disabled. Check narrow
+screen overflow, copy success/failure, source-synced setup/credits and navigation.
+Do not replace the functional HTML baseline with a client-rendered blank shell.

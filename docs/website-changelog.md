@@ -10,6 +10,10 @@ The [server changelog](../CHANGELOG.md) remains separate.
 
 - Established the navy/mint branded website shell, Markdown-generated task guides
   and roadmap, and a one-minute student home page with contributor credits.
+- Refined home into a compact introduction, asymmetric install/access layout,
+  copyable command strip, lightweight sharing/quiet section and contributor
+  closing area. Layout and content work without JavaScript; optional copy and
+  pointer controls progressively enhance supported browsers.
 - Command search now presents matches directly below the input with a visible
   count, empty state and Clear/Escape reset.
 - Introduced default-on adaptive pointer feedback for supported desktop devices,
