@@ -68,3 +68,19 @@ class LobbyView(unittest.TestCase):
         c.lobby_command('/game')
         self.assertTrue(c.play)
         self.assertFalse(c.show_lobby)
+
+    def test_clusters_heading_has_no_overwritten_text_and_controls_fit_tmux(self):
+        c=Client.__new__(Client)
+        c.name,c.connected,c.input,c.play,c.scroll='owner',True,'',False,0
+        c.lines=collections.deque(['chat remains visible']);c.game={};c.colors=False
+        c.state=dict(players=[player('owner','c1r1s1')])
+        c.cluster_source=True;c.cluster_stamp=100;c.cluster=2;c.lobby_view='map';c.lobby_page=0
+        c.cluster_players=[player('p'+str(i),'c2r1s'+str(i+1)) for i in range(15)]
+        for h,w in ((28,76),(54,204)):
+            screen=Canvas(h,w);c.draw(screen)
+            heading=''.join(screen.rows[3]).rstrip()
+            self.assertTrue(heading.startswith('CAMPUS API: 15'))
+            self.assertNotIn('unverified',heading)
+            self.assertIn('/next /prev',''.join(screen.rows[4]))
+            self.assertIn('page ',''.join(screen.rows[4]))
+            self.assertIn('chat remains visible',screen.text())

@@ -872,3 +872,6 @@ shown on map markers), not physical desk numbers. LAN42 lists the current Intra
 names and seats for confirmation before adding them to your private tracking.
 It captures those people, never future desk occupants; a changed seat snapshot
 cancels the pending request. `/track LOGIN LOGIN` still works normally.
+
+Terminal display recovery: Ctrl-L forces a full LAN42 redraw. Resizing a tmux
+pane also redraws the screen; API queue notices stay in the chat log.

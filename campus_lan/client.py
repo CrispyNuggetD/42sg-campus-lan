@@ -503,7 +503,9 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
             kind = msg.get('type')
             if self.announcement_event(msg):
                 continue
-            if kind == 'local_koel':
+            if kind == 'local_api_notice':
+                self.lines.append(safe(msg.get('text','')))
+            elif kind == 'local_koel':
                 self.koel_local(msg)
             elif kind == 'koel_invite':
                 self.koel_invitation(msg)
@@ -764,9 +766,14 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
         self.lobby_hits=[]
         ordered={n:p for n,p,_ in roster(players)}
         self.campus_selection={n:(p.get('name','').lower(),location) for n,p,location in roster(players) if location} if campus else {}
-        self.line(screen,3,f"CURRENTLY ONLINE: {len(players)} | " + ('42 identities verified over TLS' if getattr(self, 'secure', False) else 'Guest names are unverified'),curses.A_BOLD)
-        if campus:self.line(screen,3,'CAMPUS API: '+str(len(players))+' logged-in seats | snapshot '+time.strftime('%H:%M:%S',time.localtime(self.cluster_stamp)),curses.A_BOLD)
-        self.line(screen,4,f'/clusters 1|2 | /roster | /map 1 | /map 2 | /next /prev (page {self.lobby_page+1}/{pages})')
+        if campus:
+            heading='CAMPUS API: '+str(len(players))+' logged-in seats | snapshot '+time.strftime('%H:%M:%S',time.localtime(self.cluster_stamp))
+        else:
+            heading=f"CURRENTLY ONLINE: {len(players)} | " + ('42 identities verified over TLS' if getattr(self, 'secure', False) else 'Guest names are unverified')
+        self.line(screen,3,heading,curses.A_BOLD)
+        controls=f'/clusters 1|2 | Tab: map/roster | /next /prev | page {self.lobby_page+1}/{pages}'
+        if getattr(self,'focus_name',None):controls='SELECTED '+self.focus_name+' | c%dr%ds%d'%self.focus_location+' | /next /prev'
+        self.line(screen,4,controls)
         for y,segments in enumerate(content[self.lobby_page*capacity:(self.lobby_page+1)*capacity],5):
             x = 0
             for text,style in segments:
@@ -783,7 +790,6 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
                         attr|=curses.A_REVERSE|curses.A_BOLD
                 self.line(screen,y,text,attr,x)
                 x += len(text)
-        if getattr(self,'focus_name',None):self.line(screen,4,'SELECTED '+self.focus_name+' · c%dr%ds%d'%self.focus_location+' | /next /prev | click a roster name',curses.A_BOLD)
         bottom = 5+capacity
         self.line(screen,bottom,'-'*(w-1),curses.A_DIM)
         self.line(screen,bottom+1,'CHAT & INVITATIONS | /game hexwars | /game forknite | /rooms',curses.A_BOLD)
@@ -1226,6 +1232,9 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
                 return self.home
             self.draw(screen)
             key = screen.getch()
+            if key in (curses.KEY_RESIZE,12):
+                screen.clearok(True)
+                continue
             if key==curses.KEY_MOUSE:
                 try:
                     _,mouse_x,mouse_y,_,buttons=curses.getmouse()
@@ -1414,7 +1423,9 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
                 sys.stdout.write('\033[22;0t')
                 sys.stdout.flush()
             try:
-                destination = curses.wrapper(client.run)
+                from .api_pacing import ui_notices
+                with ui_notices(lambda text:client.inbox.put_nowait(dict(type='local_api_notice',text=text))):
+                    destination = curses.wrapper(client.run)
             finally:
                 if getattr(client,'courier',None):client.courier.stop()
                 if getattr(client,'host_watch',None):client.host_watch.close()
