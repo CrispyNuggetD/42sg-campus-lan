@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.1.0-beta.1 · 2026-10-27T01:27:38+08:00
+
+- feat: graduate LAN42 to beta with automatic server releases and changelog
+
 ## 2.0.0-beta.1 · 2026-10-27T00:48:00+08:00
 
 - API-backed campus tools, verified sign-in, tracking, announcements and consent-controlled KoelDrop graduate from alpha.

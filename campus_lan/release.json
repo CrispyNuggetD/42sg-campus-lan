@@ -1,8 +1,16 @@
 {
-  "version": "2.0.0-beta.1",
-  "date": "2026-10-27T00:48:00+08:00",
-  "source": "51eda1d2ab8b6712ef6553775dc85956249bba8c",
+  "version": "2.1.0-beta.1",
+  "date": "2026-10-27T01:27:38+08:00",
+  "source": "af15668d7bf5b2f9b838b8068a73dcb69478bedb",
   "history": [
+    {
+      "version": "2.1.0-beta.1",
+      "date": "2026-10-27T01:27:38+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: graduate LAN42 to beta with automatic server releases and changelog"
+      ]
+    },
     {
       "version": "2.0.0-beta.1",
       "date": "2026-10-27T00:48:00+08:00",
@@ -63,5 +71,5 @@
       ]
     }
   ],
-  "runtime_sha256": "3a447b760bb4eec3eec142c488b65a86c9326fb421055e02c401cc7913d93225"
+  "runtime_sha256": "5cccf1962dec2b65a24dee7bf8791ec4e748e03e8922ade05b74389018e1b291"
 }
