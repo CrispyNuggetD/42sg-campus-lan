@@ -88,6 +88,10 @@ All four launch from HQ with `/game NAME`; friends use `/join ROOM_NUMBER`.
 Hi, I’m **Christopher Nah** (**hnah** on Intra), a student at **42 Singapore**.
 Questions or ideas? Find me on the **global 42 Slack**, or [here on GitHub](https://github.com/CrispyNuggetD).
 
+**AI-assisted, human-directed.** I use Codex and other AI tools as coding assistants and teachers. I’m learning through 42’s peer-led approach rather than a lecture-based degree programme, so I use AI to explore unfamiliar concepts and engineering practices, ask questions, and work through implementation details. Substantial parts of the code are AI-assisted; I guide the project and test its behaviour.
+
+I’m still building technical depth, and I don’t always know which questions to ask. AI explanations can be wrong, and passing tests does not prove correctness or security. I aim to check explanations against documentation, experiments and peer feedback. I remain responsible for what I publish, communicating limitations and fixing mistakes.
+
 Beta since **Tuesday 27 October 2026, 00:48 SGT**, starting at **2.0.0-beta.1**.
 Alpha testing: **dthoo** (GitHub: [whatisthisbuffoonery](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html)). Thank you for testing LAN42 before beta.
 
