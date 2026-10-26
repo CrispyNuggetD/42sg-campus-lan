@@ -24,6 +24,9 @@ The [server changelog](../CHANGELOG.md) remains separate.
   creator/maintainer from Darren’s alpha-testing credit.
 - Command search now presents matches directly below the input with a visible
   count, empty state and Clear/Escape reset.
+- Named the shared visual style Campus HQ and added a persistent bottom-right
+  pointer toggle/source dock, with a reusable-package link in page-template
+  footers. Visitors can opt out without scrolling to the end.
 - Introduced default-on adaptive pointer feedback for supported desktop devices,
   with a persistent browser-local off switch and native touch/reduced-motion/
   high-contrast fallbacks.

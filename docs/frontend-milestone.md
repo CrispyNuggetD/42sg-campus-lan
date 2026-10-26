@@ -157,7 +157,7 @@ its [pointer design guidance](https://developer.apple.com/videos/play/wwdc2020/1
 
 The website now provides an iPadOS-inspired adaptive pointer as a progressive
 enhancement, not native iPadOS integration. It is on by default for eligible
-mouse/trackpad users, with a persistent footer toggle. All links, buttons and disclosure controls share a rounded highlight. A single
+mouse/trackpad users, with a persistent bottom-right pointer dock. All links, buttons and disclosure controls share a rounded highlight. A single
 borderless translucent shape continuously interpolates position and size; it
 forms an I-beam over text and text fields without altering native selection or
 editing. The overlay never changes actual click targets. See the

@@ -102,7 +102,7 @@ self-contained file powers the online reference and local help.
 `pointer.js` and `pointer.css` are inlined into generated online pages by the
 builder, including the command reference. The local offline HELP file is not
 modified by this enhancement. Eligible mouse/trackpad users get the effect by
-default. The footer toggle persists only `lan42.pointer-effects=on|off` in the
+default. The floating dock toggle persists only `lan42.pointer-effects=on|off` in the
 browser; there is no telemetry. Storage failure falls back to session behaviour.
 Links retain their semantic navigation behaviour while sharing the morph
 highlight. Text and text fields smoothly form a visual I-beam; actual selection
@@ -139,3 +139,12 @@ Do not replace the functional HTML baseline with a client-rendered blank shell.
 Markdown inside HTML disclosure blocks needs `<details markdown="1">`; the
 renderer enables `md_in_html`. Keep a blank line after the summary and verify
 that links/code render inside expanded content rather than displaying Markdown.
+
+
+## Campus HQ style
+
+The shared navy/mint page shell is called **Campus HQ**. Its footer links the
+MIT cursor package; the adaptive pointer injects a compact, fixed bottom-right
+preference dock with an immediate toggle and “Get this effect” source link.
+The off switch stays reachable throughout long pages. Keep safe-area spacing,
+bottom breathing room, keyboard focus and native/reduced-motion fallbacks.
