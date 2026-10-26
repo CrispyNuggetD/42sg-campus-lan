@@ -13,6 +13,7 @@ class FeatureList(unittest.TestCase):
         self.assertEqual(text.count(end), 1)
         block = text.split(start)[1].split(end)[0].strip()
         self.assertLessEqual(len(block.splitlines()), 8)
+        self.assertTrue(all(len(line)<=240 for line in block.splitlines()), "Shell installers accept at most 240 characters per feature line.")
         client = (ROOT/'campus_lan/client.py').read_text()
         shell = (ROOT/'useful-scripts/campus.zsh').read_text()
         for command in re.findall(r'`([^`]+)`', block):

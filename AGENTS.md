@@ -10,7 +10,8 @@ when LAN42 is missing. It is separate from this repository's dailylogin helper.
 
 - When a feature, command, requirement or availability changes, update that
   README block in the same change. Advertise implemented features only; never
-  claim transfers occur before explicit group/folder consent. Keep the list short.
+  claim transfers occur before explicit group/folder consent. Keep the list short
+  (at most eight bullets, each at most 240 characters for the shell parser).
 - Run `python3 -m unittest discover -s tests -p test_shell_features.py`.
 - Online installers read the current upstream README; publishing the README
   update makes it available without a separate hard-coded feature list.
