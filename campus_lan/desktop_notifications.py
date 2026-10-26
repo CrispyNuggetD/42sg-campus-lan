@@ -11,11 +11,11 @@ class Notifications:
         self.inbox=inbox;self.jobs=queue.Queue(maxsize=32);self.closed=threading.Event()
         self.thread=threading.Thread(target=self.run,daemon=True);self.thread.start()
 
-    def show(self,title,body,name,icon='',can_message=False,koel_sound=None):
-        try:self.jobs.put_nowait((title,body,name,icon,can_message,koel_sound))
+    def show(self,title,body,name,icon='',can_message=False,koel_sound=None,custom_actions=None,action_context=None):
+        try:self.jobs.put_nowait((title,body,name,icon,can_message,koel_sound,custom_actions,action_context))
         except queue.Full:pass
 
-    def fallback(self,title,body,name,icon,can_message,koel_sound=None):
+    def fallback(self,title,body,name,icon,can_message,koel_sound=None,custom_actions=None,action_context=None):
         if not shutil.which('notify-send'):return
         args=['notify-send','--app-name=LAN42 tracking','--expire-time=15000']
         if icon:args+=['--icon',icon]
@@ -41,9 +41,13 @@ class Notifications:
         def signal(connection,sender,object_path,interface,signal_name,parameters):
             values=parameters.unpack();ident=values[0]
             if signal_name=='NotificationClosed':pending.pop(ident,None);return
-            name=pending.pop(ident,None)
-            if name and values[1] in ('message','profile'):
-                try:self.inbox.put_nowait(dict(type='notification_action',action=values[1],login=name))
+            item=pending.pop(ident,None)
+            if item and values[1] in item[1]:
+                name,allowed,action_context=item
+                try:
+                    message=dict(type='notification_action',action=values[1],login=name)
+                    if action_context is not None:message['context']=action_context
+                    self.inbox.put_nowait(message)
                 except queue.Full:pass
         subscription=bus.signal_subscribe(service,service,None,path,None,Gio.DBusSignalFlags.NONE,signal)
         try:
@@ -51,11 +55,14 @@ class Notifications:
                 while context.pending():context.iteration(False)
                 try:job=self.jobs.get(timeout=.1)
                 except queue.Empty:continue
-                title,body,name,icon,can_message,koel_sound=job
+                title,body,name,icon,can_message,koel_sound,custom_actions,action_context=job
                 actions=[]
                 if 'actions' in caps:
-                    if can_message:actions+=['message','Say hi / write message']
-                    actions+=['profile','Open Intra profile']
+                    if custom_actions is not None:
+                        for key,label in custom_actions.items():actions.extend([key,label])
+                    else:
+                        if can_message:actions+=['message','Say hi / write message']
+                        actions+=['profile','Open Intra profile']
                 hints={'category':GLib.Variant('s','presence.online')}
                 if icon:hints['image-path']=GLib.Variant('s',icon)
                 from .koel_sound import sound_hints
@@ -64,7 +71,7 @@ class Notifications:
                 try:
                     args=GLib.Variant('(susssasa{sv}i)',('LAN42 tracking',0,icon,title,html.escape(body) if 'body-markup' in caps else body,actions,hints,15000))
                     ident=bus.call_sync(service,path,service,'Notify',args,None,Gio.DBusCallFlags.NONE,3000,None).unpack()[0]
-                    pending[ident]=name
+                    pending[ident]=(name,set(actions[::2]),action_context)
                     if len(pending)>100:pending.pop(next(iter(pending)))
                 except Exception:self.fallback(title,body,name,icon,can_message,False if koel_sound is not None else None)
         finally:

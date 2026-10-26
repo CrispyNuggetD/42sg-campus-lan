@@ -149,6 +149,12 @@ class Prompts:
         accept.decline=decline;accept.needed=needed;accept.always_action=always
         self.pending.append(('notifications',description,accept,'session'))
 
+    def confirm(self,description,accept,decline=lambda:None):
+        # File/group consent never inherits permission to display a popup.
+        if len(self.pending)>=20:self.report('Confirmation queue full; action skipped.');return
+        accept.decline=decline
+        self.pending.append(('notifications',description,accept,'decision'))
+
     def remember(self,category):
         category=self.permissions.scope(category)
         if self.permissions.persistent_mode(category)!='ask':return
@@ -178,7 +184,10 @@ class Prompts:
         if not self.active:return
         category,description,action,stage=self.active;self.active=None
         yes=value.strip().lower() in ('y','yes')
-        if stage=='session':
+        if stage=='decision':
+            try:action() if yes else action.decline()
+            except (OSError,ValueError):self.report('Action could not be completed.')
+        elif stage=='session':
             try:
                 if value.strip().lower() in ('a','always') and getattr(action,'always_action',None):action.always_action()
                 elif yes:action()

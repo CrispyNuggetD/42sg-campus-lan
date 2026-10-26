@@ -25,12 +25,12 @@ def complete(text):
         elif command in ('/game', '/host') and parts[1:2] == ['bluff'] and len(parts) <= 3:
             choices = ('free', 'prompt')
         elif command in ('/settings','/profile') and (len(parts)==1 or (len(parts)==2 and not text.endswith(' '))):
-            choices = ('signin','signout','notifications','clusters','permissions','autologin','signin-close','koel-sound') if command=='/settings' else ('signin','signout','notifications')
+            choices = ('signin','signout','notifications','clusters','permissions','autologin','signin-close','koel-sound','experimental') if command=='/settings' else ('signin','signout','notifications')
         elif command=='/settings' and parts[1:2]==['autologin'] and len(parts)<=3:
             choices=('off','saved','on')
         elif command=='/settings' and parts[1:2]==['koel-sound'] and len(parts)<=3:
             choices=('on','off','always')
-        elif command=='/settings' and parts[1:2]==['signin-close'] and len(parts)<=3:
+        elif command=='/settings' and parts[1:2] in (['signin-close'],['experimental']) and len(parts)<=3:
             choices=('on','off')
         elif command=='/settings' and parts[1:2]==['permissions'] and len(parts)<=3:
             choices=('all','browser','help','forknite','profiles','signin','tools','photos','notifications','terminals')
@@ -39,7 +39,7 @@ def complete(text):
         elif command in ('/roadmap','/experimental') and len(parts)<=2:
             choices=('koeldrop','files')
         elif command in ('/files','/koel','/koeldrop') and len(parts)<=2:
-            choices=('status',)
+            choices=('status','help','create','invite','accept','decline','dir','pending','receive','reject','trust','sync','leave')
         elif command=='/track' and len(parts)<=2:
             choices=('help','status','list','lists','alerts','clusters','config')
         elif command=='/track' and parts[1:2]==['status'] and len(parts)<=3:

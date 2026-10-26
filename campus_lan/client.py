@@ -26,7 +26,7 @@ from .completion import complete
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
-    '/about: project purpose + public source | /repo: request browser link | /roadmap files: disabled experiment',
+    '/about: project purpose + public source | /repo: request browser link | /roadmap files: experimental milestones',
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
     '/who /rooms /games | /game tetris | /game bluff free|prompt | /game hexwars | /game forknite',
     'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
@@ -38,7 +38,7 @@ HELP = [
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
     '/game forknite: browser game room | /browser: reopen current FORKNITE website',
-    '/roadmap koeldrop | /koel status: file-sharing experiment and milestones (execution disabled)',
+    '/roadmap koeldrop | /koel help: opt-in campus file sharing; /settings experimental on|off',
     '/update (or /upgrade): update package + reload local instances | /restart: reload installed code',
     'Chat: type and Enter. Tab completes /commands and games. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
@@ -76,10 +76,13 @@ class SectionLog(collections.deque):
         if self and self[-1]!='':super().append('')
         for line in lines:super().append(line)
 
-class Client:
+from .file_sharing.ui import KoelUI
+
+class Client(KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
+        self.uid = auth_session.get('uid') if auth_session else None
         self.secure = auth_session is not None
         self.session_token = auth_session['session'] if auth_session else None
         self.signing_in = False
@@ -267,15 +270,6 @@ class Client:
             self.open_urls('browser',[REPOSITORY],'Open the public LAN42 source repository in your browser?')
         return True
 
-    def experimental_command(self,text):
-        parts=text.split()
-        if not parts or parts[0] not in ('/roadmap','/experimental','/files','/koel','/koeldrop'):return False
-        from .file_sharing import roadmap
-        if parts[0] in ('/files','/koel','/koeldrop') and parts[1:] not in ([],['status']):
-            self.lines.append('KoelDrop is disabled: no group, invite, directory, file watcher or transfer was started. /roadmap koeldrop shows the implementation and review milestones.')
-        else:self.lines.extend(roadmap())
-        return True
-
     def group_command(self,text):
         command=text.split(maxsplit=1)[0] if text else ''
         if command not in ('/sabo','/dm','/alert'):return False
@@ -311,6 +305,8 @@ class Client:
         return True
 
     def notification_action(self,message):
+        if message.get('action') in ('koel_accept','koel_decline'):
+            self.koel_notification_action(message);return
         from .tracking import login
         try:name=login(message.get('login'))
         except ValueError:return
@@ -343,6 +339,8 @@ class Client:
                     msg = json.loads(line)
                     if not isinstance(msg,dict):
                         raise ValueError('Invalid response')
+                    kind=msg.get('type')
+                    if not isinstance(kind,str) or kind.startswith('local_') or kind in ('notification_action','popup_opened','signin_resume'):continue
                     self.inbox.put(msg,timeout=2)
         except (OSError,ValueError,queue.Full):
             pass
@@ -381,7 +379,11 @@ class Client:
             except queue.Empty:
                 break
             kind = msg.get('type')
-            if kind == 'popup_opened':
+            if kind == 'local_koel':
+                self.koel_local(msg)
+            elif kind == 'koel_invite':
+                self.koel_invitation(msg)
+            elif kind == 'popup_opened':
                 if msg.get('opened'):self.popup_prompts().remember(msg['category'])
                 else:self.lines.append('Browser launch failed; no always-allow preference was saved.')
             elif kind == 'tools_required':
@@ -754,7 +756,7 @@ class Client:
         if getattr(self,'permission_prompt',False):
             category,description,action,stage=self.popup_prompts().active
             self.line(screen,h-3,description,curses.A_BOLD)
-            self.line(screen,h-2,('y=once, a=always, Enter=off | /settings koel-sound off' if stage=='session' and getattr(action,'always_action',None) else '[y/N] Enter = no | /settings koel-sound off' if stage=='session' else '[y/N] Enter = no | always-allow comes next | /settings permissions browser allow'))
+            self.line(screen,h-2,('y=once, a=always, Enter=off | /settings koel-sound off' if stage=='session' and getattr(action,'always_action',None) else '[y/N] Enter = no | /settings koel-sound off' if stage=='session' else '[y/N] Enter = no' if stage=='decision' else '[y/N] Enter = no | always-allow comes next | /settings permissions browser allow'))
         self.line(screen,h-1,('[y/N] > ' if getattr(self,'permission_prompt',False) else 'PLAY > ' if self.play else '> ')+self.input[-(w-12):])
         screen.refresh()
 
@@ -794,6 +796,7 @@ class Client:
                 '/settings permissions — browser, popup and notification consent',
                 '/settings autologin off|saved|on — reuse login, optionally request OAuth',
                 '/settings signin-close on|off — try to close the completed sign-in tab',
+                '/settings experimental on|off — opt into KoelDrop (default off); /koel help',
                 '/settings clusters — separate include/exclude arrival rules; /track help — relationships/lists',
                 'Sign-in sessions expire automatically after one hour.',
             ])
@@ -805,10 +808,20 @@ class Client:
                     if len(parts)!=3 or parts[2] not in ('on','off','always'):raise ValueError('Use /settings koel-sound on|off|always')
                     if parts[2]=='always':self.confirm_always_koel(choice)
                     else:choice.set_always(False);choice.choose(parts[2]=='on')
-                self.lines.append('Koel sound: '+('always on' if choice.always_on() else 'on for this session' if choice.read()['enabled'] else 'off')+'. KoelDrop sharing remains disabled.')
+                self.lines.append('Koel sound: '+('always on' if choice.always_on() else 'on for this session' if choice.read()['enabled'] else 'off')+'. Sound does not enable file sharing.')
             except (OSError,ValueError) as error:self.lines.append(str(error))
-        elif parts[0]=='/settings' and parts[1] in ('files','koel','koeldrop'):
-            self.lines.append('File sharing has no activation setting. Read /roadmap files; all sharing execution is disabled.')
+        elif parts[0]=='/settings' and parts[1] in ('experimental','files','koel','koeldrop'):
+            from .file_sharing.settings import ExperimentalSettings
+            try:
+                settings=ExperimentalSettings()
+                if len(parts)>2:
+                    if len(parts)!=3 or parts[2] not in ('on','off'):raise ValueError('Use /settings experimental on|off')
+                    settings.set(parts[2]=='on')
+                    if not settings.enabled and getattr(self,'courier',None):self.courier.stop()
+                    if not settings.enabled:
+                        self.koel_actions={};self.koel_invites={};self.koel_offers={}
+                self.lines.append('Experimental features: '+('on. Signed-in HQ: /koel help. No folder sync starts until create/accept.' if settings.enabled else 'off. KoelDrop requests and polling are blocked.'))
+            except (OSError,ValueError) as error:self.lines.append(str(error))
         elif parts[0]=='/settings' and parts[1] in ('autologin','signin-close'):
             from .login_settings import LoginSettings
             settings=LoginSettings()
@@ -1255,6 +1268,7 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
             try:
                 destination = curses.wrapper(client.run)
             finally:
+                if getattr(client,'courier',None):client.courier.stop()
                 if client.tracking_notifier:client.tracking_notifier.close()
                 try:
                     sock.shutdown(socket.SHUT_RDWR)

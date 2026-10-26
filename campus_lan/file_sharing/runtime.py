@@ -19,7 +19,7 @@ class Runtime:
         self.broker=broker;self.host=host;self.port=port;self.requests=None
         self.owner=owner or pwd.getpwuid(os.getuid()).pw_name
         self.root=root or Path.home()/'KoelDrop-server'
-        self.api_factory=api_factory;self.lock=asyncio.Lock();self.was_enabled=False
+        self.api_factory=api_factory;self.lock=asyncio.Lock();self.was_enabled=False;self.generation=None
 
     def _initialize(self,token,peer):
         campus_ip(self.host)
@@ -33,16 +33,21 @@ class Runtime:
                 campus=next((c for c in api.pages('campus') if 'singapore' in (str(c.get('name',''))+' '+str(c.get('slug',''))).lower()),None)
             if not campus:raise Denied('Singapore campus could not be resolved.')
             campus_id=campus['id']
-        gate=Gate(self.broker,CampusProofs(api,campus_id),enabled=lambda:ExperimentalSettings().enabled)
+        self.generation=ExperimentalSettings().generation
+        gate=Gate(self.broker,CampusProofs(api,campus_id),enabled=self.enabled)
         actor=gate.admit(token,peer,True)
         store=Store(self.root,gate)
         try:self.requests=Requests(store,actor,self.port)
         except Exception:store.close();raise
 
+    def enabled(self):
+        settings=ExperimentalSettings()
+        return settings.enabled and settings.generation==self.generation
+
     async def handle(self,reader,writer,first):
         try:
             if not ExperimentalSettings().enabled:raise Denied('Host experimental features are off.')
-            method,target,headers=await http_request(reader,first)
+            method,target,headers=await asyncio.wait_for(http_request(reader,first),10)
             authorization=headers.get('authorization','')
             if (not writer.get_extra_info('ssl_object') or headers.get('host')!=self.host+':'+str(self.port)
                     or any(key in headers for key in ('origin','cookie','forwarded','x-forwarded-for','x-real-ip','upgrade'))
@@ -50,6 +55,15 @@ class Runtime:
             token=authorization[7:];self.broker.authenticate(token)
             peer=writer.get_extra_info('peername')[0]
             async with self.lock:
+                if self.requests is not None and self.generation!=ExperimentalSettings().generation:
+                    record=self.broker.authenticate(token)
+                    if method!='POST' or target!='/v1/groups' or peer!=self.host or record['login']!=self.owner:
+                        raise Denied('Experimental settings changed; the host must create a new group.')
+                    store=self.requests.store
+                    def reset():
+                        with store.transaction():store.db.execute('UPDATE groups SET closed=1')
+                    await asyncio.to_thread(reset)
+                    self.generation=ExperimentalSettings().generation
                 if self.requests is None:
                     if method!='POST' or target!='/v1/groups':raise Denied('The host must create a group first.')
                     await asyncio.to_thread(self._initialize,token,peer)
@@ -63,7 +77,7 @@ class Runtime:
             except (ValueError,OSError,asyncio.TimeoutError):pass
 
     async def deliver_invite(self,lobby,pid,message):
-        if not ExperimentalSettings().enabled or self.requests is None:raise Denied('KoelDrop is not active on this host.')
+        if not self.enabled() or self.requests is None:raise Denied('KoelDrop is not active on this host.')
         sender=lobby.clients[pid]
         group=message.get('group');token=message.get('invite')
         if not isinstance(token,str) or not re.fullmatch(r'[A-Za-z0-9_-]{43}',token):raise Denied('Invalid invitation.')
