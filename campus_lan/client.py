@@ -25,7 +25,7 @@ from . import auth_client
 from .updater import RestartRequested, generation
 from .completion import complete
 from .local_console import LocalConsole,History,shell_command
-from .notification_preferences import NotificationControls
+from .notification_preferences import NotificationControls,IMPORTANT
 from .quick_controls import QuickControls
 from .permission_setup import PermissionSetup
 from .announcement_ui import AnnouncementUI
@@ -52,6 +52,7 @@ HELP = [
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
     '/game forknite: browser game room | /browser: reopen current FORKNITE website',
+    '/koel flock once|always|never|ask: host-started 42SG flock | /koel flock-dir PATH: service root; local copies are kept',
     '/roadmap koeldrop | /koel help: campus file sharing; /koel create | /koel pending',
     '/update (or /upgrade): update package + reload local instances | /restart: reload installed code',
     'Chat: type and Enter. Tab completes /commands and games. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
@@ -309,7 +310,7 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
         self.open_urls('help',[guide.as_uri()],'Open the LAN42 visual command guide in your browser?')
 
     def desktop_notice(self,title,body,name,icon='',can_message=False,category='tracking'):
-        important=category in ('host','announcements','releases','warnings')
+        important=category in IMPORTANT
         allowed=lambda:self.important_notification_allowed(category) if important else self.notification_allowed(category)
         if not allowed():return
         def show():
@@ -487,6 +488,7 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
         return True
 
     def notification_action(self,message):
+        if self.flock_notification_action(message):return
         if self.announcement_action(message):return
         if message.get('action') in ('koel_accept','koel_decline'):
             self.koel_notification_action(message);return
@@ -882,6 +884,16 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
             sys.stdout.flush()
             self.last_title = title
 
+    def draw_permission_prompt(self,screen):
+        if not getattr(self,'permission_prompt',False):return
+        h,w=screen.getmaxyx()
+        category,description,action,stage=self.popup_prompts().active
+        rows=textwrap.wrap(description,max(10,w-2)) or ['']
+        rows=rows[:max(1,h-5)]
+        for y,part in enumerate(rows,h-2-len(rows)):
+            self.line(screen,y,part.ljust(w-1),curses.A_BOLD|curses.A_REVERSE)
+        self.line(screen,h-2,('y=once, a=always, Enter=off | /settings koel-sound off' if stage=='session' and getattr(action,'always_action',None) else '[y/N] Enter = no | /settings koel-sound off' if stage=='session' else '[y/N] Enter = no' if stage=='decision' else '[y/N] Enter = no | always-allow comes next | /settings permissions browser allow'))
+
     def draw(self,screen):
         screen.erase()
         self.control_hits=[]
@@ -908,7 +920,8 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
             for y,message in enumerate(list(getattr(self,'lines',[]))[-min(8,h-7):],5):
                 self.line(screen,y,message)
             self.draw_quick_controls(screen)
-            self.line(screen,h-1,'> '+getattr(self,'input','')[-(w-4):])
+            self.draw_permission_prompt(screen)
+            self.line(screen,h-1,('[y/N] > ' if getattr(self,'permission_prompt',False) else '> ')+getattr(self,'input','')[-(w-12):])
             screen.refresh()
             return
         self.line(screen,2,f"{len(players)} online across {self.state.get('nodes',1)} nodes | refresh ~5s | "+
@@ -952,10 +965,7 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
         for y,line in enumerate(shown,logs_y):
             self.line(screen,y,line,x=logs_x)
         self.draw_quick_controls(screen)
-        if getattr(self,'permission_prompt',False):
-            category,description,action,stage=self.popup_prompts().active
-            self.line(screen,h-3,description,curses.A_BOLD)
-            self.line(screen,h-2,('y=once, a=always, Enter=off | /settings koel-sound off' if stage=='session' and getattr(action,'always_action',None) else '[y/N] Enter = no | /settings koel-sound off' if stage=='session' else '[y/N] Enter = no' if stage=='decision' else '[y/N] Enter = no | always-allow comes next | /settings permissions browser allow'))
+        self.draw_permission_prompt(screen)
         self.line(screen,h-1,('[y/N] > ' if getattr(self,'permission_prompt',False) else 'PLAY > ' if self.play else '> ')+self.input[-(w-12):])
         screen.refresh()
 
@@ -1463,6 +1473,7 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
         # Window managers apply the request asynchronously; give curses a moment
         # to observe the new dimensions. Unsupported terminals safely ignore it.
         time.sleep(.15)
+    flock_choice=None
     while True:
         print(f'Connecting to {host}:{port}...')
         try:
@@ -1476,6 +1487,7 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
         with sock:
             sock.settimeout(None)
             client = Client(sock,username,socket.gethostname(),notify,role,initial_command,auth_session)
+            client.pending_flock_choice=flock_choice
             client.peer_callback = peer_callback
             client.game_target = (host,port) if auth_session else game_target or (host,port)
             client.port = port
@@ -1490,6 +1502,7 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
                 from .api_pacing import ui_notices
                 with ui_notices(lambda text:client.inbox.put_nowait(dict(type='local_api_notice',text=text))):
                     destination = curses.wrapper(client.run)
+                    flock_choice=getattr(client,'pending_flock_choice',None)
             finally:
                 if getattr(client,'courier',None):client.courier.stop()
                 if getattr(client,'host_watch',None):client.host_watch.close()

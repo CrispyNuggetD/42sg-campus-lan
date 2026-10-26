@@ -6,7 +6,10 @@ import time
 from .security import Denied,login
 
 
-class KoelUI:
+from .flock_ui import FlockUI
+
+
+class KoelUI(FlockUI):
     def koel_worker(self):
         if not getattr(self,'secure',False) or getattr(self,'role','lobby')!='lobby':raise Denied('Use KoelDrop from your signed-in HQ lobby.')
         worker=getattr(self,'courier',None)
@@ -33,6 +36,7 @@ class KoelUI:
             if action=='help' or (action=='status' and not getattr(self,'secure',False)):
                 self.lines.extend(roadmap())
                 return True
+            if action in ('flock','flock-dir'):return self.flock_command(action,args)
             worker=self.koel_worker()
             if action in ('status','help'):
                 worker.submit('status')
@@ -100,13 +104,13 @@ class KoelUI:
         if len(contexts)>=100:contexts.pop(next(iter(contexts)))
         key=secrets.token_hex(16);contexts[key]=(accept,decline);self.koel_actions=contexts
         def show():
-            if not self.notify_enabled:return False
+            if not self.notification_allowed('files'):return False
             if not getattr(self,'tracking_notifier',None):
                 from ..desktop_notifications import Notifications
                 self.tracking_notifier=Notifications(self.inbox)
             self.tracking_notifier.show(title,body,name,koel_sound=sound,
                                        custom_actions={'koel_accept':'Approve','koel_decline':'Decline'},action_context=key)
-        self.request_popup('notifications','Show KoelDrop notification: '+title+'?',show)
+        if self.notification_allowed('files'):self.request_popup('notifications','Show KoelDrop notification: '+title+'?',show)
 
     def koel_local(self,message):
         worker=getattr(self,'courier',None)

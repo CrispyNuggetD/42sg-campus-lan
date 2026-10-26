@@ -4,8 +4,8 @@ from .auth import private_read, private_write
 from .local_console import local_path
 
 DEFAULTS = dict(host=True, announcements=True, releases=True, warnings=True,
-                tracking=True, chat=False, dms=False, pokes=False)
-IMPORTANT = frozenset(('host', 'announcements', 'releases', 'warnings'))
+                tracking=True, flock=True, files=True, chat=False, dms=False, pokes=False)
+IMPORTANT = frozenset(('host', 'announcements', 'releases', 'warnings', 'flock'))
 
 
 class Preferences:

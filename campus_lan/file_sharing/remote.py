@@ -33,6 +33,7 @@ class RemoteStore:
             raise Denied('KoelDrop host is unavailable or the response was invalid.') from None
         finally:connection.close()
 
+    def join_flock(self,gid,epoch):return self._request('POST','/v1/flock/join',dict(group=gid,epoch=epoch))
     def create(self):return self._request('POST','/v1/groups',{})['group']
     def invite(self,identity,gid,name):return self._request('POST','/v1/groups/'+gid+'/invites',dict(login=name))
     def accept(self,gid,token):return self._request('POST','/v1/groups/'+gid+'/accept',dict(invite=token))

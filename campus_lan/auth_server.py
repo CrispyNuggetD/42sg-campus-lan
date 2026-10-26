@@ -117,11 +117,15 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     from .announcements import Announcements
     owner=settings.get('owner_login','hnah')
     http.announcements=Announcements(broker,owner)
+    http.announcements.flock_status=koeldrop.public_status
     owner=http.announcements.owner
     from .desktop_notifications import Notifications
     announcement_inbox=queue.Queue(maxsize=32)
     announcement_notifier=Notifications(announcement_inbox)
     def owner_notice(request):
+        from .notification_preferences import Preferences
+        from .popup_permissions import Permissions
+        if not Preferences().allows('announcements') or Permissions(owner).persistent_mode('notifications')=='deny':return
         from .announcement_client import claim
         if claim(http.announcements.epoch+':request:'+request['id']):
             announcement_notifier.approval('Announcement request from intra:'+request['author'],
@@ -158,6 +162,7 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     else:
         private_write(root/'announcement-admin.json',json.dumps(dict(
             fingerprint=fingerprint(load_trust_for_owner(root)),token=http.announcements.admin_token,owner=owner)))
+    flock_task=asyncio.create_task(koeldrop.maintain_public())
     ticker = asyncio.create_task(lobby.tick())
     print(f"LAN42 secure sign-in host ready: HTTPS {settings['broker_port']}, TLS lobby {settings['lobby_port']}.", flush=True)
     reload_package = False
@@ -167,6 +172,8 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     finally:
         announcement_moderator.cancel();announcement_notifier.close()
         await asyncio.gather(announcement_moderator,return_exceptions=True)
+        flock_task.cancel()
+        await asyncio.gather(flock_task,return_exceptions=True)
         koeldrop.close()
         ticker.cancel()
         for task in list(lobby.hex_tasks):

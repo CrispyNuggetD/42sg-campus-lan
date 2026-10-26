@@ -19,11 +19,17 @@ class Courier:
         self.remote=remote or RemoteStore(token)
         self.remote.cancelled=lambda:self.stopped.is_set()
         self.sync=None;self.folder=None;self.thread=None
+        self.flock_epoch=None;self.join_pending=None
 
     def submit(self,operation,*args):
         if self.stopped.is_set():raise Denied('KoelDrop stopped; run the command again.')
+        joining=operation in ('create','accept','flock')
+        if joining and (self.sync or self.join_pending):raise Denied('A group is active or joining; leave it or wait first.')
+        if joining:self.join_pending=operation
         try:self.jobs.put_nowait((operation,args))
-        except queue.Full:raise Denied('KoelDrop is busy; wait for pending operations.') from None
+        except queue.Full:
+            if joining:self.join_pending=None
+            raise Denied('KoelDrop is busy; wait for pending operations.') from None
         if self.thread is None:
             self.thread=threading.Thread(target=self.run,daemon=True);self.thread.start()
 
@@ -36,11 +42,12 @@ class Courier:
         try:self.jobs.put_nowait(('stop',()))
         except queue.Full:pass
 
-    def _join(self,gid,host,invite=None):
+    def _join(self,gid,host,invite=None,flock_epoch=None):
         if self.sync:raise Denied('Leave the current KoelDrop group before joining another.')
         mirror=Mirror(self.folder or default_folder(host,gid),self.uid,self.login)
         try:
-            if invite:self.remote.accept(gid,invite)
+            if flock_epoch:self.remote.join_flock(gid,flock_epoch)
+            elif invite:self.remote.accept(gid,invite)
             manifest=self.remote.manifest(None,gid)
             mirror.offers(manifest)
             mirror.initialize_info(manifest['welcome'],self.remote.history(None,gid)[:200])
@@ -72,6 +79,15 @@ class Courier:
         if operation=='create':
             if self.sync:raise Denied('Leave the current group first.')
             self._join(self.remote.create(),self.login)
+        elif operation=='flock':
+            if self.sync:raise Denied('Leave the current group first; no group is replaced automatically.')
+            gid,host,epoch,base,fingerprint=args
+            self.flock_epoch=epoch
+            from .flock import fresh_folder
+            self.folder=fresh_folder(base,fingerprint,epoch)
+            self._join(gid,host,flock_epoch=epoch)
+            self.flock_epoch=epoch
+            self.emit(flock_joined=True,lines=['Joined the 42 Singapore flock. This folder is kept on leave/shutdown. No automatic local cleanup or deletion.'])
         elif operation=='accept':self._join(*args)
         elif operation=='dir':
             path=Path(args[0]).expanduser().absolute()
@@ -81,7 +97,7 @@ class Courier:
             self.emit(lines=['KoelDrop '+('group '+self.sync.group+' | '+str(self.sync.mirror.path) if self.sync else 'not joined. /koel create or accept NUMBER.')])
         elif operation=='leave':
             if not self.sync:raise Denied('No KoelDrop group is joined.')
-            self.remote.leave(None,self.sync.group);self.sync.mirror.close();self.sync=None
+            self.remote.leave(None,self.sync.group);self.sync.mirror.close();self.sync=None;self.flock_epoch=None
             self.emit(lines=['Left KoelDrop; local copies were kept.'],offers=[])
         elif operation=='invite':
             if not self.sync:raise Denied('Create a group before inviting someone.')
@@ -115,8 +131,10 @@ class Courier:
                     self.perform(operation,args);failed=False
                 except (OSError,ValueError,KeyError,TypeError):
                     if not failed or operation!='sync':
-                        self.emit(lines=['KoelDrop could not complete '+operation+'. Check fresh sign-in/campus seat, group membership, empty folder and file conflicts. /koel pending'])
+                        self.emit(lines=['KoelDrop could not complete '+operation+'. Sharing is paused; local copies are kept. Check sign-in/campus seat, membership, folder permissions and quotas; /koel pending'])
                     failed=True
+                finally:
+                    if operation in ('create','accept','flock'):self.join_pending=None
                 next_poll=time.monotonic()+self.interval
         finally:
             self.stopped.set()

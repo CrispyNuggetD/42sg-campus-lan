@@ -1,6 +1,6 @@
 # KoelDrop — the uwu bird, but it brings files
 
-A little campus file courier inside **Ryker's 42SG Campus LAN Server**.
+A little campus file courier inside **LAN42**.
 Files in your nest, only if you say yes.
 
 **State: available as a standard LAN42 feature.** No experimental setting is
@@ -11,13 +11,48 @@ session and live campus-seat evidence checks. Importing modules or constructing
 `/koel help` describes create/invite/accept, dedicated folders, per-file receives,
 explicit receive whitelists, sync and leave. `/files` and `/koeldrop` are aliases.
 Only deliberate group creation/acceptance starts dedicated-folder upload polling;
-recipient approval is separate. The API service owner creates groups, and members
+recipient approval is separate. Normal approved-host startup also creates/resumes
+the public 42 Singapore flock without scanning a personal folder. Members
 must be signed in to that same trusted service.
 
 The core and transport tests use temporary stores and controlled identities,
 campus evidence and HTTPS request adapters. Real campus transfers and real
 notifications are not used as automated tests. Cross-machine campus behaviour
 still needs verification on actual participating computers.
+
+## Host-started public flock
+
+The normal approved auth host runs `Runtime.maintain_public`, retries unavailable
+campus/storage evidence every 30 seconds, and advertises only safe flock metadata
+through its existing pinned announcement poll. No new port or public forwarding
+is opened. The service uses an in-process identity with a random key that is
+**never inserted into Broker.sessions or delivered as a login token**. Every
+service check revalidates local admin/operator/host enrollment and the same fresh
+SG membership/campus-seat proof used by participants. Ordinary user sessions
+remain one-hour broker sessions; owner OAuth sign-out does not impersonate or
+terminate the independently running service.
+
+`POST /v1/flock/join` accepts only the current host-selected group and epoch.
+No client-supplied UID, login, scope, invitation wildcard or remote folder path
+can grant membership. Campus admission still uses the real TLS socket source.
+Only this recorded service flock has open campus admission; private groups keep
+recipient-bound invitation admission. The existing 16-member/64-namespace,
+request, file and storage bounds remain in force.
+
+Host restart rotates the service epoch and clears membership/invites, while
+retaining the same owned flock's files and audit history. It never deletes the
+host's retained objects or clients' copies. Local always-join/never preferences
+are scoped to the pinned certificate, verified UID and computer. An anonymous
+campus client can receive a conditional invitation but must sign in and confirm
+the directory/upload disclosure before any first join. Notification grants alone
+cannot approve joining, receiving files, deleting or trusting new hosts.
+
+Each join allocates a new private, empty session directory beneath the configured
+service root using exclusive creation and no-follow traversal. Existing siblings
+are never scanned, renamed, reused or recursively deleted. An unavailable host
+stops the public courier and keeps all copies; rejoin starts fresh, without
+silently re-publishing earlier local files. There is no scheduled directory
+expiry/deletion. See the [user flow and retention policy](file-sharing.md).
 
 ## A group session
 
@@ -28,10 +63,10 @@ The group flow is:
    the resulting recipients go to the service, not personal relationship lists.
 3. An invitation notice goes to the verified recipient. Accepting a group is a
    separate decision from accepting its files.
-4. The recipient chooses an empty dedicated sync folder. Its default would be
-   `~/KoelDrop/<host-login>/<group-id>/`. No folder is created by today's commands.
-5. File changes become offers. The future watcher will call the tested explicit
-   operations; it is not running now.
+4. The recipient chooses an empty dedicated sync folder. Its default is
+   `~/KoelDrop/<host-login>/<group-id>/`. Accepting creates that dedicated folder.
+5. The joined Courier polls only that dedicated folder every five seconds. File
+   changes become offers; incoming bytes still need separate approval.
 6. The receiving notice is `🔊 uwu, dthoo sent you funny.txt`, with the file size,
    destination and Accept/Decline controls. Enter declines. Bytes are fetched
    only after approval, unless the recipient explicitly whitelisted that user
@@ -63,12 +98,16 @@ seconds. The API adapter uses the existing owner API client, including its globa
 request pacing. API errors fail closed. It retains only a membership decision,
 seat names and the evidence timestamp, not the full fetched user profile.
 
-The service host's verified session and campus presence are checked too. Host
-sign-out, expiry, closing the group or loss of acceptable presence ends access.
+Private group hosts' verified sessions and campus presence are checked too.
+Their sign-out/expiry or group closure ends access. The public service flock
+instead ends/pauses on service stop, revoked local host/operator authority or
+loss of acceptable campus presence; no ordinary guest or owner client sign-out
+can masquerade as its service identity.
 Invites expire in at most five minutes and never outlive the host session. They
 are stored as hashes, bound to one recipient ID/login and consumed once.
 Accepted membership is tied to the recipient's current session: signing in again
-requires a new invitation. Invitation links must never establish new certificate
+requires a fresh admission (another recipient-bound invite for private groups,
+or the explicit/saved public-flock choice). Invitation links must never establish new certificate
 trust automatically.
 
 Initial deployment must keep the file service with the trusted broker/operator

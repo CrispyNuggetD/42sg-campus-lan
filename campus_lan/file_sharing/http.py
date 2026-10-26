@@ -1,4 +1,4 @@
-"""Native HTTPS request adapter, intentionally not registered with any listener."""
+"""Native HTTPS requests behind the existing pinned broker listener."""
 from dataclasses import dataclass
 import asyncio
 import json
@@ -30,6 +30,7 @@ class Requests:
         if type(port) is not int or not 1024<=port<=65535:raise Denied('Use an unprivileged fixed port.')
         self.store=store;self.host=host;self.bind_ip=campus_ip(host.peer_ip);self.authority=self.bind_ip+':'+str(port)
         self.slots=asyncio.Semaphore(4)
+        self.flock=None
 
     def authenticate(self,headers,peer_ip,tls,local_ip):
         if local_ip!=self.bind_ip or tls is not True:raise Denied('Pinned HTTPS on the exact campus interface is required.')
@@ -53,9 +54,13 @@ class Requests:
                 if headers.get('content-type')!='application/json' or len(body)>4096:raise Denied('Bounded JSON required.')
                 payload=json.loads(body)
                 if not isinstance(payload,dict):raise Denied('Expected an object.')
+            if parts==['v1','flock','join'] and method=='POST':
+                if not self.flock or set(payload)!={'group','epoch'} or any(payload[k]!=self.flock[k] for k in ('group','epoch')):raise Conflict('The flock session changed.')
+                self.store.join_flock(actor,self.flock['group'])
+                return response(200,dict(joined=True,**self.flock))
             if parts==['v1','groups'] and method=='POST':
                 if payload:raise Denied('No client-supplied host identity or binding.')
-                if actor.uid!=self.host.uid or actor.session_key!=self.host.session_key:raise Denied('Only the verified service host can create groups.')
+                if actor.uid!=self.host.uid or (actor.session_key!=self.host.session_key and not self.flock):raise Denied('Only the verified service host can create groups.')
                 return response(201,dict(group=self.store.create(actor,self.bind_ip)))
             if len(parts)!=4 or parts[:2]!=['v1','groups']:raise Denied('Unknown route.')
             gid,action=parts[2:]

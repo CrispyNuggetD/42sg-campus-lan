@@ -1,4 +1,4 @@
-"""Opt-in service on the existing broker HTTPS listener; no second port is opened."""
+"""Campus file service on the existing broker listener; participants opt in."""
 import asyncio
 import hashlib
 import json
@@ -19,6 +19,67 @@ class Runtime:
         self.owner=owner or pwd.getpwuid(os.getuid()).pw_name
         self.root=root or Path.home()/'KoelDrop-server'
         self.api_factory=api_factory;self.lock=asyncio.Lock()
+        self.public_available=False
+
+    def start_public(self):
+        """Explicit normal-host startup, not an import/constructor side effect."""
+        from ..access import Policy,SG_CAMPUS_ID
+        from .flock import ServiceGate,service_identity,LABEL,SCOPE
+        policy_factory=self.broker.policy_factory or Policy
+        campus_ip(self.host)
+        uid=policy_factory().local_operator(admin=True)
+        if self.api_factory:api,campus_id=self.api_factory()
+        else:
+            from ..campus_info import API
+            api=API();campus_id=SG_CAMPUS_ID
+        proofs=CampusProofs(api,campus_id)
+        user=proofs._profile(uid)
+        if user.get('id')!=uid or user.get('login')!=self.owner:raise Denied('The local operator and flock owner disagree.')
+        actor=service_identity(uid,self.owner,self.host)
+        gate=ServiceGate(self.broker,proofs,actor,policy_factory)
+        gate.check(actor)
+        fresh=self.requests is None
+        store=Store(self.root,gate) if fresh else self.requests.store
+        old_gate=store.gate
+        try:
+            store.gate=gate
+            gid=store.start_flock(actor,self.host)
+            if fresh:self.requests=Requests(store,actor,self.port)
+            else:self.requests.host=actor
+            import secrets
+            self.requests.flock=dict(group=gid,epoch=secrets.token_hex(16),host=self.owner,
+                                     scope=SCOPE,label=LABEL,campus_id=SG_CAMPUS_ID)
+            self.public_available=True
+        except Exception:
+            store.gate=old_gate
+            if fresh:store.close()
+            raise
+
+    def public_status(self):
+        return dict(self.requests.flock) if self.public_available and self.requests and self.requests.flock else None
+
+    def check_public(self):
+        try:
+            if not self.requests or not self.requests.flock:self.start_public()
+            else:self.requests.store.gate.check(self.requests.host);self.public_available=True
+        except (OSError,ValueError):
+            self.public_available=False
+            raise
+
+    async def maintain_public(self):
+        reported=None
+        while True:
+            async with self.lock:
+                operation=asyncio.create_task(asyncio.to_thread(self.check_public))
+                try:await asyncio.shield(operation)
+                except asyncio.CancelledError:
+                    await asyncio.gather(operation,return_exceptions=True)
+                    raise
+                except (OSError,ValueError):self.public_available=False
+            if reported is not self.public_available:
+                print('LAN42 42 Singapore flock '+('ready; verified campus members may opt in. Local and host copies are retained.' if self.public_available else 'waiting for approved campus host, fresh presence or private storage. Retrying in 30 seconds; local files are kept.'),flush=True)
+                reported=self.public_available
+            await asyncio.sleep(30)
 
     def _initialize(self,token,peer):
         campus_ip(self.host)
@@ -49,7 +110,7 @@ class Runtime:
                 if self.requests is None:
                     if method!='POST' or target!='/v1/groups':raise Denied('The host must create a group first.')
                     await asyncio.to_thread(self._initialize,token,peer)
-                elif method=='POST' and target=='/v1/groups' and not self.broker.active(self.requests.host.session_key):
+                elif method=='POST' and target=='/v1/groups' and not self.requests.flock and not self.broker.active(self.requests.host.session_key):
                     record=self.broker.authenticate(token)
                     if peer!=self.host or record['login']!=self.owner:raise Denied('The host must sign in again.')
                     self.requests.host=await asyncio.to_thread(self.requests.store.gate.admit,token,peer,True)
@@ -81,4 +142,8 @@ class Runtime:
         await lobby.event('KoelDrop invitation delivered to '+invite['login']+'.',{pid})
 
     def close(self):
-        if self.requests:self.requests.store.close();self.requests=None
+        self.public_available=False
+        if self.requests:
+            gate=self.requests.store.gate
+            if hasattr(gate,'running'):gate.running=False
+            self.requests.store.close();self.requests=None

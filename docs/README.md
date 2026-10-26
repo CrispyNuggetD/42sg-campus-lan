@@ -11,7 +11,7 @@
 | [Getting started](getting-started.md) | Install, launch, tmux, shell helpers, dailylogin and guest/sign-in basics. |
 | [Campus and social features](campus-guide.md) | Peer discovery, rosters, clusters, chat, invitations, profiles, tracking and arrival rules. |
 | [Minigames](minigames.md) | Tetris, Bluff, Hex Wars and FORKNITE, together with controls and requirements. |
-| [KoelDrop and the uwu bird](file-sharing.md) | Group/folder consent, file sharing, sound tests and private pokes. |
+| [KoelDrop and the uwu bird](file-sharing.md) | Host-started 42SG flock, join choices, retained folders, private groups and the uwu bird. |
 | [Personal preferences](preferences.md) | Clickable controls, keyboard shortcuts, notification channels, popup consent, auto-login, local history and output volume. |
 
 ## Hosting and maintaining LAN42

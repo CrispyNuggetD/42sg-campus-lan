@@ -159,5 +159,45 @@ end run'''
             except (OSError,subprocess.SubprocessError,queue.Full):pass
         threading.Thread(target=choose,daemon=True).start()
 
+    def flock(self,title,body,context):
+        """Three local choices; the UI still confirms the folder/upload consent."""
+        import sys
+        if sys.platform!='darwin':
+            self.show(title,body,'',koel_sound=False,
+                      custom_actions={'flock_once':'Join once','flock_always':'Always join','flock_never':'Never show again'},action_context=context)
+            return
+        def choose():
+            script='''ObjC.import('AppKit');
+function run(argv) {
+ $.NSApplication.sharedApplication;
+ let choice=-1;
+ ObjC.registerSubclass({name:'LAN42FlockChoice',superclass:'NSObject',methods:{
+ 'choose:':{types:['void',['id']],implementation:function(sender){choice=Number(sender.tag);}}
+ }});
+ const target=$.LAN42FlockChoice.new;
+ const frame=$.NSScreen.mainScreen.visibleFrame;
+ const panel=$.NSPanel.alloc.initWithContentRectStyleMaskBackingDefer(
+ $.NSMakeRect(frame.origin.x+frame.size.width-510,frame.origin.y+frame.size.height-205,490,185),128,2,false);
+ panel.level=3;panel.hidesOnDeactivate=false;
+ const label=$.NSTextField.alloc.initWithFrame($.NSMakeRect(15,65,460,105));
+ label.stringValue=argv[0]+'\\n'+argv[1];label.editable=false;label.selectable=false;label.bezeled=false;label.drawsBackground=false;
+ panel.contentView.addSubview(label);
+ ['Join once','Always join','Never show again'].forEach(function(text,index){
+ const button=$.NSButton.alloc.initWithFrame($.NSMakeRect(15+index*155,15,150,35));
+ button.title=text;button.bezelStyle=1;button.tag=index;button.target=target;button.action='choose:';
+ panel.contentView.addSubview(button);
+ });
+ panel.orderFrontRegardless;
+ const deadline=Date.now()+40000;
+ while(choice<0 && Date.now()<deadline){$.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(0.05));}
+ panel.close;return choice<0?'':String(choice);
+}'''
+            try:
+                result=subprocess.run(['osascript','-l','JavaScript','-e',script,title,body],capture_output=True,text=True,timeout=45)
+                action={'0':'flock_once','1':'flock_always','2':'flock_never'}.get(result.stdout.strip())
+                if action:self.inbox.put_nowait(dict(type='notification_action',action=action,context=context))
+            except (OSError,subprocess.SubprocessError,queue.Full):pass
+        threading.Thread(target=choose,daemon=True).start()
+
     def announcement(self,title,body,name):
         self.poke(title,body,name,koel_sound=False,duration=12)

@@ -129,6 +129,7 @@ class AnnouncementUI:
             return True
         if kind!='local_host_update':return False
         if not event.get('online'):
+            self.flock_status(None)
             previous=getattr(self,'announcement_status',{})
             was_online=previous.get('online',False)
             self.announcement_status=dict(online=False)
@@ -142,6 +143,7 @@ class AnnouncementUI:
         data=event['data'];self.announcement_status=dict(data,online=True)
         self.link_api_guest_node(event)
         self.release_notification(data)
+        self.flock_status(data)
         if event.get('recovered'):
             from .network import seat_label
             text=data['owner']+' (API host) is online at '+seat_label(event['host'])+' ('+event['host']+'). Use /signin, then /clusters or /clusters 2 for current campus seats.'

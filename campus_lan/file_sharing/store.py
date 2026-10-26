@@ -17,7 +17,7 @@ MAX_FILE=8*1024*1024
 MAX_STORAGE=128*1024*1024
 MAX_FILES=512
 MAX_MEMBERS=16
-WELCOME=b'# LAN42 file sharing\n\nExperimental campus-only group. Files are data; nothing is executed or extracted.\nMember folders are owner-writable and group-readable. Shared root files are collaborative.\n'
+WELCOME=b'# LAN42 file sharing\n\nCampus-only group. Files are data; nothing is executed or extracted.\nMember folders are owner-writable and group-readable. Shared root files are collaborative.\nLocal copies remain on leave or host shutdown. No directory expiry or automatic cleanup; manage retained copies yourself.\n'
 
 
 class Store:
@@ -40,6 +40,7 @@ class Store:
             self.db.executescript('''
                 PRAGMA foreign_keys=ON;
                 CREATE TABLE IF NOT EXISTS groups(gid TEXT PRIMARY KEY,host_uid INTEGER,host_login TEXT,host_key TEXT,expires REAL,peer TEXT,closed INTEGER DEFAULT 0);
+                CREATE TABLE IF NOT EXISTS service_flocks(scope TEXT PRIMARY KEY,gid TEXT);
                 CREATE TABLE IF NOT EXISTS members(gid TEXT,uid INTEGER,login TEXT,session_key TEXT,expires REAL,PRIMARY KEY(gid,uid),UNIQUE(gid,login));
                 CREATE TABLE IF NOT EXISTS identities(gid TEXT,uid INTEGER,login TEXT,PRIMARY KEY(gid,uid),UNIQUE(gid,login));
                 CREATE TABLE IF NOT EXISTS invites(digest TEXT PRIMARY KEY,gid TEXT,uid INTEGER,login TEXT,expires REAL,used INTEGER DEFAULT 0);
@@ -52,7 +53,9 @@ class Store:
             if hasattr(self,'objects'):os.close(self.objects)
             os.close(self.root_fd);raise
 
-    def close(self):self.db.close();os.close(self.objects);os.close(self.root_fd)
+    def close(self):
+        with self.lock:
+            self.db.close();os.close(self.objects);os.close(self.root_fd)
 
     @contextmanager
     def transaction(self):
@@ -111,6 +114,46 @@ class Store:
             self._event(gid,host,'group_created')
         return gid
 
+    def start_flock(self,host,bind_ip):
+        """Resume host-retained files, but never carry memberships across starts."""
+        self.gate.check(host)
+        if bind_ip!=host.peer_ip:raise Denied('The flock must use its campus interface.')
+        with self.lock:
+            existing=self.db.execute("SELECT g.* FROM service_flocks f JOIN groups g ON g.gid=f.gid WHERE f.scope='42-singapore'").fetchone()
+            if existing:
+                if existing['host_uid']!=host.uid or existing['host_login']!=host.login:raise Denied('Flock owner changed; review retained storage.')
+                gid=existing['gid']
+                with self.transaction():
+                    self.db.execute('UPDATE groups SET host_key=?,expires=?,peer=?,closed=0 WHERE gid=?',(host.session_key,host.expires,bind_ip,gid))
+                    self.db.execute('DELETE FROM members WHERE gid=?',(gid,))
+                    self.db.execute('DELETE FROM invites WHERE gid=?',(gid,))
+                    self.db.execute('INSERT INTO members VALUES(?,?,?,?,?)',(gid,host.uid,host.login,host.session_key,host.expires))
+                    self._event(gid,host,'flock_restarted')
+                return gid
+            gid=self.create(host,bind_ip)
+            with self.transaction():self.db.execute("INSERT INTO service_flocks VALUES('42-singapore',?)",(gid,))
+            return gid
+
+    def join_flock(self,actor,gid):
+        # This entry point is used only by the host-selected /v1/flock/join route.
+        with self.transaction():
+            group=self._group(actor,gid,member=False)
+            if not self.db.execute('SELECT 1 FROM service_flocks WHERE gid=?',(gid,)).fetchone():raise Denied('Not a public campus flock.')
+            if actor.login in ('welcome.md','logs','shared'):raise Denied('Reserved member namespace.')
+            if self.db.execute('SELECT 1 FROM files WHERE gid=? AND path=? AND deleted=0',(gid,actor.login)).fetchone():raise Conflict('A file occupies the member namespace.')
+            for row in self.db.execute('SELECT uid,session_key,expires FROM members WHERE gid=?',(gid,)).fetchall():
+                if row['uid']!=group['host_uid'] and (row['expires']<=self.clock() or not self.gate.broker.active(row['session_key'])):
+                    self.db.execute('DELETE FROM members WHERE gid=? AND uid=?',(gid,row['uid']))
+            active=self.db.execute('SELECT count(*) FROM members WHERE gid=?',(gid,)).fetchone()[0]
+            if active>=MAX_MEMBERS and not self.db.execute('SELECT 1 FROM members WHERE gid=? AND uid=?',(gid,actor.uid)).fetchone():raise Limit('The flock is full (16 active members); try after someone leaves.')
+            count=self.db.execute('SELECT count(*) FROM identities WHERE gid=?',(gid,)).fetchone()[0]
+            if count>=64 and not self.db.execute('SELECT 1 FROM identities WHERE gid=? AND uid=?',(gid,actor.uid)).fetchone():raise Limit('Flock namespace capacity reached (64 people).')
+            named=self.db.execute('SELECT uid FROM identities WHERE gid=? AND login=?',(gid,actor.login)).fetchone()
+            if named and named['uid']!=actor.uid:raise Denied('Member namespace belongs to another identity.')
+            self.db.execute('INSERT OR IGNORE INTO identities VALUES(?,?,?)',(gid,actor.uid,actor.login))
+            self.db.execute('INSERT OR REPLACE INTO members VALUES(?,?,?,?,?)',(gid,actor.uid,actor.login,actor.session_key,actor.expires))
+            self._event(gid,actor,'flock_joined')
+
     def invite(self,actor,gid,target_login):
         with self.transaction():
             group=self._group(actor,gid)
@@ -141,9 +184,9 @@ class Store:
     def leave(self,actor,gid):
         with self.transaction():
             group=self._group(actor,gid)
-            if actor.uid==group['host_uid']:self.db.execute('UPDATE groups SET closed=1 WHERE gid=?',(gid,))
+            if actor.uid==group['host_uid'] and actor.session_key==group['host_key']:self.db.execute('UPDATE groups SET closed=1 WHERE gid=?',(gid,))
             else:self.db.execute('DELETE FROM members WHERE gid=? AND uid=?',(gid,actor.uid))
-            self._event(gid,actor,'group_closed' if actor.uid==group['host_uid'] else 'member_left')
+            self._event(gid,actor,'group_closed' if actor.uid==group['host_uid'] and actor.session_key==group['host_key'] else 'member_left')
 
     def manifest(self,actor,gid):
         with self.lock:

@@ -13,6 +13,11 @@
 
 ## Access, API scope and trusted hosts
 
+Approved on-campus host startup also starts/resumes the [42 Singapore KoelDrop
+flock](file-sharing.md#the-host-started-42-singapore-flock). Its local service
+identity is independent of owner OAuth and cannot be used as a student bearer
+login. No startup scripts erase existing folders; retained copies survive restart.
+
 **Campus LAN features, with read-only Singapore-scoped API tools available to the
 API owner offsite.** This is the owner's application-form promise, not a narrower
 permission automatically enforced by the upstream student API credential.

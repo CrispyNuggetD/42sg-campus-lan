@@ -39,7 +39,9 @@ def complete(text):
         elif command in ('/roadmap','/experimental') and len(parts)<=2:
             choices=('koeldrop','files')
         elif command in ('/files','/koel','/koeldrop') and len(parts)<=2:
-            choices=('status','help','create','invite','accept','decline','dir','pending','receive','reject','trust','sync','leave')
+            choices=('status','help','flock','flock-dir','create','invite','accept','decline','dir','pending','receive','reject','trust','sync','leave')
+        elif command in ('/files','/koel','/koeldrop') and parts[1:2]==['flock'] and len(parts)<=3:
+            choices=('once','always','never','ask','status')
         elif command in ('/setup','/allow') and len(parts)<=2:
             choices=('all','batch')
         elif command=='/uwu' and len(parts)<=2:
@@ -55,13 +57,13 @@ def complete(text):
         elif command in ('/dm','/alert','/sabo') and len(parts)<=2:
             choices=('friends','tracked','alltracked','mutuals','moots','oomf')
         elif command in ('/settings','/profile') and parts[1:2]==['notifications'] and len(parts)<=3:
-            choices = ('on','off','all','host','announcements','releases','warnings','tracking','chat','dms','pokes')
+            choices = ('on','off','all','host','announcements','releases','warnings','tracking','flock','files','chat','dms','pokes')
         elif command == '/storm' and (len(parts)==1 or (len(parts)==2 and not text.endswith(' '))):
             choices = ('on','off','step','pause')
         elif command == '/preset' and len(parts)<=2:
             choices = ('chill','chaos')
         elif command == '/notify' and len(parts) <= 2:
-            choices = ('on','off','all','host','announcements','releases','warnings','tracking','chat','dms','pokes')
+            choices = ('on','off','all','host','announcements','releases','warnings','tracking','flock','files','chat','dms','pokes')
         elif command == '/notify' and len(parts)<=3:
             choices=('on','off')
         elif command in ('/settings','/profile') and parts[1:2]==['notifications'] and len(parts)<=4:

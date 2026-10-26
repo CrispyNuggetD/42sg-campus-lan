@@ -141,3 +141,14 @@ or refreshes them; no historical directory is silently deleted during upgrade.
 Cache/export permission does not authorise indefinite retention, redistribution,
 or future use outside the stated purpose. This implements the application policy;
 it is not a certification of PDPA compliance or of 42's terms.
+
+## Public KoelDrop flock
+
+Approved on-campus auth startup may run the 42 Singapore flock using a local
+service-only identity. It has no broker bearer session and never grants user
+admin rights. Join remains verified primary-SG membership plus fresh active seat
+and matching real campus source IP; offsite verified API access is insufficient.
+Anonymous clients see only conditional availability, not a membership grant.
+The current service group/epoch is chosen by the host. Saved local always-join
+is specific to that pinned host and user; it does not approve file receipt,
+deletions, a different server, or re-uploading an old local folder.

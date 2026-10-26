@@ -23,6 +23,7 @@ class Announcements:
         self.admin_token=admin_token or secrets.token_hex(32)
         self.epoch=secrets.token_hex(16);self.sequence=0
         self.requests={};self.feed=[];self.last={};self.on_request=on_request
+        self.flock_status=lambda:None
 
     @property
     def policy(self):
@@ -97,7 +98,7 @@ class Announcements:
         statuses=[{k:r[k] for k in ('id','status','author')} for r in self.requests.values() if person and r['uid']==person['uid']]
         from .release import VERSION, RELEASE_DATE
         return dict(epoch=self.epoch,owner=self.owner,host=host,sequence=self.sequence,
-                    version=VERSION,release_date=RELEASE_DATE,
+                    version=VERSION,release_date=RELEASE_DATE,flock=self.flock_status(),
                     announcements=[e for e in self.feed if e['seq']>cursor],pending=pending[:8],statuses=statuses[-16:])
 
     def dispatch(self,route,data):

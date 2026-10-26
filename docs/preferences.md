@@ -15,8 +15,9 @@
 Notification channels are private **per computer** and shared by its LAN42
 windows. Important channels default to on: **host** (API host online),
 **announcements** (approved broadcasts and moderator approval requests),
-**releases** (a changed trusted-host version, including patches), and **warnings**
-(host going offline). **Tracking** alerts also default to on for people/rules you
+**releases** (a changed trusted-host version, including patches), **warnings**
+(host going offline), and **flock** (42 Singapore flock invitations). **Files**
+(offers inside a deliberately joined group) also defaults to on. **Tracking** alerts also default to on for people/rules you
 explicitly track; **chat**, **dms** and **pokes** default to off.
 
 Use `/notify` to inspect them, `/notify dms on` or `/notify host off` for one

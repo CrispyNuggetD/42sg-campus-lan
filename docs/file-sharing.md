@@ -3,6 +3,8 @@
 [← LAN42](../README.md) · [All guides](README.md)
 
 - [KoelDrop — the uwu bird, but it brings files](#koeldrop--the-uwu-bird-but-it-brings-files)
+- [The host-started 42 Singapore flock](#the-host-started-42-singapore-flock)
+- [Private invitation groups](#private-invitation-groups)
 - [Optional uwu bird](#optional-uwu-bird)
 - [Sound tests and private pokes](#sound-tests-and-private-pokes)
 
@@ -11,28 +13,88 @@
 A little campus file courier inside LAN42. **Files in your nest, only if you say
 yes.** The receive notice is `🔊 uwu, dthoo sent you funny.txt`.
 
-KoelDrop is a standard feature. There is no experimental toggle. From your
-signed-in HQ, `/koel help` lists commands (`/files` and `/koeldrop` are aliases).
-The on-campus API service owner starts a group with `/koel create`, then uses
+## The host-started 42 Singapore flock
+
+The approved API host starts its public **42 Singapore flock** automatically on
+normal startup. No dailylogin one-off or manual `/koel create` is needed. “Public”
+means discoverable through the configured pinned host—not anonymous access.
+Joining requires the existing verified SG account, active primary Singapore
+membership, fresh workstation login and a real connection from that campus seat.
+An invitation on an anonymous campus HQ says sign-in is required; clicking it
+starts the normal sign-in flow and confirms joining only after verification.
+Offsite users cannot join.
+
+The invitation offers **Join once**, **Always join** and **Never show again**.
+Native buttons depend on desktop support; the same choices are always available
+in HQ:
+
+```text
+/koel flock once
+/koel flock always
+/koel flock never
+/koel flock ask
+/koel flock status
+/koel flock-dir "~/KoelDrop"
+```
+
+Once/always shows the service directory and explains uploads before joining.
+Always remembers consent for this trusted host and verified account on this
+computer; later sign-ins and host returns can rejoin without asking again.
+It never forces a browser sign-in, silently replaces another active/joining group,
+or grants automatic file receipt/deletion. `/koel flock ask` stops future automatic
+joins; `/koel leave` stops current uploads. Never suppresses future invitations
+but does not leave a group you already joined.
+
+The chosen service root can already contain files: those files are not scanned.
+Each join creates a new empty subdirectory such as:
+
+```text
+~/KoelDrop/42-singapore/<trusted-host-fingerprint>/
+  2026-10-27_12-30-00-<host-session>-<unique-suffix>/
+```
+
+If a destination exists, LAN42 allocates another unique directory. It never
+reuses/imports it, renames it, follows symlinks, or recursively removes it. A
+configured root must support private directories, be non-hidden and outside Git.
+Changing `flock-dir` affects future joins; it does not move the active folder.
+
+**Shutdown retention:** sharing pauses when the host/flock becomes unavailable.
+Uploads stop; your folder, downloads and unuploaded work stay on disk. On return,
+Always can join a fresh directory. Previous copies are not automatically uploaded
+into that new session. **Local copies have no expiry or automatic cleanup: you
+remove them yourself when finished.** Uploaded host copies and audit history are
+also retained across host restarts, subject to existing quotas. Fresh session
+membership is required before anyone can read those retained files again. The
+host operator must deliberately manage retained storage; startup never erases it.
+The current limits remain 16 active members (including the service host), 64
+reserved member namespaces, 8 MiB per file and 128 MiB retained per group. A full
+quota rejects new work rather than deleting old copies.
+
+Files added to your joined folder upload to the flock, where admitted members
+can request them. Incoming files still need `/koel receive NUMBER` or a separate
+explicit `/koel trust ...` whitelist. Always join never grants those permissions.
+Deletions always need separate approval and keep a recoverable local backup.
+`/notify flock off` hides flock invitations; `/notify files off` hides file-offer
+popups; `/notify all off` also silences them. These are notification choices,
+not commands to stop a previously approved transfer or leave the group.
+
+## Private invitation groups
+
+The owner can still create a separate group with `/koel create`, then use
 `/koel invite dthoo` (or `friends` / `@LIST`). Recipients accept or decline their
-numbered invitation. Accepting creates a dedicated folder whose added files
-upload to that group; unrelated folders are never scanned.
+numbered invitation. Accepting starts uploads from its dedicated empty folder.
+Only one KoelDrop group runs in each HQ at a time.
 
 `/koel pending` lists offers; `/koel receive NUMBER` approves a file and
 `/koel reject NUMBER` declines it. `/koel trust LOGIN...` separately confirms an
-automatic-receive whitelist for the current group. Deletions still require
-approval. `/koel dir "EMPTY PATH"` chooses a folder; `/koel sync` syncs now;
-`/koel leave` stops group uploads and preserves local copies.
+automatic-receive whitelist for the current group. `/koel dir "EMPTY PATH"`
+chooses a different empty folder; `/koel sync` syncs now; `/koel leave` stops
+uploads and preserves copies. Group membership and file acceptance remain
+separate decisions.
 
-Transfers use the existing pinned HTTPS broker, current verified sessions,
-fresh campus seat/source-IP evidence, recipient-bound expiring invites, private
-storage, file ownership, version conflicts and bounded polling. No files transfer
-merely because LAN42 starts or a legacy experimental setting says `on`.
-See [the design and permissions](file-sharing-design.md).
-
-The project name and public Intra description remain **Ryker's 42SG Campus LAN
-Server** and the student-built campus LAN purpose at the top of this README.
-KoelDrop is a sub-feature of that project.
+Transfers use the existing pinned HTTPS broker, private storage, file ownership,
+version conflicts and bounded polling. Private invitation groups additionally
+use recipient-bound expiring invites. [Design and permissions](file-sharing-design.md).
 
 ## Optional uwu bird
 
