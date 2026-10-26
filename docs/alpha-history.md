@@ -11,7 +11,11 @@ Reconstructed source history, newest first. These are historical changes, not re
 - Previous checkout reported 0.6.0. V1 was a product milestone, not a published 1.0.0 release.
 - Historical commit subjects describe changes at the time, not current feature availability or published alpha releases.
 - Background hosts and peer-presence exchanges refer to LAN networking, not keeping an OS session awake. LAN42 does not implement OS anti-idle; the separate shared shell helper defaults Stayon off.
-- Detailed source commit history follows (newest first; commit dates in SGT; no retroactive version tags):
+
+### Detailed source commit history
+
+Newest first; commit dates in SGT; no retroactive version tags.
+
 - 51eda1d · 2026-10-26T23:32:50+08:00 · Add batch popup permission setup and one-confirmation allow-all
 - fe7a755 · 2026-10-26T23:19:16+08:00 · Wait for managed node lock release during app restart
 - 7341987 · 2026-10-26T23:17:59+08:00 · Promote KoelDrop to standard feature and add LAN42 pane restart helper

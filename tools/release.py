@@ -79,7 +79,10 @@ def write_changelog(data):
         for index, note in enumerate(item['notes']):
             if item is alpha and index == len(item['notes']) - 1:
                 lines.extend(['', '<a id="beginning"></a>', ''])
-            lines.append('- '+note)
+            if note.startswith('Detailed source commit history follows'):
+                lines.extend(['', '### Detailed source commit history', '', 'Newest first; commit dates in SGT; no retroactive version tags.', ''])
+            else:
+                lines.append('- '+note)
         lines.append('')
     (ROOT/'CHANGELOG.md').write_text('\n'.join(lines))
     if alpha:
@@ -89,7 +92,10 @@ def write_changelog(data):
         for index, note in enumerate(alpha['notes']):
             if index == len(alpha['notes']) - 1:
                 lines.extend(['', '<a id="beginning"></a>', ''])
-            lines.append('- '+note)
+            if note.startswith('Detailed source commit history follows'):
+                lines.extend(['', '### Detailed source commit history', '', 'Newest first; commit dates in SGT; no retroactive version tags.', ''])
+            else:
+                lines.append('- '+note)
         lines.extend(['', '## Original README · 2026-09-13', '',
                       'Archived verbatim from initial commit `84ec75c`; the nickname and feature description below are historical.', '',
                       '> # 42sg-campus-lan',
