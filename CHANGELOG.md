@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.8.2-beta.1 · 2026-10-27T07:03:42+08:00
+
+- fix: name LAN42 adapted koel sound uwu.ogg
+
 ## 2.8.1-beta.1 · 2026-10-27T05:18:59+08:00
 
 - fix: align public LAN42 identity with Christopher Nah
