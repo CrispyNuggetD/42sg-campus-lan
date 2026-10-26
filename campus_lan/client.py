@@ -25,6 +25,7 @@ from . import auth_client
 from .updater import RestartRequested, generation
 from .completion import complete
 from .local_console import LocalConsole,History,shell_command
+from .permission_setup import PermissionSetup
 from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
@@ -42,6 +43,7 @@ HELP = [
     '/clusters [1|2]: campus seats | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
     '/track help: relationships/lists | /settings clusters: include/exclude arrival rules',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
+    '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
     '/game forknite: browser game room | /browser: reopen current FORKNITE website',
     '/roadmap koeldrop | /koel help: campus file sharing; /koel create | /koel pending',
@@ -84,7 +86,7 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
-class Client(LocalConsole,AnnouncementUI,KoelUI):
+class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
@@ -255,6 +257,7 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
         self.popup_prompts().request(category,description,action)
 
     def permission_tick(self):
+        if getattr(self,'wizard',None) and self.wizard[0].startswith('permissions-'):return
         prompts=getattr(self,'consent',None)
         if not prompts:return
         active=prompts.activate()
@@ -1159,6 +1162,9 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
 
     def wizard_answer(self, text):
         intent, values = self.wizard
+        if intent.startswith('permissions-'):
+            self.permission_setup_answer(text)
+            return
         if intent.startswith('bot'):
             self.bot_wizard_answer(intent, text)
             return
@@ -1266,6 +1272,7 @@ class Client(LocalConsole,AnnouncementUI,KoelUI):
                 text,self.input = self.input.strip(),''
                 self.scroll = 0
                 if text=='/restart':raise RestartRequested()
+                if self.permission_setup_command(text):continue
                 if getattr(self,'permission_prompt',False):
                     self.permission_answer(text)
                     continue

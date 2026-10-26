@@ -2,7 +2,7 @@
 import os
 
 GAMES = ('bluff', 'forknite', 'hexwars', 'tetris')
-COMMANDS = ('/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
+COMMANDS = ('/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
             '/help', '/info', '/info_campus', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
             '/lobby', '/map', '/next', '/meals', '/notify', '/practice', '/prev', '/preset', '/profile', '/quit', '/settings',
             '/restart', '/roster', '/rooms', '/signin', '/start', '/stop', '/status', '/storm', '/timings',
@@ -40,6 +40,8 @@ def complete(text):
             choices=('koeldrop','files')
         elif command in ('/files','/koel','/koeldrop') and len(parts)<=2:
             choices=('status','help','create','invite','accept','decline','dir','pending','receive','reject','trust','sync','leave')
+        elif command in ('/setup','/allow') and len(parts)<=2:
+            choices=('all','batch')
         elif command=='/uwu' and len(parts)<=2:
             choices=('auto','on','off')
         elif command=='/track' and len(parts)<=2:

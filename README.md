@@ -888,3 +888,13 @@ app. It skips shells, servers and unrelated Python programs, and clears unfinish
 app input. `lan42_restart --check` lists matching panes without sending anything.
 It works on Linux and macOS. Source the installed shell helpers or run
 `useful-scripts/lan42_restart` directly. It does not restart the API host service.
+
+For faster popup setup, use `/setup` or `/allow batch` to choose each category
+with y/n. `/allow all` lists every category and asks once before allowing them
+all permanently; `all` during batch setup also grants the full list. Categories
+cover browser pages, help, FORKNITE, profiles, sign-in, tools, photos,
+notifications and terminals. No for the general browser fallback keeps asking;
+No for a specific category blocks it. `/cancel` stops the batch, keeping choices
+already saved. `/settings permissions all ask` resets the policies. File receives,
+group joins, announcement approval, sound and system-volume permission remain
+separate decisions. You can invoke setup while another popup prompt is waiting.
