@@ -152,3 +152,20 @@ recursively remove existing folders. Host stop/restart keeps local copies and
 host-retained objects; new membership/epoch is required. No expiry cleanup is
 authorized. Run test_koel_flock.py with file-sharing/auth/access/notification
 checks, and mock all native notifications, campus evidence and transfers.
+
+## Web search and permanent impact aggregates
+
+All internet-search features use SearchControls.launch_search, including /key4.
+Keep F4's volume action; its optional discovered [4?] link invokes the chosen
+search engine and existing browser/search consent. No browser profile reads or
+result-click tracking. Ecosia is the default; Google selection has one fair
+confirmation, and custom templates must be fixed-host HTTPS query URLs.
+Reporting defaults on with a persistent local opt-out, as owner-authorized.
+Only a permanent total and 4096-register uniqueness sketch persist on the host.
+Never add a URL/query/hash list, per-user contribution table, durable event log,
+student identity, or telemetry data to Git. Source-rate/replay keys may exist
+briefly in RAM without query associations. Reports are best-effort client claims,
+not provider-verified searches or tree counts; label uniqueness as an estimate.
+Exclude search commands/settings from local history and purge older matching
+entries on load. Browser/provider history is outside LAN42. Test with temporary
+aggregate stores and mocked webbrowser/network; never inflate live counters.

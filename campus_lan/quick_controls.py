@@ -20,6 +20,11 @@ class QuickControls:
         elif action == 'volume':
             self.shortcut_audio_muted = False
             self.volume_command('/volume')
+            if not getattr(self,'key4_discovered',False):
+                self.key4_discovered=True
+                self.lines.append('Security-history joke: “The private key is 4.” Click [4?] in the footer or /key4 to search the eMudhra incident.')
+        elif action == 'key4':
+            self.search_command('/key4')
         elif action == 'uwu':
             self.uwu_command('/uwu')
         elif action == 'auto':
@@ -46,6 +51,7 @@ class QuickControls:
         controls = [('account', 'F2 '+('Sign out' if signed else 'Sign in')),
                     ('mute', 'F3 Mute'), ('volume', 'F4 0/30%'), ('uwu', 'F5 Uwu'),
                     ('auto', 'F6 Auto:'+('on' if getattr(self, 'uwu_auto_due', None) is not None else 'off'))]
+        if getattr(self,'key4_discovered',False):controls.append(('key4','4?'))
         x = 0
         for action, label in controls:
             text = '['+label+']'

@@ -14,6 +14,9 @@
 | [KoelDrop and the uwu bird](file-sharing.md) | Host-started 42SG flock, join choices, retained folders, private groups and the uwu bird. |
 | [Personal preferences](preferences.md) | Clickable controls, keyboard shortcuts, notification channels, popup consent, auto-login, local history and output volume. |
 
+[Web search and the impact counter](web-search.md) covers engine choices, the
+F4 Easter egg, permanent aggregates and privacy.
+
 ## Hosting and maintaining LAN42
 
 | Guide | What is inside |

@@ -24,6 +24,7 @@ with friends.
 - **Easy controls:** clickable footer or F2 sign in/out; F3 mute, F4 output 0/30%, F5 uwu once, F6 automatic uwu; Up/Down history and !COMMAND for your local shell.
 - **Useful alerts:** approved `/broadcast` messages and pinned host-arrival notices; `/notify` separates important alerts from quiet-by-default DMs/pokes, with an all-off override.
 - **Versioned server:** startup shows version/date; `/changelog` explains releases. README-only edits do not bump the server.
+- **Web search:** `/search` defaults to Ecosia; Google/custom engines are optional. Permanent aggregate impact totals and estimated unique searches have a counting opt-out.
 <!-- shell-installer-features:end -->
 
 **Campus API features need a running approved host on campus (currently hnah’s).**
@@ -75,7 +76,7 @@ All four launch from HQ with `/game NAME`; friends use `/join ROOM_NUMBER`.
 | Find people, see clusters, track friends or chat | [Campus and social guide](docs/campus-guide.md) |
 | Play or host a game | [Minigames](docs/minigames.md) |
 | Share files or understand the uwu bird | [KoelDrop](docs/file-sharing.md) |
-| Change shortcuts, notifications, sound or consent | [Personal preferences](docs/preferences.md) |
+| Change shortcuts, search, notifications or consent | [Personal preferences](docs/preferences.md) |
 | Sign in or configure the approved API host | [Sign-in setup](docs/sign-in.md) |
 | Host, update or troubleshoot LAN42 | [Hosting and maintenance](docs/hosting.md) |
 

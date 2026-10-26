@@ -3,6 +3,7 @@
 [← LAN42](../README.md) · [All guides](README.md)
 
 - [Notification channels](#notification-channels)
+- [Web search and the impact counter](#web-search-and-the-impact-counter)
 - [Keyboard and clickable controls](#keyboard-and-clickable-controls)
 - [Account settings](#account-settings)
 - [Visual guide and popup permissions](#visual-guide-and-popup-permissions)
@@ -39,6 +40,14 @@ They add no 42 API requests, never install updates, and do not announce unrelate
 GitHub/README changes. Guest chat/games work without the API host; sign-in and
 fresh campus views need it. In-app status and message history remain visible
 regardless of desktop preferences.
+
+## Web search and the impact counter
+
+`/search TERMS` opens Ecosia in your default browser. Choose Google or a custom
+HTTPS engine in `/settings search`, and inspect the permanent host aggregate with
+`/search stats`. Counting defaults to on; `/settings search counting off` opts out.
+Only a total and estimated uniqueness sketch persist, with no query history,
+identity records or result tracking. [Search, privacy and counter details](web-search.md).
 
 ## Keyboard and clickable controls
 
@@ -88,7 +97,7 @@ shown; it is not treated as a yes. Remote events cannot grant permission.
 ```
 
 Categories: `browser` (global), `help`, `forknite`, `profiles`, `signin`, `tools`, `photos`,
-`notifications`, and `terminals`. Modes: `ask`, `allow` (always), `deny`, and `inherit` (remove an override).
+`notifications`, `terminals`, and `search`. Modes: `ask`, `allow` (always), `deny`, and `inherit` (remove an override).
 Browser actions inherit the global `browser` setting unless their category has
 an explicit override. A global `browser deny` blocks all browser actions even
 when a child category was previously allowed. Notifications and game terminals

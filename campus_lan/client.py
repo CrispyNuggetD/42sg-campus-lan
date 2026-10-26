@@ -26,12 +26,14 @@ from .updater import RestartRequested, generation
 from .completion import complete
 from .local_console import LocalConsole,History,shell_command
 from .notification_preferences import NotificationControls,IMPORTANT
+from .web_search import SearchControls
 from .quick_controls import QuickControls
 from .permission_setup import PermissionSetup
 from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    "/search TERMS: chosen engine in your browser | /settings search: engine + aggregate counting opt-out | /search stats",
     "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",
     "Click footer buttons or use F2 sign in/out | F3 system mute | F4 output 0/30% | F5 uwu | F6 auto uwu",
     '/changelog: server release history and alpha testing credits',
@@ -93,7 +95,7 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
-class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
+class Client(SearchControls,NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
@@ -564,6 +566,7 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
             except queue.Empty:
                 break
             kind = msg.get('type')
+            if self.search_result(msg):continue
             if self.announcement_event(msg):
                 continue
             if kind == 'local_api_notice':
@@ -990,6 +993,7 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
             return False
 
     def settings_command(self, text):
+        if self.search_command(text):return True
         if self.notification_command(text):return True
         if self.host_settings_command(text):return True
         parts = text.split()
@@ -1004,6 +1008,7 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
                 '/settings signin  — open 42 sign-in (local HQ)',
                 '/settings signout — end the LAN42 session on this device',
                 '/notify — notification channels; /notify all off — silence everything',
+                '/settings search — Ecosia/Google/custom; permanent aggregate impact counter and opt-out',
                 '/volume [0–100] — desktop output; /settings audio-auto-on on|off — uwu unmute',
                 '/settings host-discovery on|off | auto-host-join on|off | host-poll 60–300',
                 '/settings permissions — browser, popup and notification consent',
@@ -1355,6 +1360,7 @@ class Client(NotificationControls,QuickControls,PermissionSetup,LocalConsole,Ann
                     if text[1:].strip():shell_command(screen,text[1:].strip())
                     continue
                 if not self.wizard and self.volume_command(text):continue
+                if not self.wizard and self.search_command(text):continue
                 if self.wizard:
                     self.wizard_answer(text)
                     if self.next_server:

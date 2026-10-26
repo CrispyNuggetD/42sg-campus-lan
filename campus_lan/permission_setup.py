@@ -2,6 +2,7 @@
 from .popup_permissions import CATEGORIES
 
 LABELS={
+    'search':'Open web searches with the selected engine',
     'browser':'General browser pages (fallback for the categories below)',
     'help':'Open the help guide in your browser',
     'forknite':'Open FORKNITE game pages',

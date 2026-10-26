@@ -8,8 +8,8 @@ import secrets
 import atexit
 from .auth import config_dir,private_read,private_write
 
-BROWSER_CATEGORIES={'help','forknite','profiles','signin','tools','photos'}
-CATEGORIES=('browser','help','forknite','profiles','signin','tools','photos','notifications','terminals')
+BROWSER_CATEGORIES={'search','help','forknite','profiles','signin','tools','photos'}
+CATEGORIES=('browser','help','forknite','profiles','signin','tools','photos','notifications','terminals','search')
 MODES=('ask','allow','deny')
 
 

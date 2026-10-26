@@ -2,7 +2,7 @@
 import os
 
 GAMES = ('bluff', 'forknite', 'hexwars', 'tetris')
-COMMANDS = ('/changelog','/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
+COMMANDS = ('/search','/key4','/changelog','/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
             '/help', '/info', '/info_campus', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
             '/lobby', '/map', '/next', '/meals', '/notify', '/practice', '/prev', '/preset', '/profile', '/quit', '/settings',
             '/restart', '/roster', '/rooms', '/signin', '/start', '/stop', '/status', '/storm', '/timings',
@@ -25,7 +25,11 @@ def complete(text):
         elif command in ('/game', '/host') and parts[1:2] == ['bluff'] and len(parts) <= 3:
             choices = ('free', 'prompt')
         elif command in ('/settings','/profile') and (len(parts)==1 or (len(parts)==2 and not text.endswith(' '))):
-            choices = ('signin','signout','notifications','clusters','permissions','autologin','signin-close','koel-sound','host-discovery','host-poll','auto-host-join','audio-auto-on') if command=='/settings' else ('signin','signout','notifications')
+            choices = ('search','signin','signout','notifications','clusters','permissions','autologin','signin-close','koel-sound','host-discovery','host-poll','auto-host-join','audio-auto-on') if command=='/settings' else ('signin','signout','notifications')
+        elif command=='/settings' and parts[1:2]==['search'] and len(parts)<=3:
+            choices=('ecosia','google','custom','counting')
+        elif command=='/settings' and parts[1:3]==['search','counting'] and len(parts)<=4:
+            choices=('on','off')
         elif command=='/settings' and parts[1:2]==['autologin'] and len(parts)<=3:
             choices=('off','saved','on')
         elif command=='/settings' and parts[1:2]==['koel-sound'] and len(parts)<=3:
@@ -33,7 +37,7 @@ def complete(text):
         elif command=='/settings' and parts[1:2] in (['signin-close'],['audio-auto-on']) and len(parts)<=3:
             choices=('on','off')
         elif command=='/settings' and parts[1:2]==['permissions'] and len(parts)<=3:
-            choices=('all','browser','help','forknite','profiles','signin','tools','photos','notifications','terminals')
+            choices=('all','browser','search','help','forknite','profiles','signin','tools','photos','notifications','terminals')
         elif command=='/settings' and parts[1:2]==['permissions'] and len(parts)<=4:
             choices=('ask','allow','deny','inherit')
         elif command in ('/roadmap','/experimental') and len(parts)<=2:

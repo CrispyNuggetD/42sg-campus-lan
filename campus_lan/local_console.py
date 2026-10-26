@@ -13,16 +13,25 @@ def local_path(name):
     return config_dir()/(name+'-'+machine+'.json')
 
 
+def search_input(text):
+    parts=text.split()
+    return parts[:1] in (['/search'],['/key4']) or parts[:2]==['/settings','search']
+
+
 class History:
     def __init__(self):
         self.path=local_path('command-history')
         try:
             data=json.loads(private_read(self.path))
-            self.items=[x for x in data if isinstance(x,str) and len(x)<=400][-200:] if isinstance(data,list) else []
+            self.items=[x for x in data if isinstance(x,str) and len(x)<=400 and not search_input(x)][-200:] if isinstance(data,list) else []
+            if isinstance(data,list) and any(isinstance(x,str) and search_input(x) for x in data):private_write(self.path,json.dumps(self.items))
         except (OSError,ValueError):self.items=[]
         self.index=len(self.items);self.draft=''
 
     def add(self,text):
+        if search_input(text):
+            self.index=len(self.items);self.draft=''
+            return
         if text and (not self.items or self.items[-1]!=text):
             self.items.append(text);self.items=self.items[-200:]
             while len(json.dumps(self.items).encode())>60000:self.items.pop(0)

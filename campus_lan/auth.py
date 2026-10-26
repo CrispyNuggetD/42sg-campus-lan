@@ -383,6 +383,7 @@ class AuthHTTP:
         self.connections = 0
         self.koeldrop=None
         self.announcements=None
+        self.search_counts=None
 
     async def handle(self, reader, writer):
         self.connections += 1
@@ -407,6 +408,11 @@ class AuthHTTP:
                 raise AuthError('Expected an object.')
             if target.startswith('/announcements/') and self.announcements:
                 result=self.announcements.dispatch(target,data)
+            elif target.startswith('/search/') and self.search_counts:
+                if any(k in headers for k in ('cookie','forwarded','x-forwarded-for','x-real-ip')):raise AuthError('Native aggregate requests only.')
+                import sqlite3
+                try:result=self.search_counts.dispatch(target,data,writer.get_extra_info('peername')[0])
+                except sqlite3.Error:raise AuthError('Aggregate counter unavailable; browsing still works.') from None
             elif target == '/begin':
                 result = self.broker.begin(data.get('proof'), writer.get_extra_info('peername')[0])
             elif target == '/resume':

@@ -114,10 +114,18 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     lobby.koeldrop=koeldrop
     http = AuthHTTP(broker, f"{settings['host']}:{settings['broker_port']}")
     http.koeldrop=koeldrop
+    from .search_counts import SearchCounts
+    import sqlite3
+    try:http.search_counts=SearchCounts()
+    except (OSError,ValueError,sqlite3.Error):print('LAN42 impact counter unavailable; existing data is kept and browsing still works.',flush=True)
     from .announcements import Announcements
     owner=settings.get('owner_login','hnah')
     http.announcements=Announcements(broker,owner)
     http.announcements.flock_status=koeldrop.public_status
+    def impact_summary():
+        try:return http.search_counts.summary() if http.search_counts else None
+        except (OSError,ValueError,sqlite3.Error):return None
+    http.announcements.search_summary=impact_summary
     owner=http.announcements.owner
     from .desktop_notifications import Notifications
     announcement_inbox=queue.Queue(maxsize=32)
@@ -152,6 +160,7 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     except Exception:
         web.close()
         await web.wait_closed()
+        if http.search_counts:http.search_counts.close()
         announcement_moderator.cancel();announcement_notifier.close()
         await asyncio.gather(announcement_moderator,return_exceptions=True)
         raise
@@ -170,6 +179,7 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
         async with web, server:
             reload_package = await wait_for_host_move(settings)
     finally:
+        if http.search_counts:http.search_counts.close()
         announcement_moderator.cancel();announcement_notifier.close()
         await asyncio.gather(announcement_moderator,return_exceptions=True)
         flock_task.cancel()
