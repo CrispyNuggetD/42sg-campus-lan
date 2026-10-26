@@ -29,7 +29,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
 - `/uwu`: meet the koel file courier; `/koel` for approved sharing; `/dm` / `/uwu LOGIN` for messages/pokes; `/volume` for audio.
-- `/games`: Tetris, Bluff, Hex Wars and FORKNITE—a multiplayer visualiser/game for 42’s classic C Philosophers project; Up/Down history and !COMMAND for the local shell.
+- `/games`: Tetris, Bluff, Hex Wars and FORKNITE—a multiplayer visualiser/game for the legacy 42 C Philosophers project; Up/Down history and !COMMAND for the local shell.
 - `/signin`: SG API views; guests keep chat/games; legacy owner-host approval migrates on startup.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
 - Pinned host discovery: keep guest nodes running offline, then discover and reconnect when the API host returns.
@@ -513,16 +513,14 @@ clients reconnect after the FORKNITE server reloads and reclaim their slots.
 
 ### FORKNITE (multiplayer Philosophers visualiser/game)
 
-FORKNITE turns my **Philosophers project from 42’s classic C-based Common Core**
+FORKNITE turns my **legacy 42 C Philosophers project**
 into a multiplayer browser visualiser/game. It runs the host’s actual C `philo`
 executable: friends become diners, the timer tightens each round, and the first
 real philosopher death ends the tournament.
 
-Curriculum context: 42’s [pre-2026 C/C++ curriculum lists Philosophers](https://www.42berlin.de/curriculum-42-berlin-pre-2026).
-[42 Singapore’s #42Next announcement](https://www.linkedin.com/posts/42singapore_42next-42singapore-futureready-activity-7426471159656763393-Z4wm)
-introduces Python and AI skills; [current curriculum descriptions still include C alongside Python](https://www.42vienna.com/en/studies/curriculum/).
-“Classic C project” describes its origins without implying that C or concurrency
-has become obsolete.
+Philosophers belongs to the [older C/C++ Common Core](https://www.42berlin.de/curriculum-42-berlin-pre-2026).
+FORKNITE gives my implementation of that legacy project a playful multiplayer life.
+For the newer curriculum, see [42 Singapore’s #42Next announcement](https://www.linkedin.com/posts/42singapore_42next-42singapore-futureready-activity-7426471159656763393-Z4wm).
 
 Use `/game forknite` in HQ and `/join ROOM_NUMBER`, exactly like the other games.
 The room server launches the bundled Node wrapper and opens each participant's

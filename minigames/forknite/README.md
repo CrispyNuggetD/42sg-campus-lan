@@ -1,13 +1,13 @@
 # FORKNITE · a multiplayer Philosophers visualiser/game
 
 A playful browser visualiser/game powered by the actual C `philo` executable from
-42’s classic **Philosophers** project (the Dining Philosophers concurrency
+the **legacy 42 C Philosophers project** (the Dining Philosophers concurrency
 problem). Friends take seats as philosophers while successive rounds tighten
 the timing until the first real death. The C program supplies the simulation;
 FORKNITE supplies the visualisation and multiplayer tournament.
 
 See the [LAN42 handbook](../../README.md#forknite-multiplayer-philosophers-visualisergame)
-for the classic curriculum context and the newer #42Next/Python additions.
+for the legacy curriculum context and the newer #42Next/Python additions.
 
 ## Play
 
