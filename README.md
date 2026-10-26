@@ -2,7 +2,7 @@
 
 Beta entry **2.0.0-beta.1** · Beta since Tuesday **27 October 2026, 00:48 SGT**.
 
-Alpha testing: dthoo and [whatisthisbuffoonery](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.
+Alpha testing: **dthoo** (GitHub: [whatisthisbuffoonery](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html)). Thank you for testing LAN42 before beta.
 
 Use `/changelog` for full server release history. See [release policy](docs/versioning.md) and [system evidence](docs/runtime-environment.md).
 

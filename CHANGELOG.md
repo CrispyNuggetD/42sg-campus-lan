@@ -22,7 +22,7 @@ Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
 - API-backed campus tools, verified sign-in, tracking, announcements and consent-controlled KoelDrop graduate from alpha.
 - Beta began Tuesday 27 October 2026 at 00:48 SGT (+08:00).
-- Alpha testing: dthoo and whatisthisbuffoonery (https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.
+- Alpha testing: dthoo (GitHub: whatisthisbuffoonery — https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.
 
 ## Alpha history (reconstructed; not retroactive releases) · 2026-09-13 – 2026-10-26
 
