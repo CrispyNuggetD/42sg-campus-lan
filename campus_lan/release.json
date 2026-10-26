@@ -1,8 +1,16 @@
 {
-  "version": "2.6.0-beta.1",
-  "date": "2026-10-27T04:02:33+08:00",
-  "source": "44b72cb584c5786051a00af83942536db7ef162f",
+  "version": "2.7.0-beta.1",
+  "date": "2026-10-27T04:42:59+08:00",
+  "source": "08e11242579349c13ade7370ad2567e82507ceba",
   "history": [
+    {
+      "version": "2.7.0-beta.1",
+      "date": "2026-10-27T04:42:59+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: add bounded exam audio quiet and coalesced release alerts"
+      ]
+    },
     {
       "version": "2.6.0-beta.1",
       "date": "2026-10-27T04:02:33+08:00",
@@ -159,5 +167,5 @@
       ]
     }
   ],
-  "runtime_sha256": "2179a6bc071a93d9452b8721b97056e85d4d9a6fe26609ce816f5782f8eb4f3e"
+  "runtime_sha256": "f5043645a4e67b2a448cdf9954555c8a5e51d7bcc204733cfbd665f686e24add"
 }

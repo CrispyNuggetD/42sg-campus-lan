@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.7.0-beta.1 · 2026-10-27T04:42:59+08:00
+
+- feat: add bounded exam audio quiet and coalesced release alerts
+
 ## 2.6.0-beta.1 · 2026-10-27T04:02:33+08:00
 
 - feat: add configurable web search and permanent anonymous impact aggregates
