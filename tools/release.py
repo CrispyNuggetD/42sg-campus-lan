@@ -71,10 +71,20 @@ def bump(version, kind):
 
 def write_changelog(data):
     alpha = next((item for item in data['history'] if item['version'].startswith('Alpha history')), None)
-    lines = ['# LAN42 server changelog', '', 'Generated from `campus_lan/release.json`; `/changelog` shows the same history.', '']
+    lines = ['# LAN42 server changelog', '', 'Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is summarized here; its detailed source log is linked below.', '']
     if alpha:
         lines.extend(['[Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)', ''])
     for item in data['history']:
+        if item is alpha:
+            lines.extend(['## Alpha · '+item['date'], '',
+                          'Development milestones reconstructed from Git; these were not separately published releases.', ''])
+            for note in item['notes']:
+                if not re.match(r'^\d{4}-\d{2}-\d{2}:',note):continue
+                if note.startswith('2026-09-13:'):
+                    lines.extend(['', '<a id="beginning"></a>', ''])
+                lines.append('- '+note)
+            lines.extend(['', '[Full alpha commit log](docs/alpha-history.md) · [Original README / earliest entry](docs/alpha-history.md#beginning)', ''])
+            continue
         lines.extend(['## '+item['version']+' · '+item['date'], ''])
         for index, note in enumerate(item['notes']):
             if item is alpha and index == len(item['notes']) - 1:

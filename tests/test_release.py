@@ -39,8 +39,11 @@ class Release(unittest.TestCase):
             self.assertIn('[Read alpha logs](docs/alpha-history.md)',main)
             for text in (main,log):
                 self.assertIn('(\x23beginning)',text)
-                self.assertLess(text.index('51eda1d ·'),text.index('84ec75c ·'))
                 self.assertIn('<a id="beginning"></a>',text)
+            self.assertLess(log.index('51eda1d ·'),log.index('84ec75c ·'))
+            self.assertNotIn('51eda1d ·',main)
+            self.assertNotIn('Detailed source commit history',main)
+            self.assertIn('[Full alpha commit log](docs/alpha-history.md)',main)
             self.assertIn('## Original README',log)
             release.write_changelog(data)
             self.assertEqual(main,(Path(tmp)/'CHANGELOG.md').read_text())
