@@ -1,8 +1,16 @@
 {
-  "version": "2.2.1-beta.1",
-  "date": "2026-10-27T02:32:15+08:00",
-  "source": "44e0ca54f361e05d7c619bddf3576f4e4936b834",
+  "version": "2.2.2-beta.1",
+  "date": "2026-10-27T02:37:27+08:00",
+  "source": "c7899e895edca8ddbb2ca8ebc85e4602b90af087",
   "history": [
+    {
+      "version": "2.2.2-beta.1",
+      "date": "2026-10-27T02:37:27+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(uwu): introduce the koel file courier and invite users to try KoelDrop"
+      ]
+    },
     {
       "version": "2.2.1-beta.1",
       "date": "2026-10-27T02:32:15+08:00",
@@ -87,5 +95,5 @@
       ]
     }
   ],
-  "runtime_sha256": "0a8927e8353c13cd2a19f1760b4a8535f0b378f17ef7e25fbba8963c5d49ae29"
+  "runtime_sha256": "1f7616b0ef41b64a08f6cdd3171dd9d5bcb3151110eff745f312811389c02604"
 }

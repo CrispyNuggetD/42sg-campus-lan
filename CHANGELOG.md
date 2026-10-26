@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.2.2-beta.1 · 2026-10-27T02:37:27+08:00
+
+- fix(uwu): introduce the koel file courier and invite users to try KoelDrop
+
 ## 2.2.1-beta.1 · 2026-10-27T02:32:15+08:00
 
 - fix(startup): migrate the legacy campus owner host during normal initialization
