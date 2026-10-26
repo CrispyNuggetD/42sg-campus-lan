@@ -1,9 +1,33 @@
-# Experimental roadmap
+# Roadmap and collaboration
 
 [← Project introduction](../README.md) · [Documentation contents](README.md)
 
 These are possible project expansions, not release commitments or available
 features. Scope and feasibility may change; no delivery date is promised.
+
+## At a glance
+
+| Direction | Status | Ways to help |
+| --- | --- | --- |
+| [Textual frontend](frontend-milestone.md) | Next planned exploration; start with one small journey. | Interaction design, Python/Textual learning, keyboard/mouse testing and peer feedback. |
+| [Stable hosting](#reliability-and-hosting) | Open problem; no always-on service promised. | Deployment ideas, availability and privacy/access review. |
+| [File-sharing review UI](#file-sharing-review) | Future interface idea; version retention already exists. | Useful diff/review workflows and understandable consent. |
+| [Life OS × LAN42](#possible-milestone-life-os-lan42) | Longer-term experiment; feasibility undecided. | Gamification, experiment design and measured energy/resource estimates. |
+| [Shared service / other frontends](frontend-milestone.md#appendix-architecture-considerations-and-future-learning) | Architectural consideration and future learning. | Feedback after the first Textual journey works; no broad platform rewrite now. |
+
+## Get involved
+
+Interested in building, testing, designing or questioning an idea? Small,
+specific contributions and thoughtful feedback are welcome. You do not need to
+sign up for an entire milestone.
+
+42 students can contact **Christopher Nah / hnah on the global 42 Slack**.
+Everyone can [open a GitHub issue](https://github.com/CrispyNuggetD/42sg-campus-lan/issues/new)
+with a proposal, question or feedback. GitHub is the public contact route; email
+notifications depend on each account’s settings. Never post API credentials,
+private student data or personal logs in an issue. Discuss substantial changes
+before investing time; the [contributor workflow](../AGENTS.md) explains project
+conventions. Proposals remain open to revision, not delivery promises.
 
 ## Next proposed milestone: frontend and usability
 
@@ -14,6 +38,21 @@ learning milestone. Start small with Textual; the [appendix](frontend-milestone.
 records the shared-service API idea and other ecosystems as future learning
 options, not initial implementation scope. V3 beta is a working candidate, not a reserved release
 number; scope, compatibility and validation determine graduation.
+
+## Reliability and hosting
+
+[Campus features currently depend on an approved on-campus host](campus-guide.md).
+Explore more dependable availability while preserving the owner’s Singapore-only
+policy, authentication, data minimization and explicit host enrollment. An
+always-on or offsite deployment is not an existing service guarantee. First
+clarify campus/network constraints and operating responsibility; this is an open
+problem, not a selected hosting architecture.
+
+## File-sharing review
+
+KoelDrop already retains versions. A [Git-style text diff/review viewer](file-sharing-design.md)
+is a possible later UI improvement, not a shipped feature. Explore how to make
+changes understandable without weakening per-file receive/deletion consent.
 
 ## Possible milestone: Life OS × LAN42
 

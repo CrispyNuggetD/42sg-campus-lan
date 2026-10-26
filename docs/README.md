@@ -20,7 +20,8 @@ F4 Easter egg, permanent aggregates and privacy.
 [Exam quiet and release digests](exam-quiet.md) explains automatic app-only audio
 quiet, calendar updates and the release notification budget.
 
-[Experimental roadmap](roadmap.md) covers the proposed [Textual frontend milestone](frontend-milestone.md)
+[Roadmap and collaboration website](https://crispynuggetd.github.io/42sg-campus-lan/roadmap.html)
+([Markdown source](roadmap.md)) covers the proposed [Textual frontend milestone](frontend-milestone.md)
 and the possible Life OS/hosted LLM and gamification/social experiment. These are plans, not
 available features or release commitments.
 

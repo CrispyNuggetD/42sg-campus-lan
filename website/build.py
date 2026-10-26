@@ -4,6 +4,7 @@ import ast
 from html import escape
 from pathlib import Path
 import re
+import posixpath
 from urllib.parse import quote,urlsplit
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -32,6 +33,34 @@ def branded_page(title,description,content):
     return re.sub(r'{{(title|description|style|content)}}',lambda match:values[match[1]],template)
 
 
+DOCUMENT_PAGES = {'docs/roadmap.md':'roadmap.html',
+                  'docs/frontend-milestone.md':'frontend-milestone.html'}
+
+def roadmap_page(source):
+    import markdown
+    path=ROOT/source
+    title,body=path.read_text().split('\n',1)
+    title=title.removeprefix('# ').strip()
+    md=markdown.Markdown(extensions=['tables','fenced_code','toc'])
+    document=md.convert(body)
+    def links(match):
+        key,url=match.groups()
+        if urlsplit(url).scheme or url.startswith(('#','//')):return match[0]
+        target,mark,anchor=url.partition('#')
+        target=posixpath.normpath(str(Path(source).parent/target))
+        destination=DOCUMENT_PAGES.get(target)
+        if target=='README.md':destination='handbook.html'
+        if destination is None:destination=REPO+'/blob/main/'+quote(target,safe='/')
+        return key+'="'+destination+('#'+anchor if mark else '')+'"'
+    document=re.sub(r'(href|src)="([^"]+)"',links,document)
+    content=('<section class="hero"><div class="eyebrow">Build the next chapter together</div><h1>'+escape(title)+
+             '</h1><p>Small steps, open questions, useful experiments. Student-built and unofficial.</p></section>'+
+             '<div class="document-layout"><aside class="contents" aria-label="Page contents"><strong>On this page</strong>'+md.toc+
+             '</aside><article class="document">'+document+'</article></div>'+
+             '<p class="muted">Generated from <a href="'+REPO+'/blob/main/'+source+'">the Markdown source</a>. Plans are proposals, not release commitments.</p>')
+    return branded_page(title,'LAN42 plans, frontend learning milestones and ways to collaborate.',content)
+
+
 def build(output):
     import markdown
     output.mkdir(parents=True,exist_ok=True)
@@ -50,6 +79,8 @@ def build(output):
     (output/'alpha-tester.html').write_text(branded_page('Thank you, Darren',
         'Darren (dthoo): LAN42 alpha testing credit, with a GitHub profile link that follows the account ID.',
         (ROOT/'website/alpha-tester.html').read_text()))
+    for source,filename in DOCUMENT_PAGES.items():
+        (output/filename).write_text(roadmap_page(source))
     (output/'.nojekyll').touch()
 
 

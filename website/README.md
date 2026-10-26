@@ -54,3 +54,15 @@ the source for handbook content. Do not add a second manually maintained copy of
 either. Build and preview the generated page, then run `test_website.py`. Avoid
 new trackers, remote fonts or decorative dependencies. Darren’s page preserves
 the existing GitHub account-ID lookup and last-known-profile fallback.
+
+## Roadmap pages: Markdown is the source
+
+`docs/roadmap.md` generates `roadmap.html`; `docs/frontend-milestone.md` generates
+`frontend-milestone.html`. Both use the shared branded page shell, a generated
+contents list and responsive document layout. Relative links between these plans
+become local HTML links; other documentation links lead to their GitHub source.
+Edit the Markdown, not generated `_site` files or a second HTML copy. Every main
+push rebuilds both automatically. Keep statuses, collaborator-sized tasks and
+known limitations current when plans change or features ship. Add further
+published plan documents to `DOCUMENT_PAGES` in `build.py` and the output/link
+checks in `test_website.py`.

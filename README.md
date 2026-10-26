@@ -8,7 +8,7 @@ with friends.
 
 [Visual command guide ↗](https://crispynuggetd.github.io/42sg-campus-lan/) ·
 [All guides](docs/README.md) · [Release history](CHANGELOG.md) ·
-[Experimental roadmap](docs/roadmap.md)
+[Roadmap & collaboration](https://crispynuggetd.github.io/42sg-campus-lan/roadmap.html)
 
 [Highlights](#highlights) · [Quick start](#quick-start) · [Games](#games) ·
 [Guides](#guides) · [About](#about) · [Contributors](#contributors)
@@ -100,6 +100,13 @@ Beta since **Tuesday 27 October 2026, 00:48 SGT**, starting at **2.0.0-beta.1**.
 - [Darren (dthoo · GitHub: whatisthisbuffoonery)](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html) — LAN42 alpha testing. Thank you for helping the project reach beta.
 
 GitHub profile links resolve using the contributor’s permanent account ID, with a last-known-profile fallback.
+
+**Want to help?** Design, testing, code and feedback are welcome. See the
+[roadmap and collaboration page](https://crispynuggetd.github.io/42sg-campus-lan/roadmap.html)
+for small starting points. 42 students: message **hnah on global 42 Slack**.
+Otherwise, [open a GitHub issue](https://github.com/CrispyNuggetD/42sg-campus-lan/issues/new)
+with your idea or question.
+
 
 
 [Issues and contributions](https://github.com/CrispyNuggetD/42sg-campus-lan/issues) ·

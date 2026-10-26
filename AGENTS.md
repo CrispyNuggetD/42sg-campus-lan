@@ -204,3 +204,16 @@ Preserve accessible links/status, mobile layout and no-script/network fallbacks.
 Darren’s contributor profile resolves GitHub account 222878446; never replace that
 identity with an unrelated username. README remains the handbook source; the
 self-contained command guide retains its separate offline/runtime-help workflow.
+
+## Roadmap and collaborator website
+
+`docs/roadmap.md` is the collaboration overview; `docs/frontend-milestone.md`
+contains the detailed frontend plan and appendix. `website/build.py` renders
+both Markdown sources as branded `roadmap.html` and `frontend-milestone.html`
+on every Pages build. Update these sources when milestone scope/status changes;
+mark shipped work accurately and keep exploratory ideas distinct from promises.
+Do not maintain duplicated HTML prose or edit ignored `_site` output. Preserve
+local cross-page/anchor links, the generated contents and README collaborator
+call (global 42 Slack: hnah; other contributors: GitHub issues). Never assume
+GitHub email notifications are enabled. Run the site build and test_website.py
+after changes; see website/README.md for adding another generated plan page.

@@ -24,7 +24,7 @@ class Website(unittest.TestCase):
     def test_site_builds_both_guides_without_private_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             output=Path(tmp);site.build(output)
-            self.assertEqual({p.name for p in output.iterdir()},{'index.html','handbook.html','alpha-tester.html','.nojekyll'})
+            self.assertEqual({p.name for p in output.iterdir()},{'index.html','handbook.html','alpha-tester.html','roadmap.html','frontend-milestone.html','.nojekyll'})
             index=(output/'index.html').read_text();handbook=(output/'handbook.html').read_text()
             self.assertIn('href="handbook.html"',index)
             self.assertIn('Christopher Nah',handbook)
@@ -42,3 +42,18 @@ class Website(unittest.TestCase):
             self.assertNotIn('href="docs/',handbook)
             self.assertNotIn('/home/hnah',index)
             self.assertNotIn('file://',index)
+            roadmap=(output/'roadmap.html').read_text()
+            frontend=(output/'frontend-milestone.html').read_text()
+            self.assertIn('Roadmap and collaboration',roadmap)
+            self.assertIn('href="frontend-milestone.html"',roadmap)
+            self.assertIn('href="roadmap.html"',frontend)
+            self.assertIn('appendix-architecture-considerations-and-future-learning',frontend)
+            self.assertIn('global 42 Slack',roadmap)
+            self.assertIn('/issues/new',roadmap)
+            self.assertIn('File-sharing review',roadmap)
+            self.assertIn('Reliability and hosting',roadmap)
+            for page in (roadmap,frontend):
+                self.assertIn('aria-label="Page contents"',page)
+                self.assertNotIn('{{',page)
+                self.assertNotIn('href="frontend-milestone.md',page)
+
