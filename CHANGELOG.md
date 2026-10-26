@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.3.0-beta.1 · 2026-10-27T03:08:08+08:00
+
+- feat: add clickable account and audio shortcut bar
+
 ## 2.2.4-beta.1 · 2026-10-27T03:00:35+08:00
 
 - fix(host): guide on-campus guests and report the initial waiting state

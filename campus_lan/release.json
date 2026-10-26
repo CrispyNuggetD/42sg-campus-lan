@@ -1,8 +1,16 @@
 {
-  "version": "2.2.4-beta.1",
-  "date": "2026-10-27T03:00:35+08:00",
-  "source": "6f6cdffe5efa6bb6c7ad47a009caa3ac33aa6b58",
+  "version": "2.3.0-beta.1",
+  "date": "2026-10-27T03:08:08+08:00",
+  "source": "baea2ce79ffb32b06df43ced96e12da32c989f00",
   "history": [
+    {
+      "version": "2.3.0-beta.1",
+      "date": "2026-10-27T03:08:08+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: add clickable account and audio shortcut bar"
+      ]
+    },
     {
       "version": "2.2.4-beta.1",
       "date": "2026-10-27T03:00:35+08:00",
@@ -111,5 +119,5 @@
       ]
     }
   ],
-  "runtime_sha256": "25aedf22d2f18cae20e9748abdc752e15cc5d6fee13f387f11fe2767556497ba"
+  "runtime_sha256": "f590c675f0908829601373eb5c3f57870eb6f77a68c198b7669fb74df5891e31"
 }
