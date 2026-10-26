@@ -27,7 +27,7 @@ class Website(unittest.TestCase):
             self.assertEqual({p.name for p in output.iterdir()},{'index.html','handbook.html','alpha-tester.html','.nojekyll'})
             index=(output/'index.html').read_text();handbook=(output/'handbook.html').read_text()
             self.assertIn('href="handbook.html"',index)
-            self.assertIn('Ryker',handbook)
+            self.assertIn('Christopher Nah',handbook)
             self.assertIn('api.github.com/user/222878446',(output/'alpha-tester.html').read_text())
             self.assertIn('href="index.html"',handbook)
             self.assertNotIn('href="docs/',handbook)

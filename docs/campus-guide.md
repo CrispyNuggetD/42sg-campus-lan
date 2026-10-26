@@ -1,0 +1,323 @@
+# Find people, campus seats and chat
+
+[← LAN42](../README.md) · [All guides](README.md)
+
+- [Find your friends](#find-your-friends)
+- [How the lobbies stay connected](#how-the-lobbies-stay-connected)
+- [The lobby: who's online?](#the-lobby-whos-online)
+- [Chat, invitations and commands](#chat-invitations-and-commands)
+- [Live Singapore campus seats](#live-singapore-campus-seats)
+- [Profile browsing](#profile-browsing)
+- [Personal tracking and lists](#personal-tracking-and-lists)
+- [Track from the displayed rosterIn `/clusters`, `/track 2 4` uses the **displayed online roster numbers** (also](#track-from-the-displayed-rosterin-clusters-track-2-4-uses-the-displayed-online-roster-numbers-also)
+- [Relationships and named lists](#relationships-and-named-lists)
+- [Cluster arrival rules](#cluster-arrival-rules)
+
+## Find your friends
+
+Everyone starts the same way: run `lan42` (or `lan42.sh`). Your HQ starts on
+TCP **31415** and shows **1 online: you** once it connects to its local node.
+There is no choice between hosting and joining a lobby.
+
+In HQ, type `/join` for seat questions, `/join c1r2s3` for a known seat, or
+`/join 192.168.1.50 31415` for a custom address and port. That links the nodes
+and shares known peers while your HQ stays in its own terminal.
+
+The campus address mapping is:
+
+| Seat | IP address |
+| --- | --- |
+| Cluster 1, row 2, seat 3 (`c1r2s3`) | `10.11.2.3` |
+| Cluster 2, row 4, seat 9 (`c2r4s9`) | `10.12.4.9` |
+
+In general, cluster 1 uses `10.11.row.seat` and cluster 2 uses `10.12.row.seat`.
+You can check [the Intra cluster map](https://meta.intra.42.fr/clusters) to see
+where people are sitting. You'll need to sign in to Intra to view it.
+
+Joining tries that one address. Your friend must have the app running, and the
+network must allow the connection. You can also enter an IP address directly,
+such as `/join 10.11.2.3` inside HQ.
+
+## How the lobbies stay connected
+
+Each app runs its own local server, or **node**. Connecting to one friend
+exchanges the addresses of other known nodes. From there, the nodes check in
+with each other every **5 seconds**, sharing who's online, chat, rooms and
+invitations. There's no central server or campus-wide scan: you need one live
+friend's address to join an existing group.
+
+When someone comes online, you can get a notification like:
+
+> thtay came online! Cluster 1, row 2, seat 3. Go say hi! [Guest]
+
+Seats come from the LAN address or a matching cluster hostname. This does not
+poll the 42 API every five seconds. If a seat can't be determined, it is shown
+as unknown.
+
+The first node is only the initial meeting point. After discovery, nodes talk
+to one another directly. When the first quits, the remaining nodes keep the
+shared lobby alive without electing a replacement. When everyone quits, it ends.
+A crashed or unreachable peer drops out after roughly 16 seconds.
+
+**HQ and games have separate terminal windows.** HQ has a cyan banner; game
+windows have a magenta banner naming the game and room. Window/tab titles also
+show `HQ LOBBY` or, for example, `GAME | TETRIS | ROOM 1`. This uses standard
+terminal title sequences; terminal settings may override the displayed title.
+ `/host tetris` or `/host bluff
+free` opens a game window on your node; `/join NUMBER` opens a game on the peer
+you last linked. `/home` resets that game target to your own node. Closing a
+game window leaves HQ and your presence running. Closing HQ stops your node.
+
+Each game still runs on one node. If that node quits, its games end; other nodes
+and their games continue. Migrating a running game's state is not implemented.
+Keep HQ open while playing. One guest can have one HQ connection and one game
+connection on each server, without appearing twice in the mesh roster.
+
+## The lobby: who's online?
+
+The main screen shows a numbered roster grouped into **Cluster 1**, **Cluster 2**
+and **off campus / seat unknown**. Guests get consistent colours, while the
+Guest label stays visible: colour isn't verification. Presence refreshes about
+every five seconds. The list covers connected LAN42 users, not everyone on Intra.
+
+Press **Tab** to switch between the roster and an ASCII seat map. `/map 1` and
+`/map 2` select a cluster; `/roster` or `/who` returns to the list. The maps follow
+the supplied floor plans, with higher rows at the top and staggered even/odd
+seat boxes. Coloured boxes refer to the numbered roster below the map. Unmarked
+desks don't prove vacancy; they simply have no reported LAN42 peer.
+
+Use `/next` and `/prev` to page through longer rosters or maps in a small terminal.
+Chat and invitations stay in their own panel below. During a game, `/lobby`
+opens the roster without leaving the room, and `/game` returns to play. Tab
+retains its play/chat function when you're viewing Tetris.
+
+## Chat, invitations and commands
+
+Type a message and press **Enter** to chat. **Page Up/Down** scrolls through the
+last 500 event lines. Text input currently supports ASCII.
+
+| Command | What it does |
+| --- | --- |
+| `/who` or `/lobby` | Open the grouped online roster. |
+| `/map 1` or `/map 2` | Show a cluster seat map. |
+| `/next` or `/prev` | Page through the lobby panel. |
+| `/game` | Return from the lobby panel to your game. |
+| `/rooms` | Show game rooms. |
+| `/games` | List the available games. |
+| `/join` | Ask for a friend's cluster, row and seat. |
+| `/connect c1r2s3` | Alias for linking a peer; HQ stays local. |
+| `/home` | Select your own node for the next game join. |
+| `/host hexwars` | Open the C bot arena; `/bot` opens its upload menu. |
+| `/host tetris` | Open a Tetris terminal and advertise its room. |
+| `/host bluff free` | Open a bluff terminal without a prompt. |
+| `/host bluff prompt` | Open a bluff terminal with a random prompt. |
+| `/join NUMBER` | Open a game terminal on the last linked peer. |
+| `/start` | Start your room's game, or play another round. |
+| `/leave` | Leave the game room. |
+| `/invite` | Ask for a friend's seat and invite their running lobby to your room. |
+| `/invite-room` | Share your room invitation across the connected nodes. |
+| `/notify` | View channels; `/notify dms on`, `/notify host off`, or `/notify all off`. |
+| `/signin` | When the approved on-campus host is online, SG students can sign in and use `/clusters`. |
+| `/clusters [1|2]` | Needs sign-in and the running campus host; shows API-reported occupied seats/logins and a snapshot timestamp. |
+| `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
+| `/settings signout` | Revoke this device's session and return to guest HQ. |
+| `/quit` | Close the app and stop your node. |
+
+To invite someone, first create or join a room. They receive its server address
+and room number, then use `/connect IP PORT` followed by `/join NUMBER` to join.
+Invitations don't move anyone automatically.
+
+Lobby chat popups, DMs and uwu pokes default to **off**. Enable them separately
+with `/notify chat on`, `/notify dms on` or `/notify pokes on`. Your own messages
+and game windows do not produce chat notifications. Messages remain in the
+terminal even with desktop alerts off.
+
+Desktop notifications use `notify-send` on the recipient's computer, so they
+need their client open. If notifications aren't available, the terminal beeps
+and the message stays in the log. Invitations have a 10-second cooldown; those
+sent across the mesh arrive on the next exchange.
+
+## Live Singapore campus seats
+
+**Singapore students: you can see the clusters after signing in—while an approved
+API host is running on campus.** Someone must keep that host server running on a
+campus workstation (currently hnah’s). Installing or pulling this repo alone
+does not provide the shared sign-in/API service. If the host is offline, shared
+sign-in and fresh cluster views are unavailable; guest chat/games remain available.
+**Stable, always-on hosting is future work**, not an existing service guarantee.
+
+With the campus host online, run
+`/signin`, then `/clusters` (cluster 1) or `/clusters 2`. The ASCII floor plan is
+the layout; occupied seats and student logins are fetched from the 42 API, with
+the snapshot time shown. This is reported workstation login activity, rather
+than a guarantee of physical attendance or instantaneous updates.
+
+Your client asks the configured approved API host (currently hnah’s), not 42
+directly. That server process shares one snapshot across `/clusters` and campus
+tracking for **30 seconds**. Ten students requesting it together share **one
+refresh**, including the first concurrent requests on an empty cache. A refresh
+may require several API pages and an OAuth token request—it is not necessarily
+one HTTP call. After the cache expires, the next request refreshes it for everyone.
+There is no continuous fetch just to redraw the map or use `/next` and `/prev`.
+Separate server processes, including the owner’s optional local offsite view,
+have separate caches; the cache is not shared across different machines.
+
+`/map` and `/roster` show LAN42 peers; `/clusters` adds API-reported campus seats.
+Guest sockets cannot request API-backed views. Verified SG members and enrolled
+local API operators can. API reference:
+https://api.intra.42.fr/apidoc/2.0/locations/index.html
+
+## Profile browsing
+
+`/profile thtay hnah` requests permission to open both Intra profiles in local browser tabs. `all` and
+`cohort4` expand from the local private campus cache. Selections above ten tabs
+show the count first; `/profile --open-many cohort4` explicitly opens a large
+selection. Parsing validates every login and deduplicates names before opening
+any tabs. Existing `/profile signin`/`signout` settings aliases remain available.
+
+The campus map overlays connected LAN42 peers: verified peers use green, guests
+keep their LAN42 name colour, and API-only students use white with an “API login”
+label. Matching a guest name never grants verified status. API seats remain the
+source of location information. Click a numbered login in the roster (or an
+occupied map marker) to switch to its cluster and page and blink its seat.
+`/locate LOGIN` provides the same action when terminal mouse reporting is not
+available. `Shift` plus mouse can still be used for ordinary terminal selection.
+Help/table rows stay together, with one blank line between separate messages,
+room changes and presence notifications.
+
+Bare `/profile` opens your personal Intra home at
+`https://profile-v3.intra.42.fr/`, using the account already signed in to that
+browser. Explicit `/profile hnah` opens the public page at
+`https://profile-v3.intra.42.fr/users/hnah`; multiple explicit names still open
+multiple public profiles. Both inherit the same browser permission by default.
+Once approved, inherited browser actions do not repeat the consent or
+always-allow question during that LAN42 session. Closing HQ ends its session
+grant. `/settings permissions browser ask` revokes a current session grant;
+`browser allow` makes it permanent, and `browser deny` blocks all browser pages.
+
+## Personal tracking and lists
+
+`/track dthoo thtay` saves a watch list privately on this computer, separately
+for your local LAN42 login. `/track` lists it; `/untrack dthoo` or `/untrack all`
+removes entries. Keep your HQ window running: it checks the shared campus API
+snapshot immediately and then every five minutes. The watch list is never sent
+to the lobby, other peers or Git. Campus API requests still share the global
+owner-machine pacing limit. An unavailable API leaves the last known state
+intact and reports a retry; it does not mark everybody offline.
+
+Campus notifications say “dthoo is online on campus” with cluster, row and seat
+on a separate line. LAN42 arrivals produce a separate “has joined the LAN42
+lobby — say hi!” notification immediately from normal lobby state updates.
+Each source notifies on an offline-to-online transition, including the first
+online observation after starting HQ. Repeated polling does not repeat a notice.
+Campus presence means an active reported computer login, rather than physical
+attendance. Tracking resumes from the saved list when HQ starts again.
+
+Notifications use an existing local cached photo when available. On desktops
+supporting notification actions, “Open Intra profile” opens the profile and
+“Say hi / write message” prepares `/dm LOGIN ` in your LAN42 input. Type the
+message and press Enter yourself. An unfinished input is preserved: `/compose`
+loads the waiting draft after you finish it. Desktop action support uses optional
+PyGObject/GIO; plain `notify-send` is the fallback. `/notify off` suppresses
+popups while keeping tracking text in the terminal.
+
+`/dm LOGIN MESSAGE` and `/alert LOGIN MESSAGE` deliver a targeted message and a
+desktop notification if the recipient enables the DMs channel. `/alert` remains
+a personal message; it cannot promote itself to an important system channel.
+They work within the current lobby
+and directly between known guest-mesh nodes. DMs are never broadcast as public
+chat or included in mesh gossip; verified lobbies refuse guest-mesh delivery.
+Guest sender names remain explicitly unverified. Multiple matching guest nodes
+require connecting to the intended node first. Message sends are limited to one
+per two seconds. Notification buttons prepare drafts only; they do not send.
+
+## Track from the displayed rosterIn `/clusters`, `/track 2 4` uses the **displayed online roster numbers** (also
+shown on map markers), not physical desk numbers. LAN42 lists the current Intra
+names and seats for confirmation before adding them to your private tracking.
+It captures those people, never future desk occupants; a changed seat snapshot
+cancels the pending request. `/track LOGIN LOGIN` still works normally.
+
+## Relationships and named lists
+
+Relationships, lists and independent arrival rules are configured locally:
+
+```text
+/track dthoo thtay
+/track status friends dthoo
+/track status moots thtay
+/track status oomf another-login
+/track list lunch add dthoo thtay
+/track list lunch remove thtay
+/track alerts friends campus off
+/settings clusters include cohort4 cohort5
+/settings clusters exclude excluded-login
+/settings clusters c1
+/settings clusters on
+```
+
+Newly tracked people are acquaintances (`tracked`). A relationship is one local
+label: `tracked`, `friends`, `mutuals` (alias `moots`), or `oomf`. Labels do not
+claim reciprocal friendship or send requests to anyone. `friends` selects the
+friendly relationships (friends, mutuals and oomf); `tracked` selects only
+acquaintances; `alltracked` selects everyone in your relationship registry.
+`mutuals`/`moots` and `oomf` can also be selected individually. `login:friends`
+addresses a literal login that collides with a reserved selector name.
+
+Custom named lists can overlap and do not automatically track their members.
+Use `@lunch` to select a list explicitly; its bare name also works. Lists accept
+`add`, `remove` and `delete`. `/track help` shows the command guide and `/track
+config` shows the private, mode-600 JSON configuration. Existing watch lists
+migrate to schema version 2 as tracked acquaintances on the first edit. Invalid
+or newer configurations are preserved and must be repaired before changes save.
+
+```text
+/sabo friends
+/sabo @lunch
+/dm friends "do you all want lunch?"
+/dm @lunch "meet at noon?"
+/alert mutuals "game later?"
+```
+
+Selectors expand entirely on the sending computer. Only the resulting logins
+and the requested message reach LAN42; relationship labels, lists and rules are
+never uploaded. Group DMs send individual messages, spaced at least two seconds
+apart, and report delivered/unavailable recipients. There is no shared group
+thread and no offline mailbox. Quoted messages have their outer quotes removed;
+unquoted apostrophes are preserved. SABO accepts at most 50 selected people and
+DMs at most 100. A game terminal reloads the saved local selectors for each
+command, so changes in HQ take effect there immediately.
+
+## Cluster arrival rules
+
+Cluster arrival rules are a separate subscription system. Includes form a union
+of logins, relationship selectors, named lists and/or cohort selectors; excludes
+subtract from that union. Cohort rules use the local private campus cache and
+remain dynamic as that cache changes. `/settings clusters off` disables these
+rules without affecting personal relationship alerts. `/settings clusters clear
+[include|exclude]` clears selectors. Rule exclusions do not mute personally
+tracked friends; use `/track alerts LOGIN campus|lobby off` for personal alerts.
+
+A friend/mutual/oomf arrival has a warmer message. Someone matched only by a rule
+has a normal “Campus update” or “LAN42 update”. If both apply, only the personal
+notification is emitted. Per-person `alerts` preferences are keyed by event
+(`campus`, `lobby`) to allow future event types without conflating relationship
+labels, list membership and subscriptions. Game activity and friend-request
+workflows are not enabled by these labels.
+
+Tracking and DM popups use Python GIO over the desktop's
+`org.freedesktop.Notifications` D-Bus service. This supports cached-image hints
+and action buttons. `notify-send` is only the fallback for desktops without the
+GIO/service path; desktop support determines whether buttons are displayed.
+
+Use `/settings clusters c1`, `c2`, or `all` to limit arrival rules
+to a physical campus cluster. `C1`, `C2`, `cluster1` and `cluster2` are also accepted. The default is
+`all`, including for older saved configurations. This scope applies to both
+campus API and LAN42 lobby arrival rules and does not mute personal friend alerts.
+An unknown seat cannot match a single-cluster scope. `/settings clusters` shows
+the current location alongside includes, exclusions and the on/off switch.
+
+Cluster names can also appear alongside rule filters:
+`/settings clusters include cohort4 c1` or `/settings clusters C1 include cohort4`.
+In cluster settings, `c1`/`cluster1` and `c2`/`cluster2` select the location rather
+than being added as logins. The include/exclude lists still contain people or
+cohort selectors. `login:c1` addresses a literal login with that spelling.

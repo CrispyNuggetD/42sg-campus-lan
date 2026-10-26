@@ -6,7 +6,7 @@ problem). Friends take seats as philosophers while successive rounds tighten
 the timing until the first real death. The C program supplies the simulation;
 FORKNITE supplies the visualisation and multiplayer tournament.
 
-See the [LAN42 handbook](../../README.md#forknite-multiplayer-philosophers-visualisergame)
+See the [LAN42 handbook](../../docs/minigames.md#forknite-multiplayer-philosophers-visualisergame)
 for the legacy curriculum context and the newer #42Next/Python additions.
 
 ## Play

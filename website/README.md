@@ -1,8 +1,10 @@
 # LAN42 website
 
 The shareable site uses the same `docs/quick-guide.html` opened by `/help`.
-The full handbook is generated from the repository README. No duplicate handbook
-copy is maintained. No API credentials, sessions or campus data go into the site.
+The concise project introduction is generated from the repository README at
+`handbook.html` (the existing URL is kept). Its guide links lead to the topic
+pages in `docs/` on GitHub; `docs/README.md` is their contents page. No duplicate
+handbook copy is maintained. No API credentials, sessions or campus data go into the site.
 
 Build locally:
 

@@ -1,17 +1,13 @@
-# 42SG LAN minigames — v0.5.0
+# LAN42 minigames
 
-Implemented in campus_lan/games.py, coordinated by campus_lan/server.py.
+All four games launch from LAN42 HQ. Use `/games` to see them, then
+`/game NAME`; friends join with `/join ROOM_NUMBER`.
 
-- **Co-op Tetris:** one shared board and falling piece; host-authoritative gravity,
-  rotation, line clearing and scoring. /host tetris, friends /join NUMBER,
-  room host /start.
-- **Who Said That?:** timed anonymous-message guessing. /host bluff free or
-  /host bluff prompt. Two players minimum; three or more recommended. /answer TEXT, then
-  /vote USER1 USER2 ... assigns an author to each shuffled entry.
-  Reveal authors and round scores after voting. Built-in prompts; no external AI.
+| Game | Launch | Guide |
+| --- | --- | --- |
+| Co-op Tetris | `/game tetris` | [Shared board and controls](../docs/minigames.md#co-op-tetris) |
+| Bluff / Who Said That? | `/game bluff free` or `/game bluff prompt` | [Answers, voting and scoring](../docs/minigames.md#who-said-that) |
+| Hex Wars | `/game hexwars` | [Gameplay](../docs/minigames.md#hex-wars-code-your-conquest) · [C SDK and exact rules](hexwars/README.md) |
+| FORKNITE | `/game forknite` | [Philosophers visualiser/game](../docs/minigames.md#forknite-multiplayer-philosophers-visualisergame) · [Developer guide](forknite/README.md) |
 
-- **Hex Wars:** 2–6 programmable armies on a 61-cell hex board. `/host hexwars`,
-  `/bot` for the C upload menu, `/practice` for a computer opponent, `/start`
-  when ready. [C structs, examples and exact rules](hexwars/README.md).
-
-See the main README for controls and limitations.
+[All game controls and requirements](../docs/minigames.md) · [Back to LAN42](../README.md)

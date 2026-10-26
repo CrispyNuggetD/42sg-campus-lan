@@ -39,7 +39,7 @@ def build(output):
         return key+'="'+url+'"'
     document=re.sub(r'(href|src)="([^"]+)"',links,document)
     style=(ROOT/'website/handbook.css').read_text()
-    (output/'handbook.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LAN42 · Full handbook</title><style>'+style+'</style></head><body><header><a href="index.html">← LAN42 quick guide</a><a href="'+REPO+'">GitHub ↗</a></header><div class="layout"><nav aria-label="Handbook contents">'+md.toc+'</nav><main>'+document+'</main></div></body></html>')
+    (output/'handbook.html').write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LAN42 · Start here</title><style>'+style+'</style></head><body><header><a href="index.html">← LAN42 quick guide</a><a href="'+REPO+'">GitHub ↗</a></header><div class="layout"><nav aria-label="Handbook contents">'+md.toc+'</nav><main>'+document+'</main></div></body></html>')
     (output/'alpha-tester.html').write_text((ROOT/'website/alpha-tester.html').read_text())
     (output/'.nojekyll').touch()
 
