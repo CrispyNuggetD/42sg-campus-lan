@@ -10,6 +10,7 @@ def start(*args,**kwargs):
 def roadmap():
     return [
         'KoelDrop — the uwu bird, but it brings files. Available in your signed-in HQ.',
+        'The bird is a koel: our Singapore take on a carrier pigeon, delivering your files around campus.',
         '/koel create: the on-campus API service owner creates a group after confirmation.',
         '/koel invite LOGIN...|friends|@LIST: invite verified recipients; /koel accept NUMBER or decline NUMBER.',
         '/koel dir "EMPTY PATH": choose a dedicated folder; create/accept starts its upload polling.',

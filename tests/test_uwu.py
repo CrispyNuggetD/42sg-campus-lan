@@ -49,6 +49,22 @@ class Uwu(unittest.TestCase):
             self.assertIsNone(c.uwu_auto_due)
             play.assert_not_called()
 
+    def test_bare_uwu_invites_koeldrop_once_even_when_silent_without_starting_sharing(self):
+        for enabled in (False,True):
+            with self.subTest(enabled=enabled):
+                c=self.client();c.popup_prompts=Mock();c.koel_command=Mock()
+                with patch('campus_lan.koel_sound.SoundChoice') as choice,patch('campus_lan.koel_sound.play') as play:
+                    choice.return_value.read.return_value={'enabled':enabled}
+                    c.uwu_command('/uwu');c.uwu_command('/uwu')
+                    output=' '.join(c.lines)
+                    self.assertIn('koel',output);self.assertIn('carrier pigeon',output)
+                    self.assertIn('Try /koel',output);self.assertIn('/koel help',output)
+                    self.assertIn('separate approval',output)
+                    self.assertEqual(output.count('Meet the koel:'),1)
+                    c.koel_command.assert_not_called();c.send.assert_not_called()
+                    self.assertEqual(play.call_count,2 if enabled else 0)
+                    choice.return_value.choose.assert_not_called()
+
     def test_targeted_uwu_sends_command_without_local_play_or_setting_change(self):
         c=self.client()
         with patch('campus_lan.koel_sound.play') as play:
@@ -57,6 +73,7 @@ class Uwu(unittest.TestCase):
             play.assert_not_called()
             c.uwu_command('/uwu bad target')
             self.assertEqual(c.send.call_count,1)
+            self.assertNotIn('carrier pigeon',' '.join(c.lines))
 
     def test_receiver_uses_own_sound_choice_and_notification_permission(self):
         for enabled in (False,True):

@@ -34,7 +34,7 @@ HELP = [
     'API views: verified Singapore sign-in; enrolled API operators may use local /clusters and /info offsite.',
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
     'Up/Down: local command history | !COMMAND: local shell | /volume [0–100]: output volume',
-    '/uwu: local koel test | /uwu auto|on|off: random local calls every 10–15 min | /uwu LOGIN: poke',
+    '/uwu: meet the koel file courier + local sound test | /uwu auto|on|off: local calls every 10–15 min | /uwu LOGIN: poke',
     '/about: project purpose + public source | /repo: request browser link | /roadmap files: file-sharing help',
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
     '/who /rooms /games | /game tetris | /game bluff free|prompt | /game hexwars | /game forknite',
@@ -184,6 +184,13 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
             else:self.send(dict(type='command',text='/uwu '+target))
             return True
         if text!='/uwu':return False
+        if not getattr(self,'uwu_courier_introduced',False):
+            self.lines.extend([
+                'Meet the koel: the familiar "uwu" bird, and our Singapore take on a carrier pigeon.',
+                'With KoelDrop, this bird delivers files! Try /koel, or /koel help to get started.',
+                'File sharing needs a signed-in campus group and separate approval; this sound test sends no files.',
+            ])
+            self.uwu_courier_introduced=True
         from .koel_sound import SoundChoice,play
         choice=SoundChoice(self.name)
         def chirp():

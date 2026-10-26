@@ -28,7 +28,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `lan42` / `lan42_window`: BETA campus HQ in tmux; startup version/date and `/changelog`.
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
-- `/dm` / `/uwu LOGIN`: messages and sound pokes; `/volume` for audio; `/koel` for approved group file sharing.
+- `/uwu`: meet the koel file courier; `/koel` for approved sharing; `/dm` / `/uwu LOGIN` for messages/pokes; `/volume` for audio.
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE; Up/Down history and !COMMAND for the local shell.
 - `/signin`: SG API views; guests keep chat/games; legacy owner-host approval migrates on startup.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
@@ -69,7 +69,10 @@ the timer; disabling koel sound also stops it at the next scheduled call.
 The timer applies only to this window and stops when it closes; it never pokes
 other students. Repeating the command does not reset an active timer.
 
-`/uwu` plays one short koel call (0.85 seconds, no repeated calls) on your own computer for the running joke
+`/uwu` introduces the **koel**, the familiar “uwu” bird and KoelDrop’s Singapore
+take on a carrier pigeon: this bird delivers your files. Once per window, it
+invites you to try `/koel` or read `/koel help`; it never starts sharing itself.
+It also plays one short koel call (0.85 seconds, no repeated calls) on your own computer for the running joke
 or an audio test. If sound is off, it asks first; Enter keeps it off. `a` offers
 always-on with the existing second confirmation. Change it with
 `/settings koel-sound on|off|always`. `/uwu LOGIN` sends a private poke to a
