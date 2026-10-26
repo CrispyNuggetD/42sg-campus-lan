@@ -34,6 +34,19 @@ def probe(host,port):
         pass
     return None
 
+
+def local_node_busy(host,port):
+    """A closed listener may still hold the server lock during cleanup."""
+    if probe(host,port):return True
+    try:
+        with (runtime_dir()/f'server-{port}.pid').open('r') as handle:
+            try:fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            except BlockingIOError:return True
+            fcntl.flock(handle,fcntl.LOCK_UN)
+    except FileNotFoundError:pass
+    return False
+
+
 def start_background(bind,port):
     target = '127.0.0.1' if bind=='0.0.0.0' else bind
     existing = probe(target,port)
@@ -199,7 +212,7 @@ def main():
     finally:
         owner.close()
     if maintenance is not None:
-        restart(maintenance.update, wait_for_node=lambda: probe(local,local_port))
+        restart(maintenance.update, wait_for_node=lambda: local_node_busy(local,local_port))
 
 if __name__=='__main__':
     try:

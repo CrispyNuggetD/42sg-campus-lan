@@ -17,3 +17,16 @@ class Restart(unittest.TestCase):
             self.assertEqual(restart_panes(check=True),['%1']);self.assertFalse(sent)
             self.assertEqual(restart_panes(),['%1'])
         self.assertEqual(sent,[('tmux','send-keys','-t','%1','C-u'),('tmux','send-keys','-t','%1','-l','/restart'),('tmux','send-keys','-t','%1','Enter')])
+
+    def test_restart_waits_for_node_lock_after_listener_closes(self):
+        import fcntl
+        import tempfile
+        from pathlib import Path
+        from campus_lan.__main__ import local_node_busy
+        with tempfile.TemporaryDirectory() as tmp,patch('campus_lan.__main__.runtime_dir',return_value=Path(tmp)),patch('campus_lan.__main__.probe',return_value=None):
+            self.assertFalse(local_node_busy('127.0.0.1',31415))
+            with (Path(tmp)/'server-31415.pid').open('w') as lock:
+                fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+                self.assertTrue(local_node_busy('127.0.0.1',31415))
+                fcntl.flock(lock,fcntl.LOCK_UN)
+                self.assertFalse(local_node_busy('127.0.0.1',31415))
