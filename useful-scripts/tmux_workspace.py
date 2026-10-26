@@ -240,4 +240,3 @@ if __name__ == "__main__":
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
         detail = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) else str(error)
         sys.exit("daily tmux: " + detail)
-
