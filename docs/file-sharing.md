@@ -109,7 +109,7 @@ use recipient-bound expiring invites. [Design and permissions](file-sharing-desi
 
 ## Optional uwu bird
 
-The licensed `koel.ogg` recording is included with [attribution](../assets/sounds/ATTRIBUTION.md).
+The licensed `uwu.ogg` recording is included with [attribution](../assets/sounds/ATTRIBUTION.md).
 Sound is **off by default**. At each fresh LAN42 launch, `y` enables it for this
 session, `a` requests always-on, and Enter leaves it off. Always-on requires:
 

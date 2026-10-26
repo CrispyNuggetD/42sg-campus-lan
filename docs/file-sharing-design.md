@@ -213,7 +213,7 @@ automated tests do not replace checking a transfer on two actual computers.
 
 ## The uwu option
 
-`koel.ogg` is bundled with attribution in `assets/sounds/ATTRIBUTION.md`.
+`uwu.ogg` is bundled with attribution in `assets/sounds/ATTRIBUTION.md`.
 The sound starts **off**. A fresh LAN42 launch asks: `y=once, a=always, Enter=off`.
 The always-on choice has a second prompt: `Always uwu? Are you SURE? ಠ_ಠ [y/N]`.
 Only confirming that prompt saves always-on. `/settings koel-sound off` clears

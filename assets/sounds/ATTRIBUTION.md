@@ -1,6 +1,6 @@
-# Koel sound
+# LAN42 uwu sound
 
-`koel.ogg` is a shortened adaptation of **Asian Koel.ogg** by **Philip Eapen**
+`uwu.ogg` is LAN42’s shortened adaptation of **Asian Koel.ogg** by **Philip Eapen**
 (Philip.eapen), recorded in Kochi, India, on 31 January 2022.
 
 - Source: https://commons.wikimedia.org/wiki/File:Asian_Koel.ogg
@@ -13,6 +13,8 @@
 - Original published SHA-1: `bce37a7238cc6b243f263cd1b5fba39fdc01eecf`
 - Original duration: approximately 6.8 seconds; 65,516 bytes.
 - Bundled adaptation duration: 0.85 seconds (one call).
+- LAN42 filename: `uwu.ogg` (previously `koel.ogg`); renaming does not alter
+  the recording or its attribution/license.
 
 The recording's license applies to this media asset; it does not imply the
 recorder endorses LAN42. Playback is off by default. Users may opt in for one launch, or explicitly

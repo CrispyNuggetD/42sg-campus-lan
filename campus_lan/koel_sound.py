@@ -4,7 +4,7 @@ from pathlib import Path
 from .auth import private_read,private_write,config_dir
 from .popup_permissions import Permissions
 
-ASSET=Path(__file__).resolve().parents[1]/'assets/sounds/koel.ogg'
+ASSET=Path(__file__).resolve().parents[1]/'assets/sounds/uwu.ogg'
 
 
 class SoundChoice:

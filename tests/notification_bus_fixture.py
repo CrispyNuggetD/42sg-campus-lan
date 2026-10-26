@@ -38,6 +38,6 @@ try:
     _,values=received.get(timeout=5);assert values[6]['suppress-sound'] is True
     notifier.show('opted-in koel','cluster 2\nrow 3 & seat 9','dthoo',can_message=True,koel_sound=True)
     _,values=received.get(timeout=5)
-    assert values[6]['suppress-sound'] is False and values[6]['sound-file'].endswith('/assets/sounds/koel.ogg')
+    assert values[6]['suppress-sound'] is False and values[6]['sound-file'].endswith('/assets/sounds/uwu.ogg')
     print('PASS: native draft actions and opted-in sound-file hints; no real desktop notifications or audio')
 finally:notifier.close();stop.set();thread.join(2)
