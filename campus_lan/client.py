@@ -6,6 +6,7 @@ import json
 import os
 import pwd
 import queue
+import random
 import re
 import shutil
 import socket
@@ -28,7 +29,7 @@ from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summar
 
 HELP = [
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
-    '/uwu: local koel sound test | /uwu LOGIN: 2-second poke (their sound settings apply)',
+    '/uwu: local koel test | /uwu auto|on|off: random local calls every 10–15 min | /uwu LOGIN: poke',
     '/about: project purpose + public source | /repo: request browser link | /roadmap files: experimental milestones',
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
     '/who /rooms /games | /game tetris | /game bluff free|prompt | /game hexwars | /game forknite',
@@ -136,7 +137,40 @@ class Client(AnnouncementUI,KoelUI):
         enabled_before=choice.read()['enabled']
         self.popup_prompts().session_question('Always uwu? Are you SURE? ಠ_ಠ [y/N]',accept,lambda:choice.choose(enabled_before))
 
+    def uwu_auto_tick(self):
+        due=getattr(self,'uwu_auto_due',None)
+        if due is None or time.monotonic()<due:return
+        from .koel_sound import SoundChoice,play
+        if not SoundChoice(self.name).read()['enabled']:
+            self.uwu_auto_due=None
+            self.lines.append('Automatic uwu stopped: koel sound is off.')
+            return
+        self.uwu_auto_due=time.monotonic()+random.uniform(600,900)
+        try:play()
+        except OSError as error:
+            self.uwu_auto_due=None
+            self.lines.append(str(error)+' Automatic uwu stopped.')
+
     def uwu_command(self,text):
+        if text.strip() in ('/uwu auto','/uwu on','/uwu off'):
+            if text.strip()=='/uwu off':
+                self.uwu_auto_due=None
+                self.lines.append('Automatic uwu off.')
+                return True
+            from .koel_sound import SoundChoice
+            choice=SoundChoice(self.name)
+            def start():
+                if getattr(self,'uwu_auto_due',None) is None:
+                    self.uwu_auto_due=time.monotonic()+random.uniform(600,900)
+                self.lines.append('Automatic local uwu on: every 10–15 minutes until /uwu off or this window closes.')
+            if choice.read()['enabled']:start()
+            else:
+                def accept():choice.choose(True);start()
+                self.popup_prompts().session_question(
+                    'Enable koel sound for automatic local uwu? y=once, a=always, Enter=off',accept,
+                    lambda:choice.choose(False),lambda:not choice.read()['enabled'],
+                    always=lambda:self.confirm_always_koel(choice,start))
+            return True
         if text.startswith('/uwu '):
             target=text.split(maxsplit=1)[1].strip()
             if not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',target):self.lines.append('Use /uwu LOGIN')
@@ -1130,6 +1164,7 @@ class Client(AnnouncementUI,KoelUI):
             self.consume()
             self.tracking_tick()
             self.announcement_tick()
+            self.uwu_auto_tick()
             self.permission_tick()
             self.auto_login_tick()
             self.sound_tick()

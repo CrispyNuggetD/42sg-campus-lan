@@ -21,7 +21,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `lan42` / `lan42_window`: open your campus HQ in its own tmux workspace.
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
-- `/dm` / `/uwu LOGIN`: message peers or send a two-second, opt-in sound poke.
+- `/dm` / `/uwu LOGIN`: message peers, send a two-second sound poke, or `/uwu auto` for local random koel calls.
 - `/games`: find locally hosted Tetris, Bluff, Hex Wars and FORKNITE rooms.
 - `/signin`: optionally verify your 42 identity; the secure service requires owner setup.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
@@ -57,6 +57,12 @@ file contents and activity databases are not public project assets.
 
 This is version **0.6.0**, a small LAN prototype. Start as a guest, or use `/signin` to enter a TLS-protected lobby with your
 verified 42 account. [Owner setup and student sign-in](docs/sign-in.md).
+
+`/uwu auto` (or `/uwu on`) enables local koel calls at a fresh random interval
+of 10–15 minutes. It asks for sound permission if needed. `/uwu off` stops
+the timer; disabling koel sound also stops it at the next scheduled call.
+The timer applies only to this window and stops when it closes; it never pokes
+other students. Repeating the command does not reset an active timer.
 
 `/uwu` plays the bundled koel sound on your own computer for the running joke
 or an audio test. If sound is off, it asks first; Enter keeps it off. `a` offers

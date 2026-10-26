@@ -14,6 +14,37 @@ class Uwu(unittest.TestCase):
         client.notify_enabled=True;client.inbox=queue.Queue();client.send=Mock()
         return client
 
+    def test_auto_defaults_off_reschedules_and_stops_without_sending(self):
+        c=self.client()
+        with patch('campus_lan.koel_sound.SoundChoice') as choice, patch('campus_lan.koel_sound.play') as play, patch('campus_lan.client.time.monotonic',return_value=100), patch('campus_lan.client.random.uniform',return_value=750) as interval:
+            choice.return_value.read.return_value={'enabled':True}
+            c.uwu_auto_tick()
+            play.assert_not_called()
+            c.uwu_command('/uwu auto')
+            self.assertEqual(c.uwu_auto_due,850)
+            interval.assert_called_with(600,900)
+            c.uwu_command('/uwu on')
+            self.assertEqual(interval.call_count,1)
+            c.uwu_auto_due=99
+            c.uwu_auto_tick()
+            play.assert_called_once_with()
+            self.assertEqual(c.uwu_auto_due,850)
+            c.uwu_command('/uwu off')
+            self.assertIsNone(c.uwu_auto_due)
+            c.send.assert_not_called()
+
+    def test_auto_requires_sound_consent_and_honors_revocation(self):
+        c=self.client();c.popup_prompts=Mock()
+        with patch('campus_lan.koel_sound.SoundChoice') as choice, patch('campus_lan.koel_sound.play') as play:
+            choice.return_value.read.return_value={'enabled':False}
+            c.uwu_command('/uwu on')
+            c.popup_prompts.return_value.session_question.assert_called_once()
+            self.assertIsNone(getattr(c,'uwu_auto_due',None))
+            c.uwu_auto_due=0
+            c.uwu_auto_tick()
+            self.assertIsNone(c.uwu_auto_due)
+            play.assert_not_called()
+
     def test_targeted_uwu_sends_command_without_local_play_or_setting_change(self):
         c=self.client()
         with patch('campus_lan.koel_sound.play') as play:

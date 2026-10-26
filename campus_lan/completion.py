@@ -40,6 +40,8 @@ def complete(text):
             choices=('koeldrop','files')
         elif command in ('/files','/koel','/koeldrop') and len(parts)<=2:
             choices=('status','help','create','invite','accept','decline','dir','pending','receive','reject','trust','sync','leave')
+        elif command=='/uwu' and len(parts)<=2:
+            choices=('auto','on','off')
         elif command=='/track' and len(parts)<=2:
             choices=('help','status','list','lists','alerts','clusters','config')
         elif command=='/track' and parts[1:2]==['status'] and len(parts)<=3:
