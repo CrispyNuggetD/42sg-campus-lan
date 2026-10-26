@@ -26,6 +26,25 @@ class Release(unittest.TestCase):
         self.assertIn('/changelog',banner())
         self.assertIn('dthoo',' '.join(changelog()))
         self.assertIn('alpha-tester.html',' '.join(c.lines))
+    def test_alpha_navigation_and_reverse_chronology(self):
+        data=json.loads((ROOT/'campus_lan/release.json').read_text())
+        alpha=data['history'][-1]
+        import re
+        dates=[note.split(' · ')[1] for note in alpha['notes'] if re.match(r'^[0-9a-f]{7} · ', note)]
+        self.assertEqual(dates, sorted(dates, reverse=True))
+        with tempfile.TemporaryDirectory() as tmp, patch.object(release,'ROOT',Path(tmp)):
+            release.write_changelog(data)
+            main=(Path(tmp)/'CHANGELOG.md').read_text()
+            log=(Path(tmp)/'docs/alpha-history.md').read_text()
+            self.assertIn('[Read alpha logs](docs/alpha-history.md)',main)
+            for text in (main,log):
+                self.assertIn('(\x23beginning)',text)
+                self.assertLess(text.index('51eda1d ·'),text.index('84ec75c ·'))
+                self.assertIn('<a id="beginning"></a>',text)
+            self.assertIn('## Original README',log)
+            release.write_changelog(data)
+            self.assertEqual(main,(Path(tmp)/'CHANGELOG.md').read_text())
+            self.assertEqual(log,(Path(tmp)/'docs/alpha-history.md').read_text())
     def test_runtime_filter_and_idempotent_release_in_real_git(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);(root/'campus_lan').mkdir();meta=root/'campus_lan/release.json'

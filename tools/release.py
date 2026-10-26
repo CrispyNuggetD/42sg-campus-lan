@@ -70,12 +70,33 @@ def bump(version, kind):
     return '.'.join(map(str, parts))+('-beta.1' if channel.startswith('beta.') else '')
 
 def write_changelog(data):
+    alpha = next((item for item in data['history'] if item['version'].startswith('Alpha history')), None)
     lines = ['# LAN42 server changelog', '', 'Generated from `campus_lan/release.json`; `/changelog` shows the same history.', '']
-    for release in data['history']:
-        lines.extend(['## '+release['version']+' · '+release['date'], ''])
-        lines.extend('- '+note for note in release['notes'])
+    if alpha:
+        lines.extend(['[Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)', ''])
+    for item in data['history']:
+        lines.extend(['## '+item['version']+' · '+item['date'], ''])
+        for index, note in enumerate(item['notes']):
+            if item is alpha and index == len(item['notes']) - 1:
+                lines.extend(['', '<a id="beginning"></a>', ''])
+            lines.append('- '+note)
         lines.append('')
     (ROOT/'CHANGELOG.md').write_text('\n'.join(lines))
+    if alpha:
+        lines = ['# LAN42 alpha development log', '',
+                 '[Read from the beginning ↓](#beginning) · [Server changelog](../CHANGELOG.md)', '',
+                 'Reconstructed source history, newest first. These are historical changes, not retroactively published releases.', '']
+        for index, note in enumerate(alpha['notes']):
+            if index == len(alpha['notes']) - 1:
+                lines.extend(['', '<a id="beginning"></a>', ''])
+            lines.append('- '+note)
+        lines.extend(['', '## Original README · 2026-09-13', '',
+                      'Archived verbatim from initial commit `84ec75c`; the nickname and feature description below are historical.', '',
+                      '> # 42sg-campus-lan',
+                      "> Ryker's 42SG Campus LAN Server: a terminal lobby, LAN minigames, campus presence and useful scripts.", '',
+                      '[Back to newest alpha entries ↑](#lan42-alpha-development-log)', ''])
+        (ROOT/'docs').mkdir(exist_ok=True)
+        (ROOT/'docs/alpha-history.md').write_text('\n'.join(lines))
 
 def prepare():
     data = json.loads(META.read_text())

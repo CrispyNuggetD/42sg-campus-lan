@@ -1,4 +1,7 @@
-# Current proof of concept: v0.2.0
+# Archived alpha proof of concept: v0.2.0
+
+Historical design notes from September 2026, not current installation or authentication guidance.
+See the [current README](../README.md) and [alpha development log](alpha-history.md).
 
 The original guest lobby and games now have a bounded peer mesh. Seat handshakes
 discover peers; five-second exchanges share online presence, chat and game rooms.

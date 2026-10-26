@@ -48,7 +48,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add campus_lan/release.json CHANGELOG.md
+          git add campus_lan/release.json CHANGELOG.md docs/alpha-history.md
           version=$(python -c 'from campus_lan import VERSION; print(VERSION)')
           if ! git diff --cached --quiet; then
             git commit -m "chore(release): v$version"
