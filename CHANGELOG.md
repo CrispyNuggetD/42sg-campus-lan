@@ -72,7 +72,7 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 - API-backed campus tools, verified sign-in, tracking, announcements and consent-controlled KoelDrop graduate from alpha.
 - Beta began Tuesday 27 October 2026 at 00:48 SGT (+08:00).
-- Alpha testing: dthoo (GitHub: whatisthisbuffoonery — https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.
+- Alpha testing: [Darren (dthoo)](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html) · GitHub: [whatisthisbuffoonery](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.
 
 ## Alpha · 2026-09-13 – 2026-10-26
 

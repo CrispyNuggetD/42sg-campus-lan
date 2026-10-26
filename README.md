@@ -94,7 +94,7 @@ Questions or ideas? Find me on the **global 42 Slack**, or [here on GitHub](http
 I’m still building technical depth, and I don’t always know which questions to ask. AI explanations can be wrong, and passing tests does not prove correctness or security. I aim to check explanations against documentation, experiments and peer feedback. I remain responsible for what I publish, communicating limitations and fixing mistakes.
 
 Beta since **Tuesday 27 October 2026, 00:48 SGT**, starting at **2.0.0-beta.1**.
-Alpha testing: **dthoo** (GitHub: [whatisthisbuffoonery](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html)). Thank you for testing LAN42 before beta.
+Alpha testing: [Darren (dthoo)](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html) · GitHub: [whatisthisbuffoonery](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.
 
 [Issues and contributions](https://github.com/CrispyNuggetD/42sg-campus-lan/issues) ·
 [Contributor workflow](AGENTS.md) · [Versioning](docs/versioning.md) ·
