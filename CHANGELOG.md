@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.6.0-beta.1 · 2026-10-27T04:02:33+08:00
+
+- feat: add configurable web search and permanent anonymous impact aggregates
+
 ## 2.5.0-beta.1 · 2026-10-27T03:41:54+08:00
 
 - feat: start an opt-in Singapore KoelDrop flock with the campus host
