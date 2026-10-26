@@ -146,3 +146,22 @@ Further primary references:
 [React](https://react.dev/learn), [Flask](https://flask.palletsprojects.com/),
 [Node.js](https://nodejs.org/en/about),
 [Bootstrap](https://getbootstrap.com/docs/5.3/getting-started/introduction/).
+
+### Interaction request: adaptive pointer feedback
+
+Explore iPadOS-inspired **adaptive pointer / pointer morphing** with a magnetic
+highlight around buttons and navigation targets. The goal is to make available
+actions feel tangible, rather than relying only on a hand-shaped cursor.
+Apple describes pointer shape changes, highlight/lift effects and magnetism in
+its [pointer design guidance](https://developer.apple.com/videos/play/wwdc2020/10640/).
+
+Treat this as a scoped interaction prototype, not a shipped feature or a promise
+of native iPadOS behaviour in a website. For the web, evaluate subtle target
+highlight/motion first; any simulated morphing pointer should be optional, keep
+accurate click targets and restore native text selection and cursor behaviour.
+Respect reduced-motion preferences, keyboard focus, touch input, browser zoom
+and high-contrast needs. No tracking, artificial click delays or moving targets.
+
+Textual remains the initial frontend scope. Terminal mouse events do not give
+LAN42 control over the operating system pointer shape; use widget hover/focus
+feedback there. Assess custom browser pointer effects separately from the TUI.
