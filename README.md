@@ -64,7 +64,7 @@ the timer; disabling koel sound also stops it at the next scheduled call.
 The timer applies only to this window and stops when it closes; it never pokes
 other students. Repeating the command does not reset an active timer.
 
-`/uwu` plays the bundled koel sound on your own computer for the running joke
+`/uwu` plays one short koel call (0.85 seconds, no repeated calls) on your own computer for the running joke
 or an audio test. If sound is off, it asks first; Enter keeps it off. `a` offers
 always-on with the existing second confirmation. Change it with
 `/settings koel-sound on|off|always`. `/uwu LOGIN` sends a private poke to a
