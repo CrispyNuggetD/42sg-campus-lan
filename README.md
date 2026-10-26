@@ -27,10 +27,10 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 <!-- shell-installer-features:start -->
 - `lan42` / `lan42_window`: BETA campus HQ in tmux; startup version/date and `/changelog`.
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
-- `/map` / `/track`: maps and personal lists; `/signin` then `/clusters` for current API-reported SG seats.
+- `/map` / `/track`: maps and personal lists; `/clusters` adds current SG seats while the campus host is online.
 - `/uwu`: meet the koel file courier; `/koel` for approved sharing; `/dm` / `/uwu LOGIN` for messages/pokes; `/volume` for audio.
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE—a multiplayer visualiser/game for the legacy 42 C Philosophers project; Up/Down history and !COMMAND for the local shell.
-- `/signin`: verified SG members get selected API views; guests keep chat/games; API hosts require approval.
+- `/signin`: SG API views need a running approved on-campus host (currently hnah); guests keep chat/games.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
 - Pinned host discovery: keep guest nodes running offline, then discover and reconnect when the API host returns.
 <!-- shell-installer-features:end -->
@@ -61,7 +61,7 @@ The public repository contains code, tests, diagrams and instructions. Private
 API credentials, certificate keys, sessions, campus directory exports, photos,
 file contents and activity databases are not public project assets.
 
-The current server version/date are shown at startup and in `/changelog`. Start as a guest for chat/games, or use `/signin` to enter the approved TLS host with verified **42 Singapore membership**. [Owner setup and student sign-in](docs/sign-in.md).
+The current server version/date are shown at startup and in `/changelog`. Start as a guest for chat/games, or—while an approved host is running on campus—use `/signin` to enter its TLS lobby with verified **42 Singapore membership**. [Owner setup and student sign-in](docs/sign-in.md).
 
 `/uwu auto` (or `/uwu on`) enables local koel calls at a fresh random interval
 of 10–15 minutes. It asks for sound permission if needed. `/uwu off` stops
@@ -294,8 +294,8 @@ last 500 event lines. Text input currently supports ASCII.
 | `/invite` | Ask for a friend's seat and invite their running lobby to your room. |
 | `/invite-room` | Share your room invitation across the connected nodes. |
 | `/notify off` | Mute your desktop notifications. |
-| `/signin` | Singapore students: sign in with 42 to unlock current campus occupancy via `/clusters`. |
-| `/clusters [1|2]` | After sign-in, see API-reported logins and occupied seats in either cluster, with a snapshot timestamp. |
+| `/signin` | When the approved on-campus host is online, SG students can sign in and use `/clusters`. |
+| `/clusters [1|2]` | Needs sign-in and the running campus host; shows API-reported occupied seats/logins and a snapshot timestamp. |
 | `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
 | `/settings signout` | Revoke this device's session and return to guest HQ. |
 | `/quit` | Close the app and stop your node. |
@@ -587,7 +587,14 @@ Git at `~/.cache/42sg-campus-lan/avatars` with private permissions. Joined playe
 receive same-origin image responses from the game server; see the game README
 for access control, HTTP transport limits, cache lifetime and import commands.
 
-**Singapore students: yes, you can see the clusters after signing in!** Run
+**Singapore students: you can see the clusters after signing in—while an approved
+API host is running on campus.** Someone must keep that host server running on a
+campus workstation (currently hnah’s). Installing or pulling this repo alone
+does not provide the shared sign-in/API service. If the host is offline, shared
+sign-in and fresh cluster views are unavailable; guest chat/games remain available.
+**Stable, always-on hosting is future work**, not an existing service guarantee.
+
+With the campus host online, run
 `/signin`, then `/clusters` (cluster 1) or `/clusters 2`. The ASCII floor plan is
 the layout; occupied seats and student logins are fetched from the 42 API, with
 the snapshot time shown. This is reported workstation login activity, rather

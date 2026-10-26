@@ -11,6 +11,15 @@ keys. The host uses the owner's **existing OAuth application**, not a new app.
 One trusted host holds the app client secret; students receive only public
 endpoint/certificate information and a short-lived LAN42 session.
 
+## Availability: a running campus host is required
+
+Someone must keep an approved authentication/API host running on a campus
+workstation (currently hnah’s). Cloning or pulling LAN42 does not by itself let
+students sign in or fetch cluster occupancy. When that host is offline, shared
+sign-in and fresh API-backed cluster views are unavailable; guest chat/games can
+still run. Stable, always-on hosting is a future improvement. The owner's local
+API-only mode is separate and does not provide a shared service to students.
+
 ## Host approval and Singapore admission
 
 Only OAuth-verified Singapore members enter the official secure lobby. Guest
