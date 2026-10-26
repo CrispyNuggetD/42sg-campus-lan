@@ -61,3 +61,16 @@ mock GUI actions/network outside loopback; use temporary config roots and fake
 OAuth identities. Run test_announcements.py plus auth/TLS, client, notification,
 and mesh tests. Update the exported README feature list and external offline
 snapshot in the same change. Do not send a real campus announcement as a test.
+
+## Local terminal commands and audio controls
+
+`local_console.py` handles typed `!` commands and private per-computer input
+history. Shell execution must stay in the keyboard-input path, never in server
+message handlers. Preserve terminal restoration and interactive stdin. History
+must exclude consent/wizard answers and stay bounded in private mode-600 files.
+`volume.py` is shared by `/volume` and the shell's `adjust_volume`; keep native
+GNOME/PulseAudio/PipeWire and macOS controls consistent. Uwu sound permission and
+permission to raise muted system output are separate. Do not test with real
+shell execution, audio playback, volume changes or notifications: mock them.
+Numeric `/track` refers to the displayed campus roster, with explicit confirmation
+of captured identities/seats. Never silently retarget a changed desk occupant.

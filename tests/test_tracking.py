@@ -47,3 +47,20 @@ class Tracking(unittest.TestCase):
         self.assertEqual(c.input,'unfinished message');self.assertEqual(c.pending_draft,'/dm thtay ')
         c.input='';c.tracking_command('/compose');self.assertEqual(c.input,'/dm thtay ')
         c.notification_action(dict(action='message',login='bad\n/send'));self.assertEqual(c.input,'/dm thtay ')
+
+    def test_numeric_tracking_confirms_occupants_and_rejects_changed_seats(self):
+        c=Client.__new__(Client);c.role='lobby';c.lines=collections.deque();c.tracker=Mock()
+        c.popup_prompts=Mock();c.cluster_source=True
+        c.campus_selection={2:('dthoo',(1,2,3)),4:('thtay',(2,3,4))}
+        c.cluster_players=[dict(name='dthoo',seat='c1r2s3'),dict(name='thtay',seat='c2r3s4')]
+        c.tracking_command('/track 2 4')
+        c.tracker.change.assert_not_called()
+        confirm=c.popup_prompts.return_value.confirm
+        self.assertIn('dthoo (c1r2s3)',confirm.call_args.args[0])
+        confirm.call_args.args[1]()
+        c.tracker.change.assert_called_once_with(['dthoo','thtay'])
+        c.tracker.change.reset_mock()
+        c.tracking_command('/track 2 4');c.cluster_players=[]
+        confirm.call_args.args[1]();c.tracker.change.assert_not_called()
+        c.popup_prompts.reset_mock();c.tracking_command('/track 999')
+        c.popup_prompts.assert_not_called();c.tracker.change.assert_not_called()

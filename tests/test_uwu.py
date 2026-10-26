@@ -9,6 +9,10 @@ from campus_lan.server import Lobby
 from campus_lan.desktop_notifications import Notifications
 
 class Uwu(unittest.TestCase):
+    def setUp(self):
+        patcher=patch('campus_lan.volume.Volume');volume=patcher.start();self.addCleanup(patcher.stop)
+        volume.return_value.get.return_value=50
+
     def client(self):
         client=Client.__new__(Client);client.name='recipient';client.lines=collections.deque()
         client.notify_enabled=True;client.inbox=queue.Queue();client.send=Mock()

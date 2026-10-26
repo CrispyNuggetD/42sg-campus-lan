@@ -24,11 +24,13 @@ from .hexbot import SDK, compile_bot
 from . import auth_client
 from .updater import RestartRequested, generation
 from .completion import complete
+from .local_console import LocalConsole,History,shell_command
 from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
+    'Up/Down: local command history | !COMMAND: local shell | /volume [0–100]: output volume',
     '/uwu: local koel test | /uwu auto|on|off: random local calls every 10–15 min | /uwu LOGIN: poke',
     '/about: project purpose + public source | /repo: request browser link | /roadmap files: experimental milestones',
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
@@ -82,7 +84,7 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
-class Client(AnnouncementUI,KoelUI):
+class Client(LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
@@ -146,7 +148,7 @@ class Client(AnnouncementUI,KoelUI):
             self.lines.append('Automatic uwu stopped: koel sound is off.')
             return
         self.uwu_auto_due=time.monotonic()+random.uniform(600,900)
-        try:play()
+        try:self.with_audio_volume(lambda:play() if SoundChoice(self.name).read()['enabled'] else None)
         except OSError as error:
             self.uwu_auto_due=None
             self.lines.append(str(error)+' Automatic uwu stopped.')
@@ -181,7 +183,9 @@ class Client(AnnouncementUI,KoelUI):
         choice=SoundChoice(self.name)
         def chirp():
             if not choice.read()['enabled']:return
-            try:play();self.lines.append('uwu!')
+            def emit():
+                if choice.read()['enabled']:play();self.lines.append('uwu!')
+            try:self.with_audio_volume(emit)
             except OSError as error:self.lines.append(str(error))
         if choice.read()['enabled']:
             chirp()
@@ -201,8 +205,13 @@ class Client(AnnouncementUI,KoelUI):
             if not getattr(self,'tracking_notifier',None):
                 from .desktop_notifications import Notifications
                 self.tracking_notifier=Notifications(self.inbox)
-            self.tracking_notifier.poke(sender+' says uwu!', 'You have been poked.',sender,
-                                        koel_sound=SoundChoice(self.name).read()['enabled'])
+            choice=SoundChoice(self.name)
+            def notify():
+                if not self.notify_enabled:return
+                self.tracking_notifier.poke(sender+' says uwu!', 'You have been poked.',sender,
+                                            koel_sound=choice.read()['enabled'])
+            if choice.read()['enabled']:self.with_audio_volume(notify)
+            else:notify()
         self.request_popup('notifications','Show uwu poke from '+sender+'?',show)
 
     def auto_login_tick(self):
@@ -310,6 +319,26 @@ class Client(AnnouncementUI,KoelUI):
             return True
         tracker=self.get_tracker()
         try:
+            if parts[0]=='/track' and parts[1:] and any(value.isdecimal() for value in parts[1:]):
+                if not all(value.isdecimal() for value in parts[1:]):raise ValueError('Use either /track NUMBERS or /track LOGINS, separately.')
+                shown=getattr(self,'campus_selection',{})
+                if not getattr(self,'cluster_source',False) or not shown:raise ValueError('Load /clusters first; numbers refer to its displayed online roster.')
+                selected=[]
+                for value in dict.fromkeys(parts[1:]):
+                    entry=shown.get(int(value))
+                    if not entry:raise ValueError('No online campus entry '+value+'. Refresh /clusters and check the displayed numbers.')
+                    selected.append(entry)
+                description=', '.join(name+' ('+'c%dr%ds%d'%location+')' for name,location in selected)
+                def accept():
+                    current={(p.get('name','').lower(),seat(p)) for p in getattr(self,'cluster_players',[])}
+                    if any(entry not in current for entry in selected):
+                        self.lines.append('Campus seats changed; refresh /clusters and select again. Nobody added.')
+                        return
+                    tracker.change([name for name,_ in selected])
+                    self.track_next=0
+                    self.lines.append('Added to tracking: '+', '.join(name for name,_ in selected))
+                self.popup_prompts().confirm('Track these current occupants? '+description,accept)
+                return True
             if parts[0]=='/untrack':
                 names=tracker.names[:] if parts[1:]==['all'] else tracker.resolve(parts[1:])
                 tracker.change(names,remove=True)
@@ -734,6 +763,7 @@ class Client(AnnouncementUI,KoelUI):
         self.lobby_page = min(getattr(self,'lobby_page',0),pages-1)
         self.lobby_hits=[]
         ordered={n:p for n,p,_ in roster(players)}
+        self.campus_selection={n:(p.get('name','').lower(),location) for n,p,location in roster(players) if location} if campus else {}
         self.line(screen,3,f"CURRENTLY ONLINE: {len(players)} | " + ('42 identities verified over TLS' if getattr(self, 'secure', False) else 'Guest names are unverified'),curses.A_BOLD)
         if campus:self.line(screen,3,'CAMPUS API: '+str(len(players))+' logged-in seats | snapshot '+time.strftime('%H:%M:%S',time.localtime(self.cluster_stamp)),curses.A_BOLD)
         self.line(screen,4,f'/clusters 1|2 | /roster | /map 1 | /map 2 | /next /prev (page {self.lobby_page+1}/{pages})')
@@ -893,6 +923,7 @@ class Client(AnnouncementUI,KoelUI):
                 '/settings signin  — open 42 sign-in (local HQ)',
                 '/settings signout — end the LAN42 session on this device',
                 '/settings notifications on|off — desktop notifications',
+                '/volume [0–100] — desktop output; /settings audio-auto-on on|off — uwu unmute',
                 '/settings host-discovery on|off | auto-host-join on|off | host-poll 60–300',
                 '/settings permissions — browser, popup and notification consent',
                 '/settings autologin off|saved|on — reuse login, optionally request OAuth',
@@ -1160,6 +1191,7 @@ class Client(AnnouncementUI,KoelUI):
             self.lines.append(f'Trying friend server at {seat} = {target}...')
 
     def run(self,screen):
+        history=History()
         installed_generation = generation()
         screen.timeout(80)
         try:
@@ -1226,12 +1258,21 @@ class Client(AnnouncementUI,KoelUI):
                     self.send(dict(type='move',action=action))
                 elif key==ord('/'):
                     self.play,self.input = False,'/'
+            elif key in (curses.KEY_UP,curses.KEY_DOWN) and not getattr(self,'permission_prompt',False) and not self.wizard:
+                self.input=history.move(-1 if key==curses.KEY_UP else 1,self.input)
             elif key in (10,13):
                 text,self.input = self.input.strip(),''
                 self.scroll = 0
                 if getattr(self,'permission_prompt',False):
                     self.permission_answer(text)
                     continue
+                if not self.wizard:
+                    try:history.add(text)
+                    except (OSError,ValueError):self.lines.append('Could not save local command history.')
+                if not self.wizard and text.startswith('!'):
+                    if text[1:].strip():shell_command(screen,text[1:].strip())
+                    continue
+                if not self.wizard and self.volume_command(text):continue
                 if self.wizard:
                     self.wizard_answer(text)
                     if self.next_server:

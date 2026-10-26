@@ -21,8 +21,8 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `lan42` / `lan42_window`: open your campus HQ in its own tmux workspace.
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
-- `/dm` / `/uwu LOGIN`: message peers, send a two-second sound poke, or `/uwu auto` for local random koel calls.
-- `/games`: find locally hosted Tetris, Bluff, Hex Wars and FORKNITE rooms.
+- `/dm` / `/uwu LOGIN`: messages and short sound pokes; `/uwu auto` for random calls, `/volume` for desktop volume.
+- `/games`: Tetris, Bluff, Hex Wars and FORKNITE; Up/Down history and !COMMAND for the local shell.
 - `/signin`: optionally verify your 42 identity; the secure service requires owner setup.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
 - Pinned host discovery: keep guest nodes running offline, then discover and reconnect when the API host returns.
@@ -842,3 +842,33 @@ After your first successful `/signin`, LAN42 asks whether to sign in automatical
 next time. Yes reuses a valid saved session and asks before opening 42 when it
 expires; No keeps automatic login off. The choice is remembered on this device.
 Change it later with `/settings autologin off|saved|on`.
+
+## Local command history, shell and output volume
+
+Up/Down recalls submitted commands and chat in the input field, restoring an
+unfinished draft when you return past the newest entry. History is private to
+this computer (last 200 entries); prompt answers are excluded. Game arrow controls
+still apply while actively playing.
+
+Type `!COMMAND` to run a local shell command, for example `!pwd` or
+`!adjust_volume 35`. LAN42 hands over the terminal, then Enter returns to the app.
+Only your typed input executes commands; server messages cannot execute them.
+
+`/volume` (alias `/adjust_volume`) toggles desktop output between 0 and 50 percent.
+`/volume 0` through `/volume 100` sets a level explicitly. The Zsh shell helper is
+`adjust_volume [0–100]`, available after sourcing `useful-scripts/campus.zsh`.
+The controls use the same output device as the GNOME/macOS slider (PulseAudio,
+PipeWire or macOS); Bluetooth/device-specific volume remains up to that device.
+
+Sound-enabled `/uwu`, received pokes and automatic calls check system output.
+If muted/zero, they ask before raising it to 50 percent. A second confirmation
+can remember permission to do this automatically on this device. This remains
+separate from permission to play the koel sound. Manage it with
+`/settings audio-auto-on on|off`. `/volume` itself applies your explicit request
+without a permission prompt.
+
+In `/clusters`, `/track 2 4` uses the **displayed online roster numbers** (also
+shown on map markers), not physical desk numbers. LAN42 lists the current Intra
+names and seats for confirmation before adding them to your private tracking.
+It captures those people, never future desk occupants; a changed seat snapshot
+cancels the pending request. `/track LOGIN LOGIN` still works normally.
