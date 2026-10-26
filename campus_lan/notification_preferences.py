@@ -51,7 +51,6 @@ class NotificationControls:
             if parts[1:] in (['on'], ['off']):
                 # Compatibility: ordinary social/arrival alerts only.
                 enabled = parts[1] == 'on'
-                self.notify_enabled = enabled
                 for key in ('chat', 'dms', 'pokes', 'tracking'):settings.set(key, enabled)
                 self.lines.append('Ordinary notifications '+parts[1]+'. Host/broadcast/release/warning preferences stay separate; /notify all off silences everything.')
             elif len(parts) == 3 and parts[1] in (*DEFAULTS, 'all') and parts[2] in ('on', 'off'):

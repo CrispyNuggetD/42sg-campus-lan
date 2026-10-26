@@ -94,3 +94,13 @@ class NotificationChannels(unittest.TestCase):
         self.assertFalse(c.important_notification_allowed('announcements'))
         self.assertTrue(c.important_notification_allowed('host'))
         self.assertTrue(c.important_notification_allowed('warnings'))
+
+    def test_channel_changes_are_seen_by_other_open_windows(self):
+        c=self.c
+        other=Client.__new__(Client);other.notify_enabled=True;other.lines=[]
+        c.notification_command('/notify off')
+        self.assertFalse(other.notification_allowed('dms'))
+        other.notification_command('/notify dms on')
+        self.assertTrue(c.notification_allowed('dms'))
+        other.notification_command('/notify all off')
+        self.assertFalse(c.important_notification_allowed('host'))
