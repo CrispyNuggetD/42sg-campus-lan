@@ -19,10 +19,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r website/requirements.txt
+      - run: python -m pip install -r website/requirements.txt -r requirements-auth.txt
       - name: Prepare server release
         run: python tools/release.py
       - run: python -m unittest discover -s tests -p test_release.py
+      - run: python -m unittest discover -s tests -p test_access_policy.py
+      - run: PYTHONPATH=tests python -m unittest test_auth test_announcements test_profile_lookup test_client test_network test_tracking test_mesh test_file_sharing test_koeldrop_live
       - run: python -m unittest discover -s tests -p test_shell_features.py
       - run: python -m unittest discover -s tests -p test_about.py
       - run: python website/build.py

@@ -51,7 +51,11 @@ def random_profiles(number, excluded, cohorts=(), filters=()):
 
 
 class API:
-    def __init__(self):
+    def __init__(self, enrollment=False):
+        from .access import Policy
+        self.enrollment=enrollment
+        if not enrollment:Policy().require_host()
+        self._members={}
         settings=json.loads(private_read(config_dir()/'auth-server.json'))
         self.settings=settings
         self.last=0
@@ -60,6 +64,9 @@ class API:
         self.opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),urllib.request.HTTPSHandler(context=provider_tls_context()),NoRedirect())
 
     def request(self,url,data=None,authenticated=True):
+        from .access import Policy
+        if not self.enrollment:Policy().require_host()
+        self._validate_url(url, data, authenticated)
         if authenticated and (not self.token or time.monotonic()>=self.expires):
             body=urllib.parse.urlencode(dict(grant_type='client_credentials',client_id=self.settings['client_id'],client_secret=self.settings['client_secret'])).encode()
             result=self.request('https://api.intra.42.fr/oauth/token',body,False)
@@ -83,15 +90,56 @@ class API:
                 raise AuthError('Campus API request rejected (HTTP '+str(e.code)+').') from None
         raise AuthError('Campus API remains busy; refresh stopped without replacing the last complete export.')
 
+    def _validate_url(self,url,data,authenticated):
+        from .access import SG_CAMPUS_ID
+        parsed=urllib.parse.urlsplit(url)
+        if url=='https://api.intra.42.fr/oauth/token' and not authenticated and data is not None:return
+        if (not authenticated or data is not None or parsed.scheme!='https' or parsed.netloc!='api.intra.42.fr'
+                or parsed.fragment or not parsed.path.startswith('/v2/')):
+            raise AuthError('Only approved read-only Singapore API operations are allowed.')
+        path=parsed.path[4:];params=urllib.parse.parse_qs(parsed.query,strict_parsing=True)
+        common={'page[number]','page[size]'}
+        for key,values in params.items():
+            if key in ('filter[id]','filter[user_id]') and not re.fullmatch(r'[1-9][0-9]{0,11}',values[0]):raise AuthError('Invalid SG user filter.')
+            if key=='filter[login]' and not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',values[0]):raise AuthError('Invalid SG login filter.')
+        if any(len(v)!=1 for v in params.values()):raise AuthError('Duplicate API parameters denied.')
+        if 'page[number]' in params and not 1<=int(params['page[number]'][0])<=50:raise AuthError('Page limit reached.')
+        if 'page[size]' in params and not 1<=int(params['page[size]'][0])<=100:raise AuthError('Page size limit reached.')
+        prefix='campus/'+str(SG_CAMPUS_ID)
+        if path==prefix and not params:return
+        if path==prefix+'/users' and not set(params)-common-{'filter[login]','filter[id]'}:return
+        if (path==prefix+'/locations' and not set(params)-common-{'filter[active]','filter[user_id]'}
+                and params.get('filter[active]')==['true']):return
+        if path.startswith('users/') and path[6:] in self._members and not params:return
+        raise AuthError('API endpoint or parameters are outside the Singapore read-only allowlist.')
+
     def get(self,path,**params):
+        if path.startswith('users/'):
+            return self.member_profile(path[6:])
         return self.request('https://api.intra.42.fr/v2/'+path+('?' + urllib.parse.urlencode(params) if params else ''))
+
+    def member_profile(self,identifier):
+        from .access import SG_CAMPUS_ID,sg_member
+        if not isinstance(identifier,str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',identifier):raise AuthError('Invalid SG profile target.')
+        # Prove membership via the scoped campus endpoint before a full profile read.
+        field='filter[id]' if identifier.isdecimal() else 'filter[login]'
+        records=self.pages('campus/'+str(SG_CAMPUS_ID)+'/users',**{field:identifier})
+        person=next((u for u in records if (str(u.get('id'))==identifier if identifier.isdecimal() else u.get('login')==identifier)),None)
+        if not person or type(person.get('id')) is not int:raise AuthError('Target is not a verified Singapore campus member.')
+        uid=str(person['id']);self._members[uid]=True
+        try:
+            result=self.request('https://api.intra.42.fr/v2/users/'+uid)
+        finally:self._members.pop(uid,None)
+        if result.get('id')!=person['id'] or not sg_member(result):raise AuthError('Singapore profile membership could not be confirmed.')
+        return result
 
     def pages(self,path,**params):
         result=[]
-        for page in range(1,501):
+        for page in range(1,51):
             batch=self.get(path,**params,**{'page[number]':page,'page[size]':100})
             if not isinstance(batch,list):raise ValueError('Expected paginated API list')
             result.extend(batch)
+            if len(result)>5000:raise ValueError('Singapore record safety limit reached')
             if len(batch)<100:return result
         raise ValueError('Pagination safety limit reached')
 
@@ -144,28 +192,26 @@ def normalize(user):
 
 
 def refresh():
+    from .access import Policy
+    Policy().local_operator()
     import fcntl
     target=directory();target.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (target/'.refresh.lock').open('w') as lock:
         try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:raise ValueError('Campus refresh already running') from None
         api=API()
-        campuses=api.pages('campus')
-        campus=next((c for c in campuses if 'singapore' in (c.get('name','')+' '+c.get('slug','')).lower()),None)
-        if not campus:raise ValueError('Singapore campus not found')
-        print('Found Singapore campus '+str(campus['id'])+'; fetching paginated users at <1 request/sec.',flush=True)
-        users=api.pages('campus/'+str(campus['id'])+'/users')
-        print('Received '+str(len(users))+' campus records; normalizing academic fields.',flush=True)
-        # Bulk cursus enrollments avoid a separate request for every campus user.
-        # Intersect against the campus list even when the server accepts a campus
-        # filter: unrelated-campus profiles must never enter the local export.
-        campus_ids={u['id'] for u in users}
-        enrollments=api.pages('cursus_users',**{'filter[campus_id]':campus['id'],'filter[cursus_id]':21})
+        from .access import SG_CAMPUS_ID
+        campus=api.get('campus/'+str(SG_CAMPUS_ID))
+        if campus.get('id')!=SG_CAMPUS_ID:raise AuthError('Singapore campus could not be confirmed.')
+        users=api.pages('campus/'+str(SG_CAMPUS_ID)+'/users')
+        print('Refreshing a bounded Singapore-only academic directory; no global enrollment endpoint is used.',flush=True)
         students=[]
-        for enrollment in enrollments:
-            user=enrollment.get('user') or {}
-            if user.get('id') not in campus_ids or enrollment.get('cursus_id')!=21:continue
-            student=normalize(dict(user,cursus_users=[enrollment]))
+        for user in users:
+            Policy().local_operator()
+            if type(user.get('id')) is not int:raise AuthError('Invalid campus user response.')
+            # Only already SG-listed IDs are eligible; each detailed read rechecks scope.
+            profile=api.member_profile(str(user['id']))
+            student=normalize(profile)
             if student:students.append(student)
         students=sorted({s['id']:s for s in students}.values(),key=lambda s:(s['intake'],s['login']))
         cohorts=[]
@@ -204,6 +250,8 @@ def info_lines(query=''):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['refresh','info'],default='info',nargs='?');args=parser.parse_args()
     try:
+        from .access import Policy
+        Policy().local_operator()
         if args.action=='refresh':refresh()
         else:print('\n'.join(info_lines()))
     except (AuthError,OSError,ValueError,KeyError):

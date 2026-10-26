@@ -87,10 +87,12 @@ async def wait_for_host_move(settings):
             return
 
 
-async def serve_auth(bind='0.0.0.0', current_seat=False):
+async def serve_auth(bind='127.0.0.1', current_seat=False):
     from .server import Lobby
     root = config_dir()
     settings = json.loads(private_read(root / 'auth-server.json'))
+    from .access import Policy
+    Policy().require_host()
     if current_seat:
         from .auth_daily import current_seat as detect_seat
         bind = detect_seat()
@@ -101,17 +103,18 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(root / 'auth-cert.pem', root / 'auth-key.pem')
-    broker = Broker(Provider(settings['client_id'], settings['client_secret']))
+    broker = Broker(Provider(settings['client_id'], settings['client_secret']),policy_factory=Policy)
     lobby = Lobby(auth_broker=broker)
+    lobby.api_status = "Approved Singapore API host; selected views require SG sign-in"
     lobby.port = settings['lobby_port']
     lobby.mesh.host = settings['host']
     from .file_sharing.runtime import Runtime
-    koeldrop=Runtime(broker,settings['host'],settings['broker_port'],owner=settings.get('owner_login',getpass.getuser()))
+    koeldrop=Runtime(broker,settings['host'],settings['broker_port'],owner=settings.get('owner_login','hnah'))
     lobby.koeldrop=koeldrop
     http = AuthHTTP(broker, f"{settings['host']}:{settings['broker_port']}")
     http.koeldrop=koeldrop
     from .announcements import Announcements
-    owner=settings.get('owner_login',getpass.getuser())
+    owner=settings.get('owner_login','hnah')
     http.announcements=Announcements(broker,owner)
     owner=http.announcements.owner
     from .desktop_notifications import Notifications
@@ -147,8 +150,13 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
         announcement_moderator.cancel();announcement_notifier.close()
         await asyncio.gather(announcement_moderator,return_exceptions=True)
         raise
-    private_write(root/'announcement-admin.json',json.dumps(dict(
-        fingerprint=fingerprint(load_trust_for_owner(root)),token=http.announcements.admin_token,owner=owner)))
+    try:
+        Policy().local_operator(admin=True)
+    except AuthError:
+        (root/'announcement-admin.json').unlink(missing_ok=True)
+    else:
+        private_write(root/'announcement-admin.json',json.dumps(dict(
+            fingerprint=fingerprint(load_trust_for_owner(root)),token=http.announcements.admin_token,owner=owner)))
     ticker = asyncio.create_task(lobby.tick())
     print(f"LAN42 secure sign-in host ready: HTTPS {settings['broker_port']}, TLS lobby {settings['lobby_port']}.", flush=True)
     reload_package = False
@@ -184,10 +192,10 @@ def main():
     create.add_argument('--host', required=True, help='Stable LAN IP or hostname reachable by students')
     create.add_argument('--broker-port', type=int, default=31416)
     create.add_argument('--lobby-port', type=int, default=31417)
-    owner_parser=sub.add_parser('set-owner',help='Set the verified Intra login allowed to moderate announcements')
+    owner_parser=sub.add_parser('set-owner',help='Set display attribution; admin authority uses numeric IDs in the private policy')
     owner_parser.add_argument('login')
     run = sub.add_parser('serve')
-    run.add_argument('--bind', default='0.0.0.0')
+    run.add_argument('--bind', default='127.0.0.1')
     run.add_argument('--current-seat', action='store_true', help='Bind only the seat prepared by dailylogin')
     export = sub.add_parser('export-trust')
     export.add_argument('output', type=Path)
@@ -204,7 +212,7 @@ def main():
         settings['owner_login']=args.login.lower()
         settings['host_generation']=__import__('secrets').token_hex(16)
         private_write(root/'auth-server.json',json.dumps(settings))
-        print('Announcement owner configured. Restart the local auth service to apply.')
+        print('Announcement display name configured; this grants no admin permissions. Restart the local service to apply.')
     elif args.command == 'setup':
         trust = setup(args.credentials, args.host, args.broker_port, args.lobby_port)
         print('Imported existing app into private configuration outside the repository.')

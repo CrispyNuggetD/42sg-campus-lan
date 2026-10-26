@@ -121,6 +121,8 @@ def main():
     if args.command=='import':
         with args.file.open('rb') as f:result=cache.store(args.login,f.read(MAX_IMAGE+1))
     else:
+        from .access import Policy
+        Policy().local_operator()
         import asyncio
         from .profile_lookup import ProfileLookup
         profiles,errors=asyncio.run(ProfileLookup().lookup_many([args.login]))

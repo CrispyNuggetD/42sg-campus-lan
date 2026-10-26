@@ -42,3 +42,21 @@ Beta checks on 27 October 2026 (SGT), version 2.0.0-beta.1:
   symlink and the path safety checks intentionally refuse symlink traversal.
   Tests use isolated config/temp state; no students were poked.
 - Dependency environment: Python 3.14, website requirements and auth requirements.
+
+## Access-policy implementation validation — 27 October 2026 SGT
+
+The credential-owning maintainer Mac was explicitly enrolled using hnah's verified
+Singapore identity (UID 234449, campus 64); the private approval files remain
+outside Git. No campus machine was automatically enrolled, and no VPN or public
+forwarding was installed. Existing campus API hosts must complete enrollment
+before restarting this version.
+
+The access-policy change passed 110 targeted tests (one platform skip), including
+real loopback/TLS announcement checks, guest socket denials before API/cache
+access, forged-role rejection, SG profile scope checks, independent admin/operator
+roles, host revocation, local owner views, and existing mesh/KoelDrop behavior.
+The broader suite before the final two administration tests ran 268 tests with
+six skips and the same two previously documented Mac failures: 127.0.0.2 binding
+and the native FORKNITE death assertion. Provider responses were mocked in tests;
+config/temp roots were isolated from owner credentials. Bootstrap verification
+was a separate explicit live owner lookup, not a test of the campus deployment.

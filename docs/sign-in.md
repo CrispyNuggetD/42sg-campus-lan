@@ -1,6 +1,6 @@
 # 42 sign-in: owner setup and student use
 
-LAN42 v0.6.0 has a TLS-protected shared lobby for verified 42 accounts. The
+LAN42 BETA has a TLS-protected shared lobby for verified 42 accounts. The
 existing guest mesh remains available. Only the protected lobby displays
 green **42 Verified** identities. A guest node's claims are never sufficient
 to authenticate a player.
@@ -10,6 +10,21 @@ collect student passwords, authentication cookies, MFA codes, or student API
 keys. The host uses the owner's **existing OAuth application**, not a new app.
 One trusted host holds the app client secret; students receive only public
 endpoint/certificate information and a short-lived LAN42 session.
+
+## Host approval and Singapore admission
+
+Only OAuth-verified Singapore members enter the official secure lobby. Guest
+nicknames do not grant API access, even on a machine with credentials. Initial
+admin/API operator: hnah, numeric ID 234449. Machines must be explicitly approved;
+ordinary game hosting and SG sign-in do not approve an authentication/API host.
+See [access-policy.md](access-policy.md) for independent roles and server-enforced
+read-only Singapore scope.
+
+Existing credential owners must run `python3 -m campus_lan.access enroll-local`
+on each intended machine before starting/upgrading the service. New setups run
+this after `setup`. Keep the private policy/operator files outside Git. Default
+foreground binding is localhost; use an explicit LAN bind only for a deliberately
+shared approved host. The dailylogin service binds its approved detected seat.
 
 ## Host owner: configure once
 

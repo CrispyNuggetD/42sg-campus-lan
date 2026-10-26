@@ -110,3 +110,20 @@ Version the server, not the README. Use `feat:`, `fix:` and `!`/`BREAKING CHANGE
 accurately for runtime changes; unclassified runtime changes default to patch.
 CI prepares releases automatically. Never bump just for wording, screenshots,
 tests or this instruction file. Preserve beta entry date and alpha credits.
+
+## API access and trust boundary
+
+Read docs/access-policy.md before changing API routes, identities or hosting.
+Singapore-only/read-only is the owner's application-form promise; upstream
+credentials are broader. No guest socket, claimed nickname/admin flag or copied
+client can access API-backed data. All student profile fetches use campus_info.API
+and prove membership through campus 64 first. No new global collection endpoint,
+arbitrary URL passthrough, or environment-secret guest adapter. OAuth POSTs are
+allowed only for authentication/token lifecycle. Numeric admin/operator roles and
+approved machine fingerprints are independent; only hnah (234449) is seeded.
+Never auto-enroll hosts on sign-in or treat Tailscale as campus evidence. Existing
+credential files alone do not approve a service. Preserve explicit local operator
+cache/export/download permission. Use isolated config roots and mocked provider
+responses in tests; never load the owner's actual credentials in a test.
+Run test_access_policy.py, auth/announcements, profile lookup, client/network,
+tracking, mesh, KoelDrop, shell feature and website checks for policy changes.

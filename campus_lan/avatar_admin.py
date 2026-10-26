@@ -62,6 +62,8 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
         photos_approved=console_permission(owner,'photos','Allow photo tabs and extension saves for this batch?')
         if not photos_approved:logins=()
     # Owner-only entry: verify private host configuration exists, without exposing it.
+    from .access import Policy
+    Policy().local_operator()
     private_read(config_dir()/'auth-server.json')
     cache=AvatarCache();imports=BrowserImports(cache);token=secrets.token_hex(32)
     # All API lookups share one event loop, lock, pacing and cache in this panel.
@@ -81,6 +83,7 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                 self.reply(403,{'error':'Local owner session required'});return
             if not gate.acquire(blocking=False):self.reply(429,{'error':'One operation at a time'});return
             try:
+                Policy().local_operator()
                 size=int(self.headers.get('Content-Length','0'))
                 if not 0<size<=MAX_IMAGE:raise ValueError('Invalid body size (maximum 1 MiB)')
                 self.connection.settimeout(15);raw=self.rfile.read(size)

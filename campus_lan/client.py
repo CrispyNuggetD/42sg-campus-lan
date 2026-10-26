@@ -31,6 +31,7 @@ from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summar
 
 HELP = [
     '/changelog: server release history and alpha testing credits',
+    'API views: verified Singapore sign-in; enrolled API operators may use local /clusters and /info offsite.',
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
     'Up/Down: local command history | !COMMAND: local shell | /volume [0–100]: output volume',
     '/uwu: local koel test | /uwu auto|on|off: random local calls every 10–15 min | /uwu LOGIN: poke',
@@ -40,7 +41,7 @@ HELP = [
     'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
-    '/tool LOGIN...: batch private photos | /info [FILTER] [PAGE]: cached campus directory',
+    '/tool LOGIN...: batch private photos | /info [FILTER] [PAGE]: API-operator campus directory',
     '/clusters [1|2]: campus seats | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
     '/track help: relationships/lists | /settings clusters: include/exclude arrival rules',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
@@ -356,6 +357,38 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         except (OSError,ValueError) as error:self.lines.append(safe(str(error)))
         return True
 
+    def local_api_command(self, text):
+        """Keyboard/local tracking path only; never dispatch this from wire messages."""
+        command,_,argument=text.partition(' ')
+        if command not in ('/clusters','/campus-presence','/info','/info_campus') or getattr(self,'secure',False):return False
+        from .auth import config_dir
+        if not (config_dir()/'local-operator.json').exists():return False
+        from .access import Policy
+        try:Policy().local_operator()
+        except (OSError,ValueError):
+            self.lines.append('Local API access denied; check approved-host/operator enrollment.')
+            return True
+        if getattr(self,'local_api_busy',False):return True
+        if command=='/clusters' and argument not in ('','1','2'):
+            self.lines.append('Use /clusters [1|2].');return True
+        self.local_api_busy=True
+        def work():
+            try:
+                Policy().local_operator()
+                if command in ('/info','/info_campus'):
+                    from .campus_info import info_lines
+                    self.inbox.put(dict(type='event',text='\n'.join(info_lines(argument))))
+                else:
+                    from .clusters import snapshot
+                    players,stamp=snapshot()
+                    kind='clusters' if command=='/clusters' else 'campus_presence'
+                    self.inbox.put(dict(type=kind,players=players,updated_at=stamp,cluster=int(argument or '1')))
+            except (OSError,ValueError,KeyError,TypeError):
+                self.inbox.put(dict(type='campus_presence',error='Local Singapore API view unavailable; check enrollment, credentials or API budget.'))
+            finally:self.local_api_busy=False
+        threading.Thread(target=work,daemon=True).start()
+        return True
+
     def tracking_tick(self):
         if getattr(self,'role','lobby')!='lobby' or not self.connected or not self.id:return
         tracker=self.get_tracker()
@@ -365,7 +398,8 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
         from .tracking import INTERVAL
         self.track_next=now+INTERVAL;self.track_pending=now
         # No names/watch list cross the network; request the shared campus view.
-        self.send(dict(type='command',text='/campus-presence'))
+        if not self.local_api_command('/campus-presence'):
+            self.send(dict(type='command',text='/campus-presence'))
 
     def tracking_update(self,players,source):
         tracker=getattr(self,'tracker',None)
@@ -1320,6 +1354,8 @@ class Client(PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
                 elif self.group_command(text):
                     pass
                 elif self.tracking_command(text):
+                    pass
+                elif self.local_api_command(text):
                     pass
                 elif self.lobby_command(text):
                     pass

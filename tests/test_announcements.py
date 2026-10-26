@@ -12,6 +12,13 @@ import unittest
 from unittest.mock import Mock,patch
 import asyncio
 from campus_lan.announcements import Announcements
+from campus_lan.access import Policy,DEFAULT
+
+def test_policy():
+    import copy
+    data=copy.deepcopy(DEFAULT);data["admins"]=[1]
+    policy=Policy(data);policy.local_operator=Mock(return_value=1)
+    return policy
 from campus_lan.auth import AuthError,AuthHTTP,Broker,digest,config_dir,private_write
 from campus_lan.auth_server import setup
 from campus_lan import auth_client
@@ -22,13 +29,13 @@ class Authority(unittest.TestCase):
     def setUp(self):
         self.now=1000
         def authenticate(token):
-            people={'student':dict(uid=2,login='dthoo'),'owner':dict(uid=1,login='hnah')}
+            people={'student':dict(uid=2,login='dthoo',sg_member=True,campus_id=64),'owner':dict(uid=1,login='hnah',sg_member=True,campus_id=64)}
             if token not in people:raise AuthError('No identity')
             return people[token]
         self.broker=Mock();self.broker.authenticate.side_effect=authenticate
         self.notice=Mock()
         self.admin='a'*64
-        self.manager=Announcements(self.broker,'hnah',self.admin,clock=lambda:self.now,on_request=self.notice)
+        self.manager=Announcements(self.broker,'hnah',self.admin,clock=lambda:self.now,on_request=self.notice,policy=test_policy())
 
     def test_student_needs_host_approval_and_is_quoted_as_real_identity(self):
         request=self.manager.submit(dict(session='student',text='New version!',login='hnah',host=True))
@@ -133,8 +140,8 @@ class NativeTLS(unittest.IsolatedAsyncioTestCase):
         private_write(credentials,'FT42_CLIENT_ID=test-id\nFT42_CLIENT_SECRET=test-secret\nFT42_REDIRECT_URI=http://localhost:31415/callback\n')
         self.trust=setup(credentials,'127.0.0.1')
         self.broker=Broker(Mock())
-        self.token='b'*64;self.broker.sessions[digest(self.token)]=dict(uid=2,login='dthoo',expires=time.time()+600)
-        self.manager=Announcements(self.broker,'hnah','a'*64,on_request=Mock())
+        self.token='b'*64;self.broker.sessions[digest(self.token)]=dict(uid=2,login='dthoo',expires=time.time()+600,sg_member=True,campus_id=64)
+        self.manager=Announcements(self.broker,'hnah','a'*64,on_request=Mock(),policy=test_policy())
         self.http=AuthHTTP(self.broker,'');self.http.announcements=self.manager
         context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(config_dir()/'auth-cert.pem',config_dir()/'auth-key.pem')

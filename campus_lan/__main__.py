@@ -156,7 +156,10 @@ def main():
             p.add_argument('address',nargs='?',help='IP, hostname, or c1r2s3; omit for seat questions')
             p.add_argument('--local-port',type=int,default=31415,help='Your own node port')
         else:
-            p.add_argument('--bind',default='0.0.0.0')
+            from .auth_daily import current_seat
+            try:current_seat();default_bind='0.0.0.0'
+            except (ValueError,OSError):default_bind='127.0.0.1'
+            p.add_argument('--bind',default=default_bind)
         p.add_argument('--port',type=int,default=31415)
         if name=='server':
             p.add_argument('--managed',action='store_true',help=argparse.SUPPRESS)

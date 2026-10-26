@@ -95,9 +95,9 @@ class ProviderTests(unittest.TestCase):
         access = 'test-access-token-12345'
         provider.request = Mock(side_effect=[dict(access_token=access, token_type='bearer',
             refresh_token='do-not-store'), dict(id=99, login='real-student', email='private',
-            phone='private', location='private'), {}])
+            phone='private', location='private',campus_users=[{'campus_id':64}]), {}])
         result = provider.identify('one-time-code', 'verifier')
-        self.assertEqual(result, dict(uid=99, login='real-student'))
+        self.assertEqual(result, dict(uid=99, login='real-student',sg_member=True,campus_id=64))
         calls = provider.request.call_args_list
         self.assertEqual([c.args[0] for c in calls], [TOKEN_URL, ME_URL, REVOKE_URL])
         self.assertEqual(calls[1].kwargs['headers'], {'Authorization': 'Bearer ' + access})

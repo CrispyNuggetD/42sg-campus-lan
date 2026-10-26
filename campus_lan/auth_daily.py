@@ -95,6 +95,8 @@ def start():
     if not (root / 'auth-server.json').exists():
         # Ordinary students never receive the app secret or start a broker.
         return None
+    from .access import Policy
+    Policy().require_host()
     host = current_seat()
     fd = os.open(root / 'auth-move.lock', os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd, 'w') as lock:
@@ -108,7 +110,7 @@ def start():
         package=Path(__file__).resolve().parent
         code=hashlib.sha256(b''.join((package/name).read_bytes() for name in
             ('auth.py','auth_server.py','server.py','announcements.py','desktop_notifications.py',
-             'announcement_client.py','auth_client.py','auth_locator.py') if (package/name).exists())).hexdigest()
+             'announcement_client.py','auth_client.py','auth_locator.py','access.py') if (package/name).exists())).hexdigest()
         desired = dict(host=host, generation=settings['host_generation'],
                        unit=hashlib.sha256(unit.read_bytes()).hexdigest(),code=code)
         try:

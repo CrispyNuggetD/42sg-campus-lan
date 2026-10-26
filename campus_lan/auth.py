@@ -129,7 +129,9 @@ def request_json(url, data=None, headers=None, context=None, empty_ok=False):
 
 
 class Provider:
-    def __init__(self, client_id, client_secret):
+    def __init__(self, client_id, client_secret, policy=None):
+        from .access import Policy
+        self.policy=policy or Policy()
         self.client_id, self.client_secret = client_id, client_secret
         self.last_request = 0
 
@@ -157,7 +159,9 @@ class Provider:
             uid, login = profile.get('id'), profile.get('login')
             if type(uid) is not int or uid <= 0 or not isinstance(login, str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,24}', login):
                 raise AuthError('42 returned an invalid account identity.')
-            identity = dict(uid=uid, login=login)
+            from .access import sg_member,SG_CAMPUS_ID
+            if not sg_member(profile):raise AuthError('42 Singapore campus membership is required.')
+            identity = dict(uid=uid, login=login, sg_member=True, campus_id=SG_CAMPUS_ID)
             image = profile.get('image') or {}
             if isinstance(image, dict):
                 versions = image.get('versions') or {}
@@ -179,7 +183,8 @@ class Provider:
 
 
 class Broker:
-    def __init__(self, provider, clock=time.time):
+    def __init__(self, provider, clock=time.time, policy_factory=None):
+        self.policy_factory=policy_factory
         self.provider, self.clock = provider, clock
         self.pending, self.sessions, self.rates = {}, {}, {}
         self.exchanges = deque()
@@ -194,6 +199,7 @@ class Broker:
             self.exchanges.popleft()
 
     def begin(self, proof, source):
+        if self.policy_factory:self.policy_factory().require_host()
         self.prune()
         if not nonce(proof):
             raise AuthError('Invalid sign-in request.')
@@ -211,6 +217,7 @@ class Broker:
         return dict(state=state, authorization_url=url, expires=now + FLOW_TTL)
 
     async def exchange(self, state, proof, code):
+        if self.policy_factory:self.policy_factory().require_host()
         self.prune()
         if not nonce(state) or not nonce(proof) or not isinstance(code, str) or not 1 <= len(code) <= 2048:
             raise AuthError('Invalid or expired sign-in request.')
@@ -231,8 +238,11 @@ class Broker:
             raise AuthError('42 sign-in failed. Start again; the app secret may need renewal.') from None
         finally:
             self.busy = False
+        if self.policy_factory:self.policy_factory().require_member(identity)
         session = secrets.token_hex(32)
         record = dict(uid=identity['uid'], login=identity['login'], expires=self.clock() + SESSION_TTL)
+        if identity.get('sg_member') is True:
+            record.update(sg_member=True,campus_id=identity.get('campus_id'))
         if identity.get('avatar'):
             record['avatar'] = identity['avatar']
         self.sessions[digest(session)] = record
@@ -244,10 +254,17 @@ class Broker:
         record = self.sessions.get(digest(session))
         if not record or record['expires'] <= self.clock():
             raise AuthError('Sign-in expired. Use /signin again.')
+        if self.policy_factory:
+            policy=self.policy_factory();policy.require_host();policy.require_member(record)
         return dict(record, session_key=digest(session))
 
     def active(self, key):
-        return key in self.sessions and self.sessions[key]['expires'] > self.clock()
+        if not (key in self.sessions and self.sessions[key]['expires'] > self.clock()):return False
+        if self.policy_factory:
+            try:
+                policy=self.policy_factory();policy.require_host();policy.require_member(self.sessions[key])
+            except (OSError,ValueError):return False
+        return True
 
     def logout(self, key):
         self.sessions.pop(key, None)
@@ -371,6 +388,7 @@ class AuthHTTP:
         self.connections += 1
         target=''
         try:
+            if self.broker.policy_factory:self.broker.policy_factory().require_host()
             if self.connections > 32:
                 raise AuthError('Authentication service busy.')
             first=await asyncio.wait_for(reader.readline(),5)

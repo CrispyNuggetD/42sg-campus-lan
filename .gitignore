@@ -16,3 +16,7 @@ auth-key.pem
 
 # Generated public website
 _site/
+
+# Local authority configuration is never a public repository artifact.
+access-policy.json
+local-operator.json

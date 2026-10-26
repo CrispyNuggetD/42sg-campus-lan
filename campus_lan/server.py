@@ -29,7 +29,7 @@ class Lobby:
         self.sequence = self.room_sequence = 0
         self.round_seconds = round_seconds
         self.seats = {}
-        self.api_status = 'API disabled; seats unknown'
+        self.api_status = 'Guest: API views require verified SG sign-in; local operator views stay private'
         self.port = 31415
         self.peer_invites = {}
         self.owners = {}
@@ -168,6 +168,16 @@ class Lobby:
         if pid in self.clients:
             await self.send(self.clients[pid],dict(type='game',game=None))
 
+    def api_identity(self, client):
+        from .access import Policy
+        if not self.auth_broker:raise AuthError('Guests cannot access API-backed data. Sign in to the approved Singapore host.')
+        key=client.get('session_key')
+        if not self.auth_broker.active(key):raise AuthError('Sign in again for API-backed data.')
+        person=self.auth_broker.sessions.get(key)
+        person=Policy().require_member(person)
+        if person['uid']!=client.get('uid'):raise AuthError('API session identity mismatch.')
+        return person
+
     async def command(self, pid, raw):
         c = self.clients[pid]
         text = clean(raw)
@@ -178,6 +188,8 @@ class Lobby:
             return
         cmd,_,arg = text.partition(' ')
         arg = arg.strip()
+        if cmd in ('/clusters','/campus-presence','/info','/info_campus') or (cmd=='/sabo' and arg.lower()!='history'):
+            self.api_identity(c)
         rid, room = self.room_for(pid)
         if not room and cmd in ('/invite','/invite-room','/invite-seat'):
             for other,peer in self.clients.items():
@@ -188,6 +200,9 @@ class Lobby:
                         break
         if cmd in ('/info','/info_campus'):
             from .campus_info import info_lines
+            person=self.api_identity(c)
+            from .access import Policy
+            if person['uid'] not in Policy().data['api_operators']:raise AuthError('Directory/academic exports are restricted to API operators.')
             await self.event('\n'.join(info_lines(arg)),{pid})
         elif cmd == '/campus-presence':
             from .clusters import snapshot
@@ -318,15 +333,21 @@ class Lobby:
             if cohorts or random_selection or filters:
                 if len(counts)>1 or any(not (x.lower() in ('random','where','and') or x in filters or x.isdecimal() or (x.lower().startswith('cohort') and x[6:].isdecimal())) for x in bits):
                     raise ValueError('Use /sabo [COUNT] random [cohort4 cohort5] or /sabo cohort4 cohort5.')
-                from .campus_info import random_profiles,load,refresh
-                if not load():
-                    await self.event('Campus cache missing; fetching private campus directory. Please wait.',{pid})
-                    await asyncio.to_thread(refresh)
+                if cohorts or filters:
+                    from .access import Policy
+                    if self.api_identity(c)["uid"] not in Policy().data["api_operators"]:raise AuthError("Academic game filters are restricted to API operators.")
+                from .campus_info import random_profiles,load
+                if not load():raise AuthError('The API operator must explicitly refresh the Singapore cache locally; game requests cannot trigger a bulk download.')
                 seated=await room['web'].control(dict(action='roster'))
                 requested=counts[0] if counts else None
                 available=50-len(seated['players'])
                 if requested is not None and requested>available:raise ValueError('Not enough empty seats (50 maximum).')
                 profiles=random_profiles(requested,[p['name'] for p in seated['players']],cohorts,filters)[:available]
+                checked=[]
+                for offset in range(0,len(profiles),10):
+                    batch,_=await self.profile_lookup.lookup_many([p['login'] for p in profiles[offset:offset+10]])
+                    checked.extend(batch)
+                profiles=checked
                 errors=[]
             else:
                 if not 1<=len(bits)<=50 or any(not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',bit) for bit in bits):

@@ -205,11 +205,11 @@ class Network(unittest.IsolatedAsyncioTestCase):
                 await self.cmd(friend,'/diners 7')
                 await self.receive(friend,lambda m:m['type']=='event' and 'Only the FORKNITE room host' in m.get('text',''))
                 await self.cmd(host,'/sabo RANDOM 5')
-                await self.receive(host,lambda m:m['type']=='event' and m.get('text','').startswith('SABO:'))
+                await self.receive(host,lambda m:m['type']=='event' and 'Guests' in m.get('text',''))
                 room=self.lobby.rooms['1']['web']
                 roster=(await room.control(dict(action='roster')))['players']
-                self.assertEqual(len(roster),7)
-                self.assertEqual(len({p['name'] for p in roster}),7)
+                self.assertEqual(len(roster),2)
+                self.assertEqual(len({p['name'] for p in roster}),2)
                 await self.cmd(host,'/diners 9')
                 await self.receive(host,lambda m:m['type']=='event' and 'Table set for 9' in m.get('text',''))
                 self.assertEqual((await room.control(dict(action='status')))['players'],9)
@@ -237,15 +237,13 @@ class Network(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(reply['text'],'hi back')
         self.assertFalse(any(e['text']=='hello privately' for e in self.lobby.mesh.events.values()))
 
-    async def test_campus_tracking_uses_shared_snapshot_without_watch_names(self):
-        peer,_=await self.connect('tracker')
-        with patch('campus_lan.clusters.snapshot',return_value=([dict(name='campus-user',seat='c1r3s6')],123)) as snapshot:
+    async def test_guest_campus_tracking_is_denied_before_snapshot(self):
+        peer,_=await self.connect('hnah')
+        with patch('campus_lan.clusters.snapshot') as snapshot:
             await self.cmd(peer,'/campus-presence')
-            result=await self.receive(peer,lambda m:m['type']=='campus_presence')
-            self.assertEqual(result['players'][0]['seat'],'c1r3s6')
-            await self.cmd(peer,'/campus-presence')
-            await self.receive(peer,lambda m:m['type']=='campus_presence')
-            self.assertEqual(snapshot.call_count,1)
+            result=await self.receive(peer,lambda m:m['type']=='event' and 'Guests' in m.get('text',''))
+            self.assertIn('Guests',result['text'])
+            snapshot.assert_not_called()
 
     async def test_group_dm_partial_delivery_deduplication_and_summary(self):
         sender,_=await self.connect('sender');target,_=await self.connect('target');other,_=await self.connect('other')

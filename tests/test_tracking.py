@@ -31,7 +31,7 @@ class Tracking(unittest.TestCase):
             self.assertFalse(tracker.transitions([player],'lobby'))
 
     def test_poll_requests_no_watch_list_and_respects_five_minutes(self):
-        c=Client.__new__(Client);c.role='lobby';c.connected=True;c.id='id';c.send=Mock()
+        c=Client.__new__(Client);c.role='lobby';c.connected=True;c.id='id';c.send=Mock();c.local_api_command=Mock(return_value=False)
         c.tracker=Mock(names=['dthoo','private-target']);c.track_next=0;c.track_pending=0
         with patch('campus_lan.client.time.monotonic',return_value=100):c.tracking_tick();c.tracking_tick()
         c.send.assert_called_once_with(dict(type='command',text='/campus-presence'))

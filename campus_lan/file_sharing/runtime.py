@@ -27,10 +27,8 @@ class Runtime:
         if self.api_factory:api,campus_id=self.api_factory()
         else:
             from ..campus_info import API,load
-            api=API();data=load();campus=(data or {}).get('campus')
-            if not campus:
-                campus=next((c for c in api.pages('campus') if 'singapore' in (str(c.get('name',''))+' '+str(c.get('slug',''))).lower()),None)
-            if not campus:raise Denied('Singapore campus could not be resolved.')
+            from ..access import SG_CAMPUS_ID
+            api=API();campus={'id':SG_CAMPUS_ID}
             campus_id=campus['id']
         gate=Gate(self.broker,CampusProofs(api,campus_id))
         actor=gate.admit(token,peer,True)

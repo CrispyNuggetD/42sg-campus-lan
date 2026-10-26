@@ -24,11 +24,8 @@ def snapshot():
     global _snapshot,_stamp
     with _lock:
         if _snapshot is not None and time.time()-_stamp<30:return _snapshot,_stamp
-        api=API();data=load()
-        campus=(data or {}).get('campus')
-        if not campus:
-            campus=next((c for c in api.pages('campus') if 'singapore' in (c.get('name','')+' '+c.get('slug','')).lower()),None)
-        if not campus:raise ValueError('Singapore campus not found.')
+        from .access import SG_CAMPUS_ID
+        api=API();campus={'id':SG_CAMPUS_ID}
         records=api.pages('campus/'+str(int(campus['id']))+'/locations',**{'filter[active]':'true'})
         _snapshot=normalize_locations(records);_stamp=time.time()
         return _snapshot,_stamp

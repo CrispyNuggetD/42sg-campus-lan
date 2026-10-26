@@ -15,20 +15,29 @@ def message(value):
 
 
 class Announcements:
-    def __init__(self,broker,owner,admin_token=None,clock=time.time,on_request=None):
+    def __init__(self,broker,owner,admin_token=None,clock=time.time,on_request=None,policy=None):
         if not isinstance(owner,str) or not LOGIN.fullmatch(owner):raise AuthError('Configure a valid announcement owner login.')
+        from .access import Policy
+        self._policy=policy
         self.broker,self.owner,self.clock=broker,owner.lower(),clock
         self.admin_token=admin_token or secrets.token_hex(32)
         self.epoch=secrets.token_hex(16);self.sequence=0
         self.requests={};self.feed=[];self.last={};self.on_request=on_request
 
+    @property
+    def policy(self):
+        from .access import Policy
+        return self._policy if self._policy is not None else Policy()
+
     def identity(self,data,required=False):
         token=data.get('admin')
         if nonce(token) and hmac.compare_digest(token,self.admin_token):
-            return dict(login=self.owner,uid='host'),True
+            uid=self.policy.local_operator(admin=True)
+            return dict(login=self.owner,uid=uid),True
         try:
             person=self.broker.authenticate(data.get('session'))
-            return person,person['login'].lower()==self.owner
+            self.policy.require_member(person)
+            return person,self.policy.is_admin(person['uid'])
         except (AuthError,ValueError):
             if required:raise AuthError('42 sign-in or local host authority is required.') from None
             return None,False
@@ -41,10 +50,10 @@ class Announcements:
         self.feed=[event for event in self.feed if now-event['created']<900][-10:]
         self.last={key:stamp for key,stamp in self.last.items() if now-stamp<60}
 
-    def publish(self,request,is_host):
+    def publish(self,request,is_host,approved_by=None):
         self.sequence+=1
         event=dict(seq=self.sequence,id=request['id'],author=request['author'],is_host=is_host,
-                   approved_by=self.owner,text=request['text'],created=self.clock())
+                   approved_by=approved_by or self.owner,text=request['text'],created=self.clock())
         self.feed.append(event);self.feed=self.feed[-10:]
         return event
 
@@ -61,7 +70,7 @@ class Announcements:
         self.last[uid]=now;ident=secrets.token_hex(16)
         request=dict(id=ident,uid=uid,author=person['login'].lower(),text=text,created=now,
                      expires=now+300,status='approved' if host else 'pending')
-        if host:self.publish(request,True)
+        if host:self.publish(request,True,person['login'])
         else:self.requests[ident]=request
         if not host and self.on_request:
             try:self.on_request(dict(request))
@@ -69,7 +78,7 @@ class Announcements:
         return dict(id=ident,status=request['status'],owner=self.owner,author=request['author'],is_host=host)
 
     def decide(self,data):
-        self.prune();_,host=self.identity(data,True)
+        self.prune();moderator,host=self.identity(data,True)
         if not host:raise AuthError('Only the API host can approve or reject announcements.')
         ident=data.get('id')
         if not isinstance(ident,str) or not re.fullmatch('[a-f0-9]{32}',ident):raise AuthError('Invalid announcement ID.')
@@ -77,7 +86,7 @@ class Announcements:
         if not request or decision not in ('approve','reject'):raise AuthError('Invalid announcement decision.')
         if request['status']=='pending':
             request['status']='approved' if decision=='approve' else 'rejected'
-            if decision=='approve':self.publish(request,False)
+            if decision=='approve':self.publish(request,False,moderator['login'])
         return dict(id=request['id'],status=request['status'])
 
     def poll(self,data):

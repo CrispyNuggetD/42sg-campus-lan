@@ -94,12 +94,11 @@ class ClientChecks(unittest.TestCase):
             c.notify('darren [Guest]: muted', throttle=False)
             self.assertEqual(beep.call_count, 2)
 
-    def test_api_location_only(self):
-        api = API()
-        api.token,api.expires = 'fake-test-token',10**12
-        from io import BytesIO
-        with patch('urllib.request.urlopen',return_value=BytesIO(b'{"location":"c1r2s3","email":"unused"}')):
-            self.assertEqual(api.get_seat('hnah'),'c1r2s3')
+    def test_api_location_only_uses_scoped_profile_adapter(self):
+        with patch('campus_lan.campus_info.API') as scoped:
+            scoped.return_value.member_profile.return_value={'location':'c1r2s3','email':'unused'}
+            self.assertEqual(API().get_seat('hnah'),'c1r2s3')
+            scoped.return_value.member_profile.assert_called_once_with('hnah')
 
 if __name__=='__main__':
     unittest.main()

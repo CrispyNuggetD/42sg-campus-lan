@@ -1,6 +1,6 @@
 # LAN42 BETA
 
-Server **2.0.0-beta.1** · Beta since Tuesday **27 October 2026, 00:48 SGT**.
+Beta entry **2.0.0-beta.1** · Beta since Tuesday **27 October 2026, 00:48 SGT**.
 
 Alpha testing: dthoo and [whatisthisbuffoonery](https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta.
 
@@ -33,7 +33,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
 - `/dm` / `/uwu LOGIN`: messages and sound pokes; `/volume` for audio; `/koel` for approved group file sharing.
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE; Up/Down history and !COMMAND for the local shell.
-- `/signin`: optionally verify your 42 identity; the secure service requires owner setup.
+- `/signin`: verified SG members get selected API views; guests retain chat/games; trusted hosts require enrollment.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
 - Pinned host discovery: keep guest nodes running offline, then discover and reconnect when the API host returns.
 <!-- shell-installer-features:end -->
@@ -64,8 +64,7 @@ The public repository contains code, tests, diagrams and instructions. Private
 API credentials, certificate keys, sessions, campus directory exports, photos,
 file contents and activity databases are not public project assets.
 
-This is version **0.6.0**, a small LAN prototype. Start as a guest, or use `/signin` to enter a TLS-protected lobby with your
-verified 42 account. [Owner setup and student sign-in](docs/sign-in.md).
+The current server version/date are shown at startup and in `/changelog`. Start as a guest for chat/games, or use `/signin` to enter the approved TLS host with verified **42 Singapore membership**. [Owner setup and student sign-in](docs/sign-in.md).
 
 `/uwu auto` (or `/uwu on`) enables local koel calls at a fresh random interval
 of 10–15 minutes. It asks for sound permission if needed. `/uwu off` stops
@@ -453,7 +452,7 @@ The launcher uses `git pull --ff-only`. If you have local edits, it skips the
 update; if pulling fails, it warns you and runs the existing copy. Set
 `LAN42_NO_UPDATE=1` to skip updating deliberately.
 
-**Updating?** Everyone needs v0.6.0 (protocol 5); quit existing apps and restart.
+**Updating?** Use the current beta on all devices (protocol 5); quit existing apps and restart. API hosts must complete the explicit enrollment below.
 The legacy `host` and `join` startup commands remain as compatibility aliases.
 Normal startup is simply `lan42`, with `/join` inside HQ.
 
@@ -583,8 +582,7 @@ ASCII floor plan (even seats above odd seats), including the snapshot timestamp.
 Snapshots are fetched on demand, shared for 30 seconds, and are separate from
 LAN42 peers shown by `/map` or `/roster`. This represents reported logged-in
 computers, not everyone physically present. `/clusters` refreshes; `/next` and
-`/prev` page through the map and numbered login roster. The API host needs its
-private owner configuration. API reference:
+`/prev` page through the map and numbered login roster. The API host needs private credentials and explicit host enrollment. Guest sockets cannot request these views; verified SG members and enrolled local API operators can. API reference:
 https://api.intra.42.fr/apidoc/2.0/locations/index.html
 
 `/profile thtay hnah` requests permission to open both Intra profiles in local browser tabs. `all` and
@@ -806,6 +804,34 @@ You can also use `/settings koel-sound on|off|always`. `off` clears any saved
 always-on choice. Enabling sound never enables file sharing. D-Bus sound hints
 respect desktop support and sound settings; no separate player is started.
 
+## Access, API scope and trusted hosts
+
+**Campus LAN features, with read-only Singapore-scoped API tools available to the
+API owner offsite.** This is the owner's application-form promise, not a narrower
+permission automatically enforced by the upstream student API credential.
+
+Guests may host games and chat, but cannot read API-backed data or trigger API
+calls through the guest lobby. OAuth-verified SG members receive selected seats,
+tracking and game-profile views. hnah (numeric 42 ID 234449) is initially the only
+admin and API operator. API operators may explicitly cache, export and download
+SG-scoped data; ordinary students cannot trigger bulk directory refreshes.
+Admins, API operators and approved service machines are independent allowlists.
+A game host does not become an official authentication/API host.
+
+**Existing API host upgrade:** run `python3 -m campus_lan.access enroll-local`
+on each owner-controlled credential-bearing machine before restarting the trusted
+service. Missing enrollment fails closed. This Mac's operator can then use local
+`/clusters` and tracking offsite without opening internet ports. Offsite defaults
+are localhost; existing listeners change binding only on restart. KoelDrop keeps
+its separate physical-campus checks, consent and pinned transport. Tailscale is
+not installed or treated as campus-presence proof.
+
+See [access policy, role management and enrollment](docs/access-policy.md) for
+permissions, adding/revoking admins/operators/hosts, API limits and private export
+locations. Modifying a downloaded client does not override server permissions;
+stealing the upstream credential can bypass application policy and requires
+credential revocation. No API credential or private policy file belongs in Git.
+
 ## Announcements and the API host coming online
 
 `/announce TEXT` and `/broadcast TEXT` are aliases. The trusted API host/admin
@@ -819,7 +845,7 @@ use `/announce approve REQUEST_ID` or `/announce reject REQUEST_ID` in HQ.
 
 This is server-side privilege control. A guest called `hnah`, a client-provided
 `host=true`, or another student's local guest server cannot grant approval.
-The API host's local private authority and configured moderator login control it.
+Numeric admin IDs in the private access policy control moderation. A configured display login grants no permissions; a local moderation capability also requires an enrolled admin.
 Ordinary chat mute does not hide trusted approved announcements; OS display/
 notification availability still applies. Each window gets terminal history and
 each local computer gets one desktop alert, avoiding duplicate game-window popups.

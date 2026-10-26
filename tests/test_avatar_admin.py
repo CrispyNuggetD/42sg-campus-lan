@@ -19,7 +19,7 @@ class Admin(unittest.TestCase):
         def browser(url):address.append(url);opened.set();return True
         def server(*args,**kwargs):
             result=ThreadingHTTPServer(*args,**kwargs);servers.append(result);return result
-        with tempfile.TemporaryDirectory() as tmp,patch.dict(os.environ,{'XDG_CACHE_HOME':tmp}),patch.object(avatar_admin,'private_read',return_value=b'{}'),patch.object(avatar_admin.webbrowser,'open',side_effect=browser),patch.object(avatar_admin,'ThreadingHTTPServer',side_effect=server),patch.object(avatar_admin,'BrowserImports',side_effect=lambda cache:BrowserImports(cache,Path(tmp)/'Downloads')):
+        with patch('campus_lan.access.Policy.local_operator',return_value=234449),tempfile.TemporaryDirectory() as tmp,patch.dict(os.environ,{'XDG_CACHE_HOME':tmp}),patch.object(avatar_admin,'private_read',return_value=b'{}'),patch.object(avatar_admin.webbrowser,'open',side_effect=browser),patch.object(avatar_admin,'ThreadingHTTPServer',side_effect=server),patch.object(avatar_admin,'BrowserImports',side_effect=lambda cache:BrowserImports(cache,Path(tmp)/'Downloads')):
             thread=threading.Thread(target=avatar_admin.launch,kwargs={'approved':True},daemon=True);thread.start()
             self.assertTrue(opened.wait(3))
             url=urlsplit(address[0]);base=url.scheme+'://'+url.netloc;token=parse_qs(url.fragment)['key'][0]
