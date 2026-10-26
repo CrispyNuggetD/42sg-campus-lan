@@ -13,7 +13,9 @@ The [server changelog](../CHANGELOG.md) remains separate.
 - Refined home into a compact introduction, asymmetric install/access layout,
   copyable command strip, lightweight sharing/quiet section and contributor
   closing area. Layout and content work without JavaScript; optional copy and
-  pointer controls progressively enhance supported browsers.
+  pointer controls progressively enhance supported browsers. The install copy
+  action sits in the terminal toolbar with a clear label, copy icon and strong
+  contrast.
 - Command search now presents matches directly below the input with a visible
   count, empty state and Clear/Escape reset.
 - Introduced default-on adaptive pointer feedback for supported desktop devices,
