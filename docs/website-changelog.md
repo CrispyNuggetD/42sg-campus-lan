@@ -16,6 +16,9 @@ The [server changelog](../CHANGELOG.md) remains separate.
   pointer controls progressively enhance supported browsers. The install copy
   action sits in the terminal toolbar with a clear label, copy icon and strong
   contrast.
+- Made the creator identity visible near the introduction, linking Christopher
+  Nah’s GitHub and hnah’s Intra profile. The closing section distinguishes
+  creator/maintainer from Darren’s alpha-testing credit.
 - Command search now presents matches directly below the input with a visible
   count, empty state and Clear/Escape reset.
 - Introduced default-on adaptive pointer feedback for supported desktop devices,
