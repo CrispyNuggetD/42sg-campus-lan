@@ -1,8 +1,16 @@
 {
-  "version": "2.2.3-beta.1",
-  "date": "2026-10-27T02:42:32+08:00",
-  "source": "45e05b7758386d50cd1f74982dab8288748f9bef",
+  "version": "2.2.4-beta.1",
+  "date": "2026-10-27T03:00:35+08:00",
+  "source": "6f6cdffe5efa6bb6c7ad47a009caa3ac33aa6b58",
   "history": [
+    {
+      "version": "2.2.4-beta.1",
+      "date": "2026-10-27T03:00:35+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(host): guide on-campus guests and report the initial waiting state"
+      ]
+    },
     {
       "version": "2.2.3-beta.1",
       "date": "2026-10-27T02:42:32+08:00",
@@ -103,5 +111,5 @@
       ]
     }
   ],
-  "runtime_sha256": "57690678918f5eff6780b4220f1e88bd04b56a4d6288183c6153709d7a1d1862"
+  "runtime_sha256": "25aedf22d2f18cae20e9748abdc752e15cc5d6fee13f387f11fe2767556497ba"
 }

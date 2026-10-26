@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.2.4-beta.1 · 2026-10-27T03:00:35+08:00
+
+- fix(host): guide on-campus guests and report the initial waiting state
+
 ## 2.2.3-beta.1 · 2026-10-27T02:42:32+08:00
 
 - fix(about): identify dthoo and his GitHub account as one alpha tester
