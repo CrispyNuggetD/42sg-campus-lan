@@ -48,9 +48,12 @@ class RoomIdentity(unittest.IsolatedAsyncioTestCase):
                 def snapshot():
                     with urllib.request.urlopen(base+'/events') as r:return json.loads(r.readline().decode()[6:])
                 state=await asyncio.to_thread(snapshot)
-                self.assertEqual(state['players'][0]['name'],'hnah')
-                self.assertTrue(state['players'][0]['verified']);self.assertFalse(state['players'][1]['verified'])
-                self.assertTrue(state['players'][2]['sabo']);self.assertFalse(state['players'][2]['verified'])
+                by_name={p['name']:p for p in state['players']}
+                self.assertNotEqual(state['players'][0]['name'],'hnah')
+                self.assertTrue(by_name['hnah']['verified']);self.assertFalse(by_name['sillyguest']['verified'])
+                self.assertTrue(by_name['thtay']['sabo']);self.assertFalse(by_name['thtay']['verified'])
+                with urllib.request.urlopen(urllib.request.Request(base+'/auth/me',headers={'Cookie':cookie})) as r:updated=json.load(r)
+                self.assertEqual(updated['user']['slot'],by_name['hnah']['id'])
                 self.assertTrue(any(e.get('action')=='died' for e in state['events']))
                 round_event=next(e for e in state['events'] if e['type']=='round')
                 self.assertEqual(round_event['args'][0],'3')

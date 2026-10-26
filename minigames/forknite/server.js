@@ -14,6 +14,7 @@ const args = split < 0 ? [] : argv.slice(split + 1);
 function opt(key, fallback) { const i = options.indexOf(key); return i < 0 ? fallback : options[i + 1]; }
 const piped = options.includes('--pipe'), storm = options.includes('--storm');
 const rules=require('./rules');
+const seating=require('./seating');
 let settings=controlSecret?{...rules.presets.chill}:{die:Number(args[1]||130),eat:Number(args[2]||60),sleep:Number(args[3]||60),storm,shrink:Number(opt('--shrink','10')),meals:Number(args[4]||opt('--meals','3')),pause:4000};
 let phase='waiting',stopping=false;
 const binary = opt('--exec', null), port = Number(opt('--port', process.env.PORT || 4242));
@@ -52,7 +53,7 @@ function begin() {
  if (active || killed || piped || stopping) return;
  if(controlSecret && players.size<2){clearTimeout(timer);timer=null;phase='waiting for players';return;}
  if(controlSecret){
-  const ordered=Array.from(players.values());players.clear();const slots=new Map();
+  const ordered=seating.shuffle(Array.from(players.values()));players.clear();const slots=new Map();
   ordered.forEach((p,i)=>{players.set(i+1,p);if(p.memberId)slots.set(p.memberId,i+1);});
   auth.reassign(slots);emit('players',{players:roster()});
  }
@@ -62,7 +63,7 @@ function begin() {
  if(controlSecret)runargs[0]=String(players.size);
  // Storm uses finite, complete native simulations. It never changes a running C process.
  if (settings.storm && runargs.length === 4) runargs.push(String(settings.meals));
- emit('round',{round,args:runargs,count:controlSecret?players.size:count});
+ emit('round',{round,args:runargs,count:controlSecret?players.size:count,players:roster()});
  const rawlog = fs.createWriteStream(path.join(logdir, session + '-round-' + round + '.log'));
  rawlog.on('error', e => { console.error(e.message); shutdown(); });
  const command = options.includes('--buffered') ? binary : 'stdbuf';
@@ -120,6 +121,7 @@ const server = http.createServer(async (req,res) => {
   if(!controlSecret||!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)||req.headers.authorization!=='Bearer '+controlSecret)return json(res,403,{error:'Local LAN42 control only'});
   let body='';req.on('data',b=>{body+=b;if(body.length>32768)req.destroy();});req.on('end',()=>{try{
    const data=JSON.parse(body);
+   if(data.action==='roster')return json(res,200,{players:roster()});
    if(data.action==='status')return json(res,200,{phase,round,players:players.size,deadline,settings});
    if(data.action==='configure'){
     if(active||timer)return json(res,409,{error:'Use /stop before changing timings or storm settings.'});
@@ -128,9 +130,20 @@ const server = http.createServer(async (req,res) => {
     settings=rules.configure(preset?{...preset}:settings,data.patch||{});deadline=settings.die;
     emit('settings',{settings});return json(res,200,{phase,round,players:players.size,deadline,settings});
    }
+   if(data.action==='diners'){
+    if(active||timer)return json(res,409,{error:'Use /stop before changing diners.'});
+    const target=data.count;
+    if(!Number.isInteger(target)||target<2||target>count)return json(res,400,{error:'Choose a total between 2 and '+count+'.'});
+    const real=Array.from(players.values()).filter(p=>!p.randomDiner).length;
+    if(target<real)return json(res,400,{error:'Total cannot be smaller than the joined players and named sabo diners ('+real+').'});
+    for(const [slot,p] of players)if(p.randomDiner)players.delete(slot);
+    while(players.size<target){let slot=1;while(players.has(slot))slot++;
+     players.set(slot,{name:'Diner-'+crypto.randomBytes(3).toString('hex'),sabo:true,randomDiner:true,token:null,userId:null});}
+    emit('players',{players:roster()});return json(res,200,{count:players.size});
+   }
    if(data.action==='sabo_profiles'){
     if(active||timer)return json(res,409,{error:'Use /stop before adding sabo diners.'});
-    if(!Array.isArray(data.profiles)||data.profiles.length>10)throw Error();
+    if(!Array.isArray(data.profiles)||data.profiles.length>count)throw Error();
     const added=[];
     for(const profile of data.profiles){
      if(typeof profile.login!=='string'||!/^[a-zA-Z0-9_.-]{1,32}$/.test(profile.login))throw Error();

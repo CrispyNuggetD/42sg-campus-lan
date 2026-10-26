@@ -30,9 +30,9 @@ HELP = [
     'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
-    '/admin: local API owner avatar cache tools',
+    '/admin: local API owner avatar cache tools | /info [FILTER] [PAGE]: cached campus directory',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
-    '/game forknite: browser game room; identity follows your LAN42 sign-in',
+    '/game forknite: browser game room | /browser: reopen current FORKNITE website',
     '/update (or /upgrade): update package + reload local instances | /restart: reload installed code',
     'Chat: type and Enter. Tab completes /commands and games. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
@@ -170,7 +170,7 @@ class Client:
                         self.notify(msg['text'],throttle=False)
             elif kind=='browser_game':
                 signature=(msg.get('room'),msg.get('url'))
-                if signature != getattr(self,'browser_room',None):
+                if msg.get('reopen') or signature != getattr(self,'browser_room',None):
                     self.browser_room=signature
                     import urllib.parse, webbrowser
                     parsed=urllib.parse.urlsplit(msg.get('url',''))
@@ -179,7 +179,7 @@ class Client:
                         continue
                     url=msg['url']+'/#lan42='+urllib.parse.quote(msg['ticket'])
                     threading.Thread(target=webbrowser.open,args=(url,),daemon=True).start()
-                    self.lines.append('FORKNITE opened in your browser with your LAN42 room identity. Host uses /start here.')
+                    self.lines.append('FORKNITE: '+msg['url']+' | /browser reopens this room. Host uses /start here.')
             elif kind=='welcome':
                 self.id = msg['id']
                 if getattr(self, 'secure', False):

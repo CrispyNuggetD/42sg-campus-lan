@@ -5,6 +5,7 @@
 1. Optionally `/signin` once in LAN42 HQ.
 2. `/game forknite` creates a room; friends use `/join ROOM_NUMBER`.
 3. Each browser opens automatically, already identified as the corresponding LAN42 room member. No separate 42 login, nickname claim, URL-copy step or credentials are required from players.
+   Use `/browser` in the game terminal to reopen the current room with a fresh entry ticket. The terminal also shows the plain room URL, which works in the same browser while its room cookie is valid.
 4. The host types `/start` in the LAN42 game terminal. `/leave` leaves the room.
 
 LAN42 guests keep their pseudonyms and silly avatars. Verified users get their Intra login, available profile photo, and `✓42`. Missing photos use silly faces. Player identities and slots are assigned by the room server, not by browser form fields. Direct URL visitors can spectate or claim an available guest slot. The last room member leaving shuts down the native process and wrapper. Browser sessions are revoked on room departure.
@@ -138,3 +139,33 @@ existing servers need only a browser refresh. Original Mojang asset URLs and
 verified SHA-1 source identifiers are recorded in `public/sounds/SOURCES.txt`.
 
 An actual `died` replay event plays one of two separate fox death clips when Sounds is enabled. The death cue cuts off eating clips so it is audible, and follows the same volume and mute controls.
+
+## Round table, diners, and campus directory
+
+Each native room round shuffles the mapping from people to C philosopher IDs;
+seat 1 changes identity between consecutive rounds. IDs remain adjacent around
+the circular table, preserving the C fork topology. Random seating distributes
+scheduling bias; it does not alter the C scheduler or guarantee survival.
+Round stats display the exact arguments supplied to C. The hunger time remaining
+is a replay-time estimate from the last observed eating start. Meal-start colors
+are lime (first), cyan (second), and pink (third or later); they do not prove a
+completed meal. Every round resets counters.
+
+- `/diners 7`: fill to seven total diners with fictional random stand-ins.
+  Repeating the command replaces its generated stand-ins; joined users and
+  explicitly named students remain. Use `/stop` before changing the table.
+- `/sabo RANDOM 5`: add five distinct students from the cached campus directory,
+  excluding everyone seated. These are labelled SABO, never verified players.
+  No API call is needed; no student is contacted or actually joins the room.
+- `/info` or `/info_campus`: read the API host's cached campus summary in LAN42.
+  `/info hnah`, `/info 2025-04`, or `/info 2` filter or paginate the table.
+
+The API owner refreshes with `python3 -m campus_lan.campus_info refresh`.
+Requests are sequential, spaced at least 1.1 seconds apart, with bounded retries
+and backoff. Pagination uses bulk enrollments rather than one lookup per student.
+The selected academic data and Markdown tables go to the owner's private workspace
+(`LAN42_CAMPUS_DATA` overrides the directory). They must stay out of public Git.
+Only students with a 42cursus enrollment are included. Intake dates come from
+cursus begin_at and are not certified cohort numbers. Missing status information
+is UNKNOWN; account activity and a blackhole deadline do not prove ACTIVE,
+BLACKHOLED or FREEZE enrollment status. The export keeps those API facts separate.

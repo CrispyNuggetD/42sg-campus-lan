@@ -38,6 +38,23 @@ class HQ(unittest.TestCase):
         c.send.assert_called_once_with(dict(type='command',text='/join 7'))
         self.assertIsNone(c.initial_command)
 
+    def test_browser_reopen_uses_fresh_ticket_and_displays_plain_url(self):
+        c=self.client()
+        c.inbox=queue.Queue()
+        message=dict(type='browser_game',room='7',url='http://127.0.0.1:4242',ticket='first')
+        with patch('campus_lan.client.threading.Thread') as thread:
+            c.inbox.put(message)
+            c.consume()
+            c.inbox.put(message)
+            c.consume()
+            self.assertEqual(thread.call_count,1)
+            c.inbox.put(dict(message,reopen=True,ticket='fresh'))
+            c.consume()
+            self.assertEqual(thread.call_count,2)
+            self.assertEqual(thread.call_args.kwargs['args'],('http://127.0.0.1:4242/#lan42=fresh',))
+        self.assertIn('http://127.0.0.1:4242',c.lines[-1])
+        self.assertNotIn('fresh',c.lines[-1])
+
     def test_game_command_launches_each_game_including_forknite(self):
         c = self.client()
         with patch('campus_lan.client.subprocess.run',return_value=Mock(returncode=0)) as run:

@@ -68,7 +68,7 @@ class Lobby:
             secure=bool(self.auth_broker), nodes=1 if self.auth_broker else len(self.mesh.peers)+1,
             players=players, rooms=self.mesh.local_rooms() if self.auth_broker else self.mesh.rooms()))
 
-    async def room_state(self, rid):
+    async def room_state(self, rid, reopen=None):
         if rid not in self.rooms:
             return
         room = self.rooms[rid]
@@ -96,12 +96,12 @@ class Lobby:
                 result=await room['web'].control(dict(action='members',members=members))
                 for entry in result['entries']:
                     c=self.clients.get(entry['id'])
-                    if not c:continue
+                    if not c or (reopen is not None and entry['id'] != reopen):continue
                     host=c['writer'].get_extra_info('sockname')[0]
                     if ipaddress.ip_address(host).is_loopback:
                         import socket
                         host=socket.gethostbyname(socket.gethostname())
-                    await self.send(c,dict(type='browser_game',room=rid,url='http://'+host+':'+str(room['web'].port),ticket=entry['ticket']))
+                    await self.send(c,dict(type='browser_game',room=rid,url='http://'+host+':'+str(room['web'].port),ticket=entry['ticket'],reopen=entry['id']==reopen))
             except (OSError,ValueError):
                 await self.event('FORKNITE browser unavailable. Leave and recreate the room.',room['members'])
 
@@ -145,7 +145,14 @@ class Lobby:
                     if active:
                         pid,rid,room = other,candidate,active
                         break
-        if cmd == '/games':
+        if cmd in ('/info','/info_campus'):
+            from .campus_info import info_lines
+            for line in info_lines(arg):await self.event(line,{pid})
+        elif cmd == '/browser':
+            if not room or room['game'] != 'forknite':
+                raise ValueError('Join a FORKNITE room first with /game forknite or /join ROOM.')
+            await self.room_state(rid, reopen=pid)
+        elif cmd == '/games':
             await self.send(c,dict(type='event',text='Games: tetris, bluff (free|prompt), hexwars (C bot arena), forknite (browser). /game NAME | /join ROOM'))
         elif cmd == '/signin':
             await self.send(c,dict(type='event',text='Use /signin in your local HQ client to open 42 in your browser.'))
@@ -210,10 +217,26 @@ class Lobby:
             else:result=await room['web'].control(parse(cmd,arg))
             await self.event(summary(result),room['members'])
             await self.broadcast(dict(type='forknite_status',status=result),room['members'])
+        elif cmd == '/diners':
+            if not room or room['game']!='forknite' or room['host']!=pid:
+                raise ValueError('Only the FORKNITE room host can use /diners TOTAL.')
+            if not arg.isdecimal():raise ValueError('Use /diners TOTAL, e.g. /diners 7.')
+            result=await room['web'].control(dict(action='diners',count=int(arg)))
+            await self.event('Table set for '+str(result['count'])+' diners; random seats assigned on /start.',room['members'])
         elif cmd == '/sabo':
             if not room or room['game']!='forknite' or room['host']!=pid:
                 raise ValueError('Only the FORKNITE room host can use /sabo LOGIN...')
-            profiles, errors = await self.profile_lookup.lookup_many(arg.split())
+            bits=arg.split()
+            if bits and bits[0].upper()=='RANDOM':
+                if len(bits)!=2 or not bits[1].isdecimal():raise ValueError('Use /sabo RANDOM 5.')
+                from .campus_info import random_profiles
+                seated=await room['web'].control(dict(action='roster'))
+                requested=int(bits[1])
+                if requested>50-len(seated['players']):raise ValueError('Not enough empty seats (50 maximum).')
+                profiles=random_profiles(requested,[p['name'] for p in seated['players']])
+                errors=[]
+            else:
+                profiles, errors = await self.profile_lookup.lookup_many(bits)
             if profiles:
                 if rid not in self.rooms or self.rooms[rid] is not room:
                     raise ValueError('Room closed while profiles were loading.')

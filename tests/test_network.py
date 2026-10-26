@@ -177,12 +177,51 @@ class Network(unittest.IsolatedAsyncioTestCase):
                 f=await self.receive(friend,lambda m:m['type']=='browser_game')
                 self.assertEqual(f['url'],h['url'])
                 self.assertNotEqual(f['ticket'],h['ticket'])
+                await self.cmd(friend,'/browser')
+                reopened=await self.receive(friend,lambda m:m['type']=='browser_game' and m.get('reopen'))
+                self.assertEqual(reopened['room'],f['room'])
+                self.assertEqual(reopened['url'],f['url'])
+                self.assertNotEqual(reopened['ticket'],f['ticket'])
+                self.assertEqual(len(self.lobby.rooms),1)
                 await self.cmd(host,'/start')
                 await self.receive(host,lambda m:m['type']=='event' and 'native simulation started' in m.get('text',''))
                 await self.cmd(friend,'/leave')
                 await self.cmd(host,'/leave')
                 await self.receive(host,lambda m:m['type']=='game' and not m.get('game'))
                 self.assertFalse(self.lobby.rooms)
+
+    async def test_random_sabo_adds_cached_people_and_diners_fills_total(self):
+        import tempfile,os
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp:
+            binary=Path(tmp)/'philo';binary.write_text('#!/bin/sh\nsleep 2\n');binary.chmod(0o700)
+            (Path(tmp)/'singapore.json').write_text(json.dumps({'students':[{'login':'student'+str(i)} for i in range(8)]+[{'login':'host'}]}))
+            with patch.dict(os.environ,{'LAN42_PHILO_BINARY':str(binary),'LAN42_FORKNITE_LOGDIR':tmp,'LAN42_CAMPUS_DATA':tmp}):
+                host,_=await self.connect('host');friend,_=await self.connect('friend')
+                await self.cmd(host,'/game forknite')
+                await self.receive(host,lambda m:m['type']=='browser_game')
+                await self.cmd(friend,'/join 1')
+                await self.receive(friend,lambda m:m['type']=='browser_game')
+                await self.cmd(friend,'/diners 7')
+                await self.receive(friend,lambda m:m['type']=='event' and 'Only the FORKNITE room host' in m.get('text',''))
+                await self.cmd(host,'/sabo RANDOM 5')
+                await self.receive(host,lambda m:m['type']=='event' and m.get('text','').startswith('SABO:'))
+                room=self.lobby.rooms['1']['web']
+                roster=(await room.control(dict(action='roster')))['players']
+                self.assertEqual(len(roster),7)
+                self.assertEqual(len({p['name'] for p in roster}),7)
+                await self.cmd(host,'/diners 9')
+                await self.receive(host,lambda m:m['type']=='event' and 'Table set for 9' in m.get('text',''))
+                self.assertEqual((await room.control(dict(action='status')))['players'],9)
+                await self.cmd(host,'/diners 7')
+                await self.receive(host,lambda m:m['type']=='event' and 'Table set for 7' in m.get('text',''))
+                self.assertEqual((await room.control(dict(action='status')))['players'],7)
+                await self.cmd(host,'/start')
+                await self.receive(host,lambda m:m['type']=='event' and 'native simulation started' in m.get('text',''))
+                await self.cmd(host,'/diners 8')
+                await self.receive(host,lambda m:m['type']=='event' and 'Use /stop' in m.get('text',''))
+                await self.cmd(friend,'/leave');await self.cmd(host,'/leave')
+                await self.receive(host,lambda m:m['type']=='game' and not m.get('game'))
 
 if __name__=='__main__':
     unittest.main()

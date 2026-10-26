@@ -2,8 +2,8 @@
 import os
 
 GAMES = ('bluff', 'forknite', 'hexwars', 'tetris')
-COMMANDS = ('/admin', '/answer', '/authhost', '/bot', '/connect', '/forknite', '/game', '/games',
-            '/help', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
+COMMANDS = ('/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
+            '/help', '/info', '/info_campus', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
             '/lobby', '/map', '/next', '/meals', '/notify', '/practice', '/prev', '/preset', '/profile', '/quit', '/settings',
             '/restart', '/roster', '/rooms', '/signin', '/start', '/stop', '/status', '/storm', '/timings',
             '/update', '/upgrade', '/vote', '/who')
