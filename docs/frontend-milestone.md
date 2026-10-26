@@ -155,10 +155,13 @@ actions feel tangible, rather than relying only on a hand-shaped cursor.
 Apple describes pointer shape changes, highlight/lift effects and magnetism in
 its [pointer design guidance](https://developer.apple.com/videos/play/wwdc2020/10640/).
 
-Treat this as a scoped interaction prototype, not a shipped feature or a promise
-of native iPadOS behaviour in a website. For the web, evaluate subtle target
-highlight/motion first; any simulated morphing pointer should be optional, keep
-accurate click targets and restore native text selection and cursor behaviour.
+The website now provides an iPadOS-inspired adaptive pointer as a progressive
+enhancement, not native iPadOS integration. It is on by default for eligible
+mouse/trackpad users, with a persistent footer toggle. Navigation links, buttons
+and disclosure controls get a rounded morphing highlight; ordinary text, inputs
+and inline links retain their native cursor. The overlay never changes actual
+click targets. Touch, reduced-motion and forced-colour preferences use the native
+pointer. This is website polish, not a completed Textual migration.
 Respect reduced-motion preferences, keyboard focus, touch input, browser zoom
 and high-contrast needs. No tracking, artificial click delays or moving targets.
 

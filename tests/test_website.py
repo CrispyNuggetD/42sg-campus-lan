@@ -54,6 +54,8 @@ class Website(unittest.TestCase):
             self.assertNotIn('/home/hnah',index)
             self.assertNotIn('file://',index)
             for page in output.glob('*.html'):
+                self.assertIn('lan42.pointer-effects',page.read_text())
+                self.assertIn('pointer-events:none',page.read_text())
                 for href in re.findall(r'href="([^"]+)"',page.read_text()):
                     link=urlsplit(html.unescape(href))
                     if not link.scheme and not link.netloc and link.path:

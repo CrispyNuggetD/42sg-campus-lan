@@ -95,3 +95,20 @@ count, nearby empty state and Clear/Escape reset. Keep results visible without
 scrolling through introductory material; cloned command rows retain copy actions.
 Check both narrow and desktop widths when changing this interaction. The same
 self-contained file powers the online reference and local help.
+
+
+## Adaptive pointer
+
+`pointer.js` and `pointer.css` are inlined into generated online pages by the
+builder, including the command reference. The local offline HELP file is not
+modified by this enhancement. Eligible mouse/trackpad users get the effect by
+default. The footer toggle persists only `lan42.pointer-effects=on|off` in the
+browser; there is no telemetry. Storage failure falls back to session behaviour.
+Text/input/inline-link cursors, keyboard focus, scrolling, reduced motion,
+forced colours and touch use native behaviour. The overlay has `pointer-events:
+none`, no click handlers and no authority to move targets or trigger navigation.
+Keep it independent of user content, permissions and server state.
+
+Browser verification covers default-on, target bounds, actual navigation,
+text/input handling, keyboard dismissal, persisted off/on, media-query changes,
+search and touch fallback. Check those flows when changing the pointer code.

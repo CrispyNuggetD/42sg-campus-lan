@@ -98,6 +98,14 @@ def build(output):
         (ROOT/'website/alpha-tester.html').read_text()))
     for source,filename in DOCUMENT_PAGES.items():
         (output/filename).write_text(roadmap_page(source))
+    # Inline across online pages; offline help remains independent of browser effects.
+    pointer_style=(ROOT/'website/pointer.css').read_text()
+    pointer_script=(ROOT/'website/pointer.js').read_text()
+    for page in output.glob('*.html'):
+        source=page.read_text()
+        source=source.replace('</head>','<style>'+pointer_style+'</style></head>',1)
+        source=source.replace('</body>','<script>'+pointer_script+'</script></body>',1)
+        page.write_text(source)
     (output/'.nojekyll').touch()
 
 
