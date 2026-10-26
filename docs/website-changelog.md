@@ -16,6 +16,9 @@ The [server changelog](../CHANGELOG.md) remains separate.
   pointer controls progressively enhance supported browsers. The install copy
   action sits in the terminal toolbar with a clear label, copy icon and strong
   contrast.
+- Placed a clearly labelled, collapsed “AI-assisted, human-directed” disclosure
+  next to the creator’s AI-use statement, with visible Read how / Close cues and
+  native keyboard/no-JavaScript operation.
 - Made the creator identity visible near the introduction, linking Christopher
   Nah’s GitHub and hnah’s Intra profile. The closing section distinguishes
   creator/maintainer from Darren’s alpha-testing credit.
