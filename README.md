@@ -569,8 +569,8 @@ The persistent footer buttons are clickable. **F2** signs in or out (use HQ for
 account changes), **F3** mutes system output, **F4** toggles system output
 between 0% and 30%, **F5** tries `/uwu` once, and **F6** toggles automatic uwu
 for this window. The guest prompt also supports “click here”. Some terminals
-require Fn with function keys; the clickable buttons work without them. These
-controls preserve your typed draft and wait while a consent/setup question is
+require Fn with function keys; the clickable buttons work without them. F3 also pauses uwu output in this window until F4, so automatic uwu cannot
+raise the volume behind your back. These controls preserve your typed draft and wait while a consent/setup question is
 active. Sound permission remains separate; output mute does not disable desktop
 popups (`/notify off` controls ordinary notifications). Tab still switches the
 roster/map or game mode; PgUp/PgDn scroll chat.

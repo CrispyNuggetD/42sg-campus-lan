@@ -14,8 +14,11 @@ class QuickControls:
             else:
                 self.start_signin()
         elif action == 'mute':
+            self.shortcut_audio_muted = True
             self.volume_command('/volume 0')
+            self.lines.append('Uwu output paused in this window; F4 resumes output control.')
         elif action == 'volume':
+            self.shortcut_audio_muted = False
             self.volume_command('/volume')
         elif action == 'uwu':
             self.uwu_command('/uwu')

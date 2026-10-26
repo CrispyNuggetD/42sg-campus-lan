@@ -49,3 +49,12 @@ class QuickControlTests(unittest.TestCase):
         self.assertEqual(len(c.control_hits),6)
         for row,left,right,action in c.control_hits:self.assertLessEqual(right,75)
         self.assertTrue(any('Auto:on' in call.args[2] for call in c.line.call_args_list))
+
+    def test_shortcut_mute_blocks_automatic_volume_raise(self):
+        from campus_lan.local_console import LocalConsole
+        c=Controls();c.quick_key(curses.KEY_F3)
+        action=Mock()
+        LocalConsole.with_audio_volume(c,action)
+        action.assert_not_called()
+        self.assertTrue(c.shortcut_audio_muted)
+        c.quick_key(curses.KEY_F4);self.assertFalse(c.shortcut_audio_muted)

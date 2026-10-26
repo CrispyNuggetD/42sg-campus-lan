@@ -51,6 +51,7 @@ def shell_command(screen,command):
 
 class LocalConsole:
     def with_audio_volume(self,action):
+        if getattr(self,'shortcut_audio_muted',False):return
         from .volume import Volume
         try:
             volume=Volume()
