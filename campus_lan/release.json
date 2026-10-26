@@ -1,8 +1,16 @@
 {
-  "version": "2.1.0-beta.1",
-  "date": "2026-10-27T01:27:38+08:00",
-  "source": "af15668d7bf5b2f9b838b8068a73dcb69478bedb",
+  "version": "2.2.0-beta.1",
+  "date": "2026-10-27T02:17:21+08:00",
+  "source": "e3aa8c40098cfa7e6e877faef9b0a51b24aa7979",
   "history": [
+    {
+      "version": "2.2.0-beta.1",
+      "date": "2026-10-27T02:17:21+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat(access): enforce Singapore API scope and independent user and host permissions"
+      ]
+    },
     {
       "version": "2.1.0-beta.1",
       "date": "2026-10-27T01:27:38+08:00",
@@ -71,5 +79,5 @@
       ]
     }
   ],
-  "runtime_sha256": "c503c109045f33e17fe28be4d926de2765e578e044fe50d5daa042bc8c5b573d"
+  "runtime_sha256": "96506df322a1db42b0b394bdbe3c49fca9a8a42288369edde812118875bd78cc"
 }

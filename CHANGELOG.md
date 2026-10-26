@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.2.0-beta.1 · 2026-10-27T02:17:21+08:00
+
+- feat(access): enforce Singapore API scope and independent user and host permissions
+
 ## 2.1.0-beta.1 · 2026-10-27T01:27:38+08:00
 
 - Administrative release: the first CI run misclassified Python 3.12 versus 3.14 AST formatting as a runtime change. No server functionality changed from 2.0.0-beta.1. The existing 2.1.0-beta.1 tag is retained for traceability; fingerprints now use interpreter-independent serialization.
