@@ -15,9 +15,22 @@ spec.loader.exec_module(module)
 class TerminalSetup(unittest.TestCase):
     def test_mac_quotes_path_as_one_argument(self):
         repo = Path("/tmp/a friend's $(echo nope) clone")
-        cmd = module.terminal_command(repo, 'darwin')
+        with patch.dict(os.environ, {'DAILY_TMUX_HELPER': ''}):
+            cmd = module.terminal_command(repo, 'darwin')
         self.assertEqual(shlex.split(cmd[-1]), ['sh', str(repo/'lan42.sh')])
         self.assertIn('do script', cmd[2])
+
+    def test_mac_and_linux_use_shared_tmux_helper_for_games(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            helper = Path(tmp)/'daily helper.py'
+            helper.touch()
+            for platform in ('darwin', 'linux'):
+                with patch.dict(os.environ, {'DAILY_TMUX_HELPER': str(helper)}):
+                    command = module.terminal_command(ROOT, platform, args=('game', 'pong'))
+                    self.assertEqual(command[1], str(helper))
+                    self.assertIn('lan42-game-' + str(os.getpid()), command)
+                    self.assertIn('LAN42_NO_UPDATE=1', command)
+                    self.assertNotIn('osascript', command)
 
     def test_linux_terminal_and_missing_desktop(self):
         with patch.dict(os.environ, {'DAILY_TMUX_HELPER': ''}):

@@ -17,7 +17,7 @@ def terminal_command(repo, platform=sys.platform, which=shutil.which, args=()):
         if os.environ.get(name):environment.append(name+'='+os.environ[name])
     if environment:invocation=['env',*environment,*invocation]
     helper = os.environ.get('DAILY_TMUX_HELPER')
-    if helper and platform != 'darwin':
+    if helper:
         if not Path(helper).is_file():
             raise RuntimeError('Daily tmux helper missing: ' + helper)
         # Separate game launches must not steal the lobby's window.
