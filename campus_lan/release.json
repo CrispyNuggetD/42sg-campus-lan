@@ -1,8 +1,16 @@
 {
-  "version": "2.2.2-beta.1",
-  "date": "2026-10-27T02:37:27+08:00",
-  "source": "c7899e895edca8ddbb2ca8ebc85e4602b90af087",
+  "version": "2.2.3-beta.1",
+  "date": "2026-10-27T02:42:32+08:00",
+  "source": "45e05b7758386d50cd1f74982dab8288748f9bef",
   "history": [
+    {
+      "version": "2.2.3-beta.1",
+      "date": "2026-10-27T02:42:32+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(about): identify dthoo and his GitHub account as one alpha tester"
+      ]
+    },
     {
       "version": "2.2.2-beta.1",
       "date": "2026-10-27T02:37:27+08:00",
@@ -41,7 +49,7 @@
       "notes": [
         "API-backed campus tools, verified sign-in, tracking, announcements and consent-controlled KoelDrop graduate from alpha.",
         "Beta began Tuesday 27 October 2026 at 00:48 SGT (+08:00).",
-        "Alpha testing: dthoo (GitHub: whatisthisbuffoonery — https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta."
+        "Alpha testing: dthoo (GitHub: whatisthisbuffoonery \u2014 https://crispynuggetd.github.io/42sg-campus-lan/alpha-tester.html). Thank you for testing LAN42 before beta."
       ]
     },
     {
@@ -95,5 +103,5 @@
       ]
     }
   ],
-  "runtime_sha256": "1f7616b0ef41b64a08f6cdd3171dd9d5bcb3151110eff745f312811389c02604"
+  "runtime_sha256": "57690678918f5eff6780b4220f1e88bd04b56a4d6288183c6153709d7a1d1862"
 }

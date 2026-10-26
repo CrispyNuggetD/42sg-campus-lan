@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.2.3-beta.1 · 2026-10-27T02:42:32+08:00
+
+- fix(about): identify dthoo and his GitHub account as one alpha tester
+
 ## 2.2.2-beta.1 · 2026-10-27T02:37:27+08:00
 
 - fix(uwu): introduce the koel file courier and invite users to try KoelDrop
