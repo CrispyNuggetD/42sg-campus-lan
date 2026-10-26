@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.3.1-beta.1 · 2026-10-27T03:08:54+08:00
+
+- fix: keep automatic uwu quiet after shortcut mute
+
 ## 2.3.0-beta.1 · 2026-10-27T03:08:08+08:00
 
 - feat: add clickable account and audio shortcut bar
