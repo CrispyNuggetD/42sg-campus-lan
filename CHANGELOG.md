@@ -2,6 +2,10 @@
 
 Generated from `campus_lan/release.json`; `/changelog` shows the same history.
 
+## 2.2.1-beta.1 · 2026-10-27T02:32:15+08:00
+
+- fix(startup): migrate the legacy campus owner host during normal initialization
+
 ## 2.2.0-beta.1 · 2026-10-27T02:17:21+08:00
 
 - feat(access): enforce Singapore API scope and independent user and host permissions

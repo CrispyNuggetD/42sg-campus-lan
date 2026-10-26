@@ -1,8 +1,16 @@
 {
-  "version": "2.2.0-beta.1",
-  "date": "2026-10-27T02:17:21+08:00",
-  "source": "e3aa8c40098cfa7e6e877faef9b0a51b24aa7979",
+  "version": "2.2.1-beta.1",
+  "date": "2026-10-27T02:32:15+08:00",
+  "source": "44e0ca54f361e05d7c619bddf3576f4e4936b834",
   "history": [
+    {
+      "version": "2.2.1-beta.1",
+      "date": "2026-10-27T02:32:15+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(startup): migrate the legacy campus owner host during normal initialization"
+      ]
+    },
     {
       "version": "2.2.0-beta.1",
       "date": "2026-10-27T02:17:21+08:00",
@@ -79,5 +87,5 @@
       ]
     }
   ],
-  "runtime_sha256": "96506df322a1db42b0b394bdbe3c49fca9a8a42288369edde812118875bd78cc"
+  "runtime_sha256": "0a8927e8353c13cd2a19f1760b4a8535f0b378f17ef7e25fbba8963c5d49ae29"
 }
