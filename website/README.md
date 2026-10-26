@@ -104,11 +104,19 @@ builder, including the command reference. The local offline HELP file is not
 modified by this enhancement. Eligible mouse/trackpad users get the effect by
 default. The footer toggle persists only `lan42.pointer-effects=on|off` in the
 browser; there is no telemetry. Storage failure falls back to session behaviour.
-Text/input/inline-link cursors, keyboard focus, scrolling, reduced motion,
-forced colours and touch use native behaviour. The overlay has `pointer-events:
+Links retain their semantic navigation behaviour while sharing the morph
+highlight. Text and text fields smoothly form a visual I-beam; actual selection
+and editing remain native. Keyboard use restores the OS cursor. Scrolling
+re-evaluates the target without tearing down the shape. Reduced motion, forced
+colours and touch use native pointer behaviour. The overlay has `pointer-events:
 none`, no click handlers and no authority to move targets or trigger navigation.
 Keep it independent of user content, permissions and server state.
 
 Browser verification covers default-on, target bounds, actual navigation,
 text/input handling, keyboard dismissal, persisted off/on, media-query changes,
 search and touch fallback. Check those flows when changing the pointer code.
+
+
+Meaningful website design milestones are maintained in docs/website-changelog.md,
+rendered as website-changelog.html. Update that source when interaction direction
+changes; server releases remain governed by the separate runtime fingerprint.

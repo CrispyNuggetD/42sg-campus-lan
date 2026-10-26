@@ -40,7 +40,7 @@ DOCUMENT_PAGES = {
     **{'docs/'+name+'.md':name+'.html' for name in (
         'getting-started','campus-guide','minigames','file-sharing','preferences',
         'web-search','exam-quiet','sign-in','hosting','access-policy','versioning',
-        'runtime-environment','local-testing','protocol','file-sharing-design')},
+        'runtime-environment','local-testing','protocol','file-sharing-design','website-changelog')},
 }
 
 

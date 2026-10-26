@@ -49,3 +49,11 @@ Exam quiet defers popups; first contact only establishes a baseline.
 A newly fetched exam date is an expiring calendar-setting update, not a software
 patch or security update. It changes the queued audio window without a Git pull,
 server-version increment or executable update message. See [exam quiet](exam-quiet.md).
+
+
+## Website design milestones
+
+Meaningful public-site interaction and design changes are recorded in
+[Website design history](website-changelog.md). A design milestone can establish
+a direction for the future TUI without being a server release or claiming the
+TUI work has shipped. Site-only work remains excluded from the server fingerprint.

@@ -157,10 +157,11 @@ its [pointer design guidance](https://developer.apple.com/videos/play/wwdc2020/1
 
 The website now provides an iPadOS-inspired adaptive pointer as a progressive
 enhancement, not native iPadOS integration. It is on by default for eligible
-mouse/trackpad users, with a persistent footer toggle. Navigation links, buttons
-and disclosure controls get a rounded morphing highlight; ordinary text, inputs
-and inline links retain their native cursor. The overlay never changes actual
-click targets. Touch, reduced-motion and forced-colour preferences use the native
+mouse/trackpad users, with a persistent footer toggle. All links, buttons and disclosure controls share a rounded highlight. A single
+borderless translucent shape continuously interpolates position and size; it
+forms an I-beam over text and text fields without altering native selection or
+editing. The overlay never changes actual click targets. See the
+[website design milestone](website-changelog.md). Touch, reduced-motion and forced-colour preferences use the native
 pointer. This is website polish, not a completed Textual migration.
 Respect reduced-motion preferences, keyboard focus, touch input, browser zoom
 and high-contrast needs. No tracking, artificial click delays or moving targets.

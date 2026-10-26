@@ -28,6 +28,9 @@ quiet, calendar updates and the release notification budget.
 and the possible Life OS/hosted LLM and gamification/social experiment. These are plans, not
 available features or release commitments.
 
+[Website design history](website-changelog.md) records site interaction milestones
+separately from server releases.
+
 ## Hosting and maintaining LAN42
 
 | Guide | What is inside |
