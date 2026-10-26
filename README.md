@@ -27,7 +27,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 <!-- shell-installer-features:start -->
 - `lan42` / `lan42_window`: BETA campus HQ in tmux; startup version/date and `/changelog`.
 - `/who` / `/join`: discover peers, link campus seats and chat across lobbies.
-- `/map` / `/track`: read-only campus seating maps and your own local people lists.
+- `/map` / `/track`: maps and personal lists; `/signin` then `/clusters` for current API-reported SG seats.
 - `/uwu`: meet the koel file courier; `/koel` for approved sharing; `/dm` / `/uwu LOGIN` for messages/pokes; `/volume` for audio.
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE—a multiplayer visualiser/game for the legacy 42 C Philosophers project; Up/Down history and !COMMAND for the local shell.
 - `/signin`: verified SG members get selected API views; guests keep chat/games; API hosts require approval.
@@ -294,7 +294,8 @@ last 500 event lines. Text input currently supports ASCII.
 | `/invite` | Ask for a friend's seat and invite their running lobby to your room. |
 | `/invite-room` | Share your room invitation across the connected nodes. |
 | `/notify off` | Mute your desktop notifications. |
-| `/signin` | Open 42 in your browser, then join the configured secure lobby. |
+| `/signin` | Singapore students: sign in with 42 to unlock current campus occupancy via `/clusters`. |
+| `/clusters [1|2]` | After sign-in, see API-reported logins and occupied seats in either cluster, with a snapshot timestamp. |
 | `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
 | `/settings signout` | Revoke this device's session and return to guest HQ. |
 | `/quit` | Close the app and stop your node. |
@@ -586,12 +587,25 @@ Git at `~/.cache/42sg-campus-lan/avatars` with private permissions. Joined playe
 receive same-origin image responses from the game server; see the game README
 for access control, HTTP transport limits, cache lifetime and import commands.
 
-`/clusters [1|2]` shows active Singapore campus API locations using the existing
-ASCII floor plan (even seats above odd seats), including the snapshot timestamp.
-Snapshots are fetched on demand, shared for 30 seconds, and are separate from
-LAN42 peers shown by `/map` or `/roster`. This represents reported logged-in
-computers, not everyone physically present. `/clusters` refreshes; `/next` and
-`/prev` page through the map and numbered login roster. The API host needs private credentials and explicit host enrollment. Guest sockets cannot request these views; verified SG members and enrolled local API operators can. API reference:
+**Singapore students: yes, you can see the clusters after signing in!** Run
+`/signin`, then `/clusters` (cluster 1) or `/clusters 2`. The ASCII floor plan is
+the layout; occupied seats and student logins are fetched from the 42 API, with
+the snapshot time shown. This is reported workstation login activity, rather
+than a guarantee of physical attendance or instantaneous updates.
+
+Your client asks the configured approved API host (currently hnah’s), not 42
+directly. That server process shares one snapshot across `/clusters` and campus
+tracking for **30 seconds**. Ten students requesting it together share **one
+refresh**, including the first concurrent requests on an empty cache. A refresh
+may require several API pages and an OAuth token request—it is not necessarily
+one HTTP call. After the cache expires, the next request refreshes it for everyone.
+There is no continuous fetch just to redraw the map or use `/next` and `/prev`.
+Separate server processes, including the owner’s optional local offsite view,
+have separate caches; the cache is not shared across different machines.
+
+`/map` and `/roster` show LAN42 peers; `/clusters` adds API-reported campus seats.
+Guest sockets cannot request API-backed views. Verified SG members and enrolled
+local API operators can. API reference:
 https://api.intra.42.fr/apidoc/2.0/locations/index.html
 
 `/profile thtay hnah` requests permission to open both Intra profiles in local browser tabs. `all` and
