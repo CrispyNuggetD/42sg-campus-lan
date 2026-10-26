@@ -48,7 +48,8 @@ class Uwu(unittest.TestCase):
             n.poke('uwu','poke','sender',koel_sound=False)
             play.assert_not_called()
             command=run.call_args.args[0]
-            self.assertIn('dateWithTimeIntervalSinceNow(2)',command[4])
+            self.assertIn('dateWithTimeIntervalSinceNow(Number(argv[2]))',command[4])
+            self.assertEqual(command[-1],'2')
             self.assertIn('panel.close',command[4])
 
     def test_linux_fallback_expires_and_explicitly_closes_after_two_seconds(self):

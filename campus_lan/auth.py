@@ -365,9 +365,11 @@ class AuthHTTP:
         self.broker, self.authority = broker, authority
         self.connections = 0
         self.koeldrop=None
+        self.announcements=None
 
     async def handle(self, reader, writer):
         self.connections += 1
+        target=''
         try:
             if self.connections > 32:
                 raise AuthError('Authentication service busy.')
@@ -385,7 +387,9 @@ class AuthHTTP:
             data = json.loads(await asyncio.wait_for(reader.readexactly(size), 5))
             if not isinstance(data, dict):
                 raise AuthError('Expected an object.')
-            if target == '/begin':
+            if target.startswith('/announcements/') and self.announcements:
+                result=self.announcements.dispatch(target,data)
+            elif target == '/begin':
                 result = self.broker.begin(data.get('proof'), writer.get_extra_info('peername')[0])
             elif target == '/resume':
                 record=self.broker.authenticate(data.get('session'))
@@ -394,11 +398,14 @@ class AuthHTTP:
                 result = await self.broker.exchange(data.get('state'), data.get('proof'), data.get('code'))
             else:
                 raise AuthError('Unknown authentication endpoint.')
-            await http_response(writer, '200 OK', json.dumps(result))
+            await http_response(writer, '200 OK', json.dumps(result,ensure_ascii=False))
         except (ValueError, OSError, asyncio.TimeoutError, asyncio.IncompleteReadError) as exc:
             # Never log requests, query strings, authorization codes or exception reprs.
             try:
-                await http_response(writer, '400 Bad Request', json.dumps(dict(error='Sign-in failed or expired. Try again shortly.', reason='app_credentials' if isinstance(exc, AuthConfigError) else 'sign_in_failed')))
+                if target.startswith('/announcements/') and isinstance(exc,AuthError):
+                    problem=dict(error=str(exc),reason='announcement_rejected')
+                else:problem=dict(error='Sign-in failed or expired. Try again shortly.',reason='app_credentials' if isinstance(exc,AuthConfigError) else 'sign_in_failed')
+                await http_response(writer, '400 Bad Request', json.dumps(problem))
             except (OSError, asyncio.TimeoutError):
                 pass
         finally:

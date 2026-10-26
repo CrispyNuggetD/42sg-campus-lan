@@ -79,8 +79,8 @@ class Notifications:
 
     def close(self):self.closed.set()
 
-    def poke(self,title,body,name,koel_sound=False):
-        """Short local toast; recipient permission is checked by the client first."""
+    def poke(self,title,body,name,koel_sound=False,duration=2):
+        """App-owned transient toast; callers enforce recipient consent or trusted host authority."""
         def show():
             import sys
             import time
@@ -102,10 +102,10 @@ function run(argv) {
  label.stringValue=argv[0]+'\\n'+argv[1]; label.editable=false; label.selectable=false;
  label.bezeled=false; label.drawsBackground=false;
  panel.contentView.addSubview(label); panel.orderFrontRegardless;
- $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(2));
+ $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(Number(argv[2])));
  panel.close;
 }'''
-                try:subprocess.run(['osascript','-l','JavaScript','-e',script,title,body],timeout=6,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                try:subprocess.run(['osascript','-l','JavaScript','-e',script,title,body,str(duration)],timeout=6,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
                 except (OSError,subprocess.SubprocessError):pass
                 return
             try:
@@ -114,22 +114,50 @@ function run(argv) {
                 service='org.freedesktop.Notifications';path='/org/freedesktop/Notifications'
                 hints={'transient':GLib.Variant('b',True),'resident':GLib.Variant('b',False),
                        'suppress-sound':GLib.Variant('b',True)}
-                args=GLib.Variant('(susssasa{sv}i)',('LAN42',0,'',title,html.escape(body),[],hints,2000))
+                args=GLib.Variant('(susssasa{sv}i)',('LAN42',0,'',title,html.escape(body),[],hints,int(duration*1000)))
                 ident=bus.call_sync(service,path,service,'Notify',args,None,Gio.DBusCallFlags.NONE,3000,None).unpack()[0]
-                time.sleep(2)
+                time.sleep(duration)
                 try:bus.call_sync(service,path,service,'CloseNotification',GLib.Variant('(u)',(ident,)),None,Gio.DBusCallFlags.NONE,3000,None)
                 except Exception:pass
             except Exception:
                 if not shutil.which('notify-send'):return
                 try:
-                    result=subprocess.run(['notify-send','--print-id','--expire-time=2000','--hint=boolean:transient:true',
+                    result=subprocess.run(['notify-send','--print-id','--expire-time='+str(int(duration*1000)),'--hint=boolean:transient:true',
                                            '--hint=boolean:suppress-sound:true','--',title,body],capture_output=True,text=True,timeout=4)
                     ident=result.stdout.strip()
                     if ident.isdecimal() and shutil.which('gdbus'):
-                        time.sleep(2)
+                        time.sleep(duration)
                         subprocess.run(['gdbus','call','--session','--dest','org.freedesktop.Notifications',
                                         '--object-path','/org/freedesktop/Notifications','--method',
                                         'org.freedesktop.Notifications.CloseNotification',ident],
                                        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=4)
                 except (OSError,subprocess.SubprocessError):pass
         threading.Thread(target=show,daemon=True).start()
+
+    def approval(self,title,body,name,request_id):
+        """Only a local API-host request invokes this owner decision popup."""
+        import sys
+        if sys.platform!='darwin':
+            self.show(title,body,name,custom_actions={'announce_approve':'Approve','announce_reject':'Reject'},
+                      action_context={'request_id':request_id})
+            return
+        def choose():
+            script='''on run argv
+try
+set result to display dialog (item 2 of argv) with title (item 1 of argv) buttons {"Reject", "Approve"} default button "Reject" giving up after 120
+if gave up of result then return ""
+return button returned of result
+on error
+return ""
+end try
+end run'''
+            try:
+                result=subprocess.run(['osascript','-e',script,title,body],capture_output=True,text=True,timeout=125)
+                decision={'Approve':'announce_approve','Reject':'announce_reject'}.get(result.stdout.strip())
+                if decision:self.inbox.put_nowait(dict(type='notification_action',action=decision,login=name,
+                                                       context={'request_id':request_id}))
+            except (OSError,subprocess.SubprocessError,queue.Full):pass
+        threading.Thread(target=choose,daemon=True).start()
+
+    def announcement(self,title,body,name):
+        self.poke(title,body,name,koel_sound=False,duration=12)

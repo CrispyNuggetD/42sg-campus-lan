@@ -24,6 +24,8 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `/dm` / `/uwu LOGIN`: message peers or send a two-second, opt-in sound poke.
 - `/games`: find locally hosted Tetris, Bluff, Hex Wars and FORKNITE rooms.
 - `/signin`: optionally verify your 42 identity; the secure service requires owner setup.
+- `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
+- Pinned host discovery: keep guest nodes running offline, then discover and reconnect when the API host returns.
 <!-- shell-installer-features:end -->
 
 The public dailylogin shell installer reads this block directly from this README
@@ -39,6 +41,7 @@ excluded while execution is disabled.
 | Verified 42 sign-in and TLS lobby | Implemented; requires owner setup |
 | Read-only campus maps and local relationships/lists | Implemented |
 | Direct messages, local notifications and browser consent | Implemented |
+| API-host moderated announcements and online discovery | Implemented; initial public host trust required |
 | Tetris, Bluff, Hex Wars and FORKNITE | Implemented; game requirements apply |
 | KoelDrop: session-scoped LAN file sharing | Offline prototype under review; **execution disabled** |
 
@@ -781,3 +784,50 @@ Always uwu? Are you SURE? ಠ_ಠ [y/N]
 You can also use `/settings koel-sound on|off|always`. `off` clears any saved
 always-on choice. Enabling sound never enables file sharing. D-Bus sound hints
 respect desktop support and sound settings; no separate player is started.
+
+## Announcements and the API host coming online
+
+`/announce TEXT` and `/broadcast TEXT` are aliases. The trusted API host/admin
+publishes directly after a local confirmation and an anti-spam warning; recipients
+see `hnah (host)` (or the configured owner's actual Intra login). A signed-in
+student sees a confirmation to **ask the host**; the host gets a desktop request
+with **Approve / Reject** buttons. Approval makes the host server publish the
+original text quoting that student's verified Intra login. Rejection/expiry is
+reported back to the requester. Desktop action support varies; the host can also
+use `/announce approve REQUEST_ID` or `/announce reject REQUEST_ID` in HQ.
+
+This is server-side privilege control. A guest called `hnah`, a client-provided
+`host=true`, or another student's local guest server cannot grant approval.
+The API host's local private authority and configured moderator login control it.
+Ordinary chat mute does not hide trusted approved announcements; OS display/
+notification availability still applies. Each window gets terminal history and
+each local computer gets one desktop alert, avoiding duplicate game-window popups.
+Announcement text never executes commands, installs an update, or changes trust.
+
+Without the API host, guest nodes still run discovery/chat/games on their own.
+They are **guest nodes**, not replacement API administrators. No app-wide 404
+occurs: sign-in/API-backed operations wait for the trusted service. Existing
+public certificate trust is required before a client can recognize that host;
+see [one-time trust and owner setup](docs/sign-in.md).
+
+While offline, clients retry the pinned endpoint and opt-in public seat locator
+every **120 seconds**, configurable within **60–300 seconds**. This uses LAN42's
+own endpoint/cache, not a new 42 API call per poll. On recovery they report the
+API host's login and current seat, link to its ordinary guest node, and reuse a
+valid saved sign-in session for the secure lobby. An expired/missing session still
+needs `/signin`; no OAuth browser is opened automatically by this recovery path.
+Other students' local servers and ongoing guest rooms are not overwritten.
+
+```
+/announce status
+/announce refresh
+/settings host-poll 120
+/settings host-discovery on
+/settings auto-host-join on
+```
+
+Public-seat discovery needs the owner's existing opt-in locator publication.
+Disabling host discovery stops seat relocation/automatic guest linking; trusted
+announcements from the configured endpoint remain available. Approved messages
+are cached in host memory for 15 minutes (latest ten); pending requests expire in
+five minutes. A host-service restart resets that queue and may require resubmission.

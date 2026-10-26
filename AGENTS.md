@@ -43,3 +43,21 @@ another user's sound, and never make the poke resident/persistent: expiry is two
 seconds with explicit close on Linux and an app-owned transient panel on Mac.
 Tests must mock notifications/audio/network delivery; never poke a real student
 as a test. Keep the exported README feature excerpt current.
+
+## Trusted announcements and host discovery
+
+`announcements.py` owns server-side moderation. Only the API host's local
+capability or verified configured owner login may approve/publish; never infer
+privilege from guest names, mesh gossip or client-supplied role fields. Student
+requests quote the authenticated Intra login and immutable submitted text.
+`announcement_client.py` polls only pinned TLS and the existing fingerprint-
+checked seat locator. Do not promote arbitrary peers, replace certificate pins,
+open OAuth automatically, or overwrite students' guest nodes on host recovery.
+
+Desktop approval and broadcast paths are privileged, separate from ordinary
+chat mute. Never turn an announcement into executable update/shell instructions.
+Keep queue/rate/expiry bounds and per-machine popup deduplication. Tests must
+mock GUI actions/network outside loopback; use temporary config roots and fake
+OAuth identities. Run test_announcements.py plus auth/TLS, client, notification,
+and mesh tests. Update the exported README feature list and external offline
+snapshot in the same change. Do not send a real campus announcement as a test.

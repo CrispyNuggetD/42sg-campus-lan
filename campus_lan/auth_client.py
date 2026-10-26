@@ -150,6 +150,8 @@ def post(trust, route, payload):
                 problem = json.loads(response.read(16384))
             except Exception:
                 problem = {}
+            if isinstance(problem,dict) and problem.get('reason')=='announcement_rejected':
+                raise AuthError('Announcement request rejected: '+str(problem.get('error','Check sign-in or host permission.'))[:200])
             if isinstance(problem, dict) and problem.get('reason') == 'app_credentials':
                 raise AuthError('42 rejected the app credentials. The LAN42 host owner must renew them; retrying /signin will not fix this.')
             raise AuthError('Sign-in was rejected or expired. Start again shortly.')

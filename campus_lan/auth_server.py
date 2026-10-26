@@ -3,10 +3,12 @@ import argparse
 import asyncio
 import datetime
 import ipaddress
+import getpass
 import json
 import os
 from pathlib import Path
 import re
+import queue
 import shlex
 import ssl
 import sys
@@ -108,6 +110,32 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
     lobby.koeldrop=koeldrop
     http = AuthHTTP(broker, f"{settings['host']}:{settings['broker_port']}")
     http.koeldrop=koeldrop
+    from .announcements import Announcements
+    owner=settings.get('owner_login',getpass.getuser())
+    http.announcements=Announcements(broker,owner)
+    owner=http.announcements.owner
+    from .desktop_notifications import Notifications
+    announcement_inbox=queue.Queue(maxsize=32)
+    announcement_notifier=Notifications(announcement_inbox)
+    def owner_notice(request):
+        from .announcement_client import claim
+        if claim(http.announcements.epoch+':request:'+request['id']):
+            announcement_notifier.approval('Announcement request from intra:'+request['author'],
+                                           request['text'],request['author'],request['id'])
+    http.announcements.on_request=owner_notice
+    async def moderate_announcements():
+        while True:
+            try:action=announcement_inbox.get_nowait()
+            except queue.Empty:await asyncio.sleep(.2);continue
+            if action.get('type')!='notification_action':continue
+            decisions={'announce_approve':'approve','announce_reject':'reject'}
+            decision=decisions.get(action.get('action'))
+            context=action.get('context')
+            if decision and isinstance(context,dict):
+                try:http.announcements.decide(dict(admin=http.announcements.admin_token,
+                                                   id=context.get('request_id'),decision=decision))
+                except AuthError:pass
+    announcement_moderator=asyncio.create_task(moderate_announcements())
     monitor=asyncio.create_task(koeldrop.monitor())
     web = await asyncio.start_server(http.handle, bind, settings['broker_port'], ssl=context,
                                      ssl_handshake_timeout=5, limit=16384)
@@ -117,7 +145,11 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
     except Exception:
         web.close()
         await web.wait_closed()
+        announcement_moderator.cancel();announcement_notifier.close()
+        await asyncio.gather(announcement_moderator,return_exceptions=True)
         raise
+    private_write(root/'announcement-admin.json',json.dumps(dict(
+        fingerprint=fingerprint(load_trust_for_owner(root)),token=http.announcements.admin_token,owner=owner)))
     ticker = asyncio.create_task(lobby.tick())
     print(f"LAN42 secure sign-in host ready: HTTPS {settings['broker_port']}, TLS lobby {settings['lobby_port']}.", flush=True)
     reload_package = False
@@ -125,8 +157,8 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
         async with web, server:
             reload_package = await wait_for_host_move(settings)
     finally:
-        monitor.cancel()
-        await asyncio.gather(monitor,return_exceptions=True)
+        monitor.cancel();announcement_moderator.cancel();announcement_notifier.close()
+        await asyncio.gather(monitor,announcement_moderator,return_exceptions=True)
         koeldrop.close()
         ticker.cancel()
         for task in list(lobby.hex_tasks):
@@ -141,6 +173,10 @@ async def serve_auth(bind='0.0.0.0', current_seat=False):
         os.execv(sys.executable,[sys.executable,'-m','campus_lan.auth_server',*sys.argv[1:]])
 
 
+def load_trust_for_owner(root):
+    return validate_trust(json.loads(private_read(root/'auth-trust.json')))
+
+
 def main():
     parser = argparse.ArgumentParser(description='LAN42 confidential sign-in host and public trust setup')
     sub = parser.add_subparsers(dest='command', required=True)
@@ -149,6 +185,8 @@ def main():
     create.add_argument('--host', required=True, help='Stable LAN IP or hostname reachable by students')
     create.add_argument('--broker-port', type=int, default=31416)
     create.add_argument('--lobby-port', type=int, default=31417)
+    owner_parser=sub.add_parser('set-owner',help='Set the verified Intra login allowed to moderate announcements')
+    owner_parser.add_argument('login')
     run = sub.add_parser('serve')
     run.add_argument('--bind', default='0.0.0.0')
     run.add_argument('--current-seat', action='store_true', help='Bind only the seat prepared by dailylogin')
@@ -161,7 +199,14 @@ def main():
     renew.add_argument('--credentials', required=True, type=Path)
     args = parser.parse_args()
     root = config_dir()
-    if args.command == 'setup':
+    if args.command=='set-owner':
+        if not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',args.login):parser.error('Invalid Intra login')
+        settings=json.loads(private_read(root/'auth-server.json'))
+        settings['owner_login']=args.login.lower()
+        settings['host_generation']=__import__('secrets').token_hex(16)
+        private_write(root/'auth-server.json',json.dumps(settings))
+        print('Announcement owner configured. Restart the local auth service to apply.')
+    elif args.command == 'setup':
         trust = setup(args.credentials, args.host, args.broker_port, args.lobby_port)
         print('Imported existing app into private configuration outside the repository.')
         print('Public trust certificate SHA256:', fingerprint(trust))

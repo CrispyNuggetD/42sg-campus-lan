@@ -23,9 +23,11 @@ from .hexbot import SDK, compile_bot
 from . import auth_client
 from .updater import RestartRequested, generation
 from .completion import complete
+from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
     '/uwu: local koel sound test | /uwu LOGIN: 2-second poke (their sound settings apply)',
     '/about: project purpose + public source | /repo: request browser link | /roadmap files: experimental milestones',
     '/lobby or /who: roster | /map 1 or /map 2: seats | /next /prev: lobby pages',
@@ -79,7 +81,7 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
-class Client(KoelUI):
+class Client(AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
@@ -342,6 +344,7 @@ class Client(KoelUI):
         return True
 
     def notification_action(self,message):
+        if self.announcement_action(message):return
         if message.get('action') in ('koel_accept','koel_decline'):
             self.koel_notification_action(message);return
         from .tracking import login
@@ -416,6 +419,8 @@ class Client(KoelUI):
             except queue.Empty:
                 break
             kind = msg.get('type')
+            if self.announcement_event(msg):
+                continue
             if kind == 'local_koel':
                 self.koel_local(msg)
             elif kind == 'koel_invite':
@@ -822,6 +827,7 @@ class Client(KoelUI):
             return False
 
     def settings_command(self, text):
+        if self.host_settings_command(text):return True
         parts = text.split()
         if not parts or parts[0] not in ('/settings','/profile'):
             return False
@@ -834,6 +840,7 @@ class Client(KoelUI):
                 '/settings signin  — open 42 sign-in (local HQ)',
                 '/settings signout — end the LAN42 session on this device',
                 '/settings notifications on|off — desktop notifications',
+                '/settings host-discovery on|off | auto-host-join on|off | host-poll 60–300',
                 '/settings permissions — browser, popup and notification consent',
                 '/settings autologin off|saved|on — reuse login, optionally request OAuth',
                 '/settings signin-close on|off — try to close the completed sign-in tab',
@@ -1122,6 +1129,7 @@ class Client(KoelUI):
                 raise RestartRequested()
             self.consume()
             self.tracking_tick()
+            self.announcement_tick()
             self.permission_tick()
             self.auto_login_tick()
             self.sound_tick()
@@ -1190,6 +1198,8 @@ class Client(KoelUI):
                     self.open_game('/game forknite')
                 elif text.startswith('/game ') or (getattr(self,'role','lobby')=='lobby' and (text.startswith('/host ') or text.startswith('/join '))):
                     self.open_game(text)
+                elif self.announcement_command(text):
+                    pass
                 elif self.uwu_command(text):
                     pass
                 elif self.about_command(text):
@@ -1312,6 +1322,7 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
                 destination = curses.wrapper(client.run)
             finally:
                 if getattr(client,'courier',None):client.courier.stop()
+                if getattr(client,'host_watch',None):client.host_watch.close()
                 if client.tracking_notifier:client.tracking_notifier.close()
                 try:
                     sock.shutdown(socket.SHUT_RDWR)

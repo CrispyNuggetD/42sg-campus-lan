@@ -257,3 +257,49 @@ to retry. Initial student trust import is still required.
 
 The public branch history reveals previously published seats. An announcement
 is a location, not proof of uptime: students still need the owner’s host online.
+
+## Announcement authority and moderation
+
+The broker now provides a pinned-TLS announcement channel separate from guest
+mesh gossip. API-host ownership does not remotely overwrite another student's
+local node. Guest hosting is still useful offline; only the trusted broker can
+approve the privileged announcement feed.
+
+The default announcement owner is the host OS account login (normally the
+owner's 42 campus login). If it differs from the real Intra login, configure it
+locally and restart/apply the host service:
+
+```sh
+python3 -m campus_lan.auth_server set-owner YOUR_INTRA_LOGIN
+python3 -m campus_lan.auth_daily
+```
+
+A host process writes a mode-600 `announcement-admin.json` in its already private
+configuration directory. It is a short-lived local administrative capability,
+not a student credential and not a public trust export. Never distribute it,
+`auth-server.json`, API secrets, TLS private keys or saved sessions. Remote owner
+clients can also moderate through their verified owner Intra session. Merely
+claiming the owner's display name on a guest node gives no authority.
+
+Students confirm a request with their verified identity. The server queues it
+and the host sees native Approve/Reject actions; accepted text is immutable and
+is broadcast as a quote from that Intra login, not as the host's own statement.
+Owner-originated messages are marked `(host)` and bypass that moderation queue,
+with a local abuse warning. Limits: 400 UTF-8 bytes, one pending request per
+student, a 30-second student cooldown, five-second host cooldown, bounded queues,
+and five-minute pending expiry. Approval is idempotent; expired/rejected requests
+cannot be turned into announcements by replaying a button press.
+
+All polling uses the existing certificate pin. The public locator can move the
+seat address only after the same trusted certificate is confirmed; it cannot
+replace the trust root or nominate an arbitrary peer as admin. Offline polling
+is 1–5 minutes (default two); when online a lightweight cached feed is checked
+every five seconds so approvals arrive quickly. These checks do not keep a
+campus OS session logged in and do not make provider API calls each time.
+
+When the service returns, clients get an availability notice with the current
+seat. They can link their guest node automatically and resume an existing valid
+LAN42 session. Fresh/expired sessions require normal 42 sign-in. Changing seats
+or restarting the broker still invalidates its old in-memory sign-in sessions,
+as documented above. No silent sign-in, credential copying or local-server
+privilege takeover is performed.

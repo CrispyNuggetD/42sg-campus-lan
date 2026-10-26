@@ -105,8 +105,12 @@ def start():
         systemctl('daemon-reload')
         unit = config_dir().parent / 'systemd/user/lan42-auth.service'
         settings = json.loads(private_read(root / 'auth-server.json'))
+        package=Path(__file__).resolve().parent
+        code=hashlib.sha256(b''.join((package/name).read_bytes() for name in
+            ('auth.py','auth_server.py','server.py','announcements.py','desktop_notifications.py',
+             'announcement_client.py','auth_client.py','auth_locator.py') if (package/name).exists())).hexdigest()
         desired = dict(host=host, generation=settings['host_generation'],
-                       unit=hashlib.sha256(unit.read_bytes()).hexdigest())
+                       unit=hashlib.sha256(unit.read_bytes()).hexdigest(),code=code)
         try:
             applied = json.loads(private_read(root / 'auth-service-applied.json'))
         except FileNotFoundError:
