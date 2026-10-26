@@ -34,9 +34,10 @@ def launch(arguments):
     if not arguments:
         binary = ensure_binary()
         arguments = ['--exec', binary, '--', '50', '130', '60', '60']
+    from .audio_quiet import browser_environment
     while True:
         installed = generation()
-        child = subprocess.Popen([node, str(ROOT/'minigames/forknite/server.js'), *arguments], env=dict(os.environ, LAN42_FORKNITE_SUPERVISED='1', LAN42_PYTHON=sys.executable))
+        child = subprocess.Popen([node, str(ROOT/'minigames/forknite/server.js'), *arguments], env=dict(os.environ, **browser_environment(), LAN42_FORKNITE_SUPERVISED='1', LAN42_PYTHON=sys.executable))
         reloading = False
         try:
             while True:

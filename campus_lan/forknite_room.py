@@ -33,10 +33,11 @@ class ForkniteRoom:
         self.secret=secrets.token_hex(32)
         logs=Path(os.environ.get('LAN42_FORKNITE_LOGDIR',str(ROOT/'minigames/forknite/.logs')));logs.mkdir(exist_ok=True)
         self.output=(logs/('room-'+str(self.port)+'.log')).open('ab')
+        from .audio_quiet import browser_environment
         try:
             self.process=subprocess.Popen([node,str(ROOT/'minigames/forknite/server.js'),'--exec',binary,'--port',str(self.port),'--','50','600','100','100'],
                 stdin=subprocess.DEVNULL,stdout=self.output,stderr=subprocess.STDOUT,
-                env=dict(os.environ,LAN42_FORKNITE_CONTROL=self.secret,LAN42_AVATAR_CACHE=str(self.avatar_cache.root)),cwd=str(ROOT))
+                env=dict(os.environ,**browser_environment(),LAN42_FORKNITE_CONTROL=self.secret,LAN42_AVATAR_CACHE=str(self.avatar_cache.root)),cwd=str(ROOT))
             for _ in range(50):
                 if self.process.poll() is not None:break
                 try:

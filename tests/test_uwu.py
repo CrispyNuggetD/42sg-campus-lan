@@ -10,6 +10,7 @@ from campus_lan.desktop_notifications import Notifications
 
 class Uwu(unittest.TestCase):
     def setUp(self):
+        quiet=patch('campus_lan.audio_quiet.active',return_value=False);quiet.start();self.addCleanup(quiet.stop)
         patcher=patch('campus_lan.volume.Volume');volume=patcher.start();self.addCleanup(patcher.stop)
         volume.return_value.get.return_value=50
         channels=patch('campus_lan.notification_preferences.Preferences.allows',return_value=True)

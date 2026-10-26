@@ -152,3 +152,20 @@ Anonymous clients see only conditional availability, not a membership grant.
 The current service group/epoch is chosen by the host. Saved local always-join
 is specific to that pinned host and user; it does not approve file receipt,
 deletions, a different server, or re-uploading an old local folder.
+
+## Exam quiet control
+
+Calendar reads are GET-only `campus/64/exams` and `campus/64/events`, with an
+explicit range spanning at most eight days and at most three 100-record pages
+per endpoint. No global exams/events endpoint, attendees, other campus or arbitrary
+provider URL is allowed. One host worker refreshes hourly through the existing
+API pacing; clients read its shared time-only cache.
+
+Automatic quiet is a fixed-schema list of bounded start/end times and reason
+enums. Only the pinned host's local poll may update the queue. Manual windows
+require a current configured numeric admin or the existing local admin capability,
+and accept only 0–720 integer minutes. Neither API text nor announcement text
+becomes a terminal command. Clients and the FORKNITE audio reader reject extra
+fields, foreign scope, stale/replayed issuance and invalid/overlong windows.
+The overlay can suppress app audio but cannot choose files/processes, modify
+system volume, enable sound consent or cancel built-in quiet defaults.

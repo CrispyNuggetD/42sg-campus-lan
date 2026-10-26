@@ -59,13 +59,17 @@ class NotificationChannels(unittest.TestCase):
 
     def test_release_uses_pinned_host_metadata_and_no_first_contact_spam(self):
         c=self.c;c.desktop_notice=Mock();data=dict(version='2.3.0-beta.1',release_date='27 October',owner='hnah')
-        with patch('campus_lan.announcement_ui.claim',return_value=True):
+        now=[1_800_000_000]
+        with patch('campus_lan.release_notices.time.time',side_effect=lambda:now[0]),patch('campus_lan.audio_quiet.active',return_value=False):
             c.release_notification(data);c.desktop_notice.assert_not_called()
             data['version']='2.3.1-beta.1';c.release_notification(data);c.release_notification(data)
+            c.desktop_notice.assert_not_called()
+            now[0]+=1800;c.release_notification(data)
             c.desktop_notice.assert_called_once()
             self.assertEqual(c.desktop_notice.call_args.kwargs['category'],'releases')
             c.notification_command('/notify releases off');data['version']='2.3.2-beta.1'
-            c.release_notification(data);self.assertEqual(c.desktop_notice.call_count,1)
+            c.release_notification(data);now[0]+=90000;c.release_notification(data)
+            self.assertEqual(c.desktop_notice.call_count,1)
 
     def test_disabled_dms_still_arrive_in_terminal(self):
         c=self.c;c.secure=False

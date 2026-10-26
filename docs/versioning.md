@@ -38,3 +38,14 @@ idempotent and workflow-token pushes do not recursively start workflows.
 For local review: `python3 tools/release.py` after committing runtime changes.
 Do not manually edit version strings throughout the repo. README shows the beta
 entry milestone; current version comes from startup, `--version`, or `/changelog`.
+
+## Release popups and calendar updates
+
+Server versioning and desktop alert frequency are independent. Clients coalesce
+changed host versions for 30 minutes and allow one release popup per rolling
+24 hours per computer, shared by HQ/game windows and preserved over restarts.
+Exam quiet defers popups; first contact only establishes a baseline.
+
+A newly fetched exam date is an expiring calendar-setting update, not a software
+patch or security update. It changes the queued audio window without a Git pull,
+server-version increment or executable update message. See [exam quiet](exam-quiet.md).

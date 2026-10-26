@@ -11,6 +11,7 @@ from campus_lan.file_sharing.sync import Offer
 
 class KoelSound(unittest.TestCase):
     def setUp(self):
+        quiet=patch('campus_lan.audio_quiet.active',return_value=False);quiet.start();self.addCleanup(quiet.stop)
         volume_patch=patch('campus_lan.volume.Volume');volume=volume_patch.start();self.addCleanup(volume_patch.stop)
         volume.return_value.get.return_value=50
         temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)

@@ -116,6 +116,7 @@ const index = fs.readFileSync(path.join(__dirname,'public/index.html'));
 function json(res, code, value) { res.writeHead(code, {'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(value)); }
 const server = http.createServer(async (req,res) => {
  const url = new URL(req.url, 'http://localhost');
+ if(req.method==='GET'&&url.pathname==='/audio-state')return json(res,200,require('./campus-audio').state());
  if(req.method==='GET'&&url.pathname==='/health')return json(res,200,{ready:true});
  if(req.method==='POST'&&url.pathname==='/internal/room'){
   if(!controlSecret||!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)||req.headers.authorization!=='Bearer '+controlSecret)return json(res,403,{error:'Local LAN42 control only'});

@@ -169,3 +169,23 @@ not provider-verified searches or tree counts; label uniqueness as an estimate.
 Exclude search commands/settings from local history and purge older matching
 entries on load. Browser/provider history is outside LAN42. Test with temporary
 aggregate stores and mocked webbrowser/network; never inflate live counters.
+
+## Exam quiet and notice budgets
+
+Keep built-in SGT fallback windows Wednesday 15–18 and every Saturday 13–16,
+including cancellations. All LAN42 clients and FORKNITE audio apply this default
+offline. Visible API entries add bounded dated windows; missing ends default to
+three hours. Fixed-schema pinned-host calendar settings are data only: never
+introduce remote commands, dynamic imports, eval, shell dispatch, process IDs,
+filesystem targets or system-volume operations. Manual quiet requires existing
+numeric-admin/local-capability authentication. Respect ordinary opt-in sound
+choices; a quiet expiry never enables sound or replays queued clips.
+
+Cache only current/upcoming SG time windows (no event text/attendees/history),
+refresh once hourly on the host, and prune expired rows. API reads stay on
+campus/64/exams|events with bounded dates/pagination and existing global pacing.
+Calendar changes are non-security configuration updates, not software releases.
+Keep 30-minute release coalescing and the per-computer rolling 24-hour popup cap
+persistent across HQ/game windows/restarts. Tests must use fake dates and mock
+all audio/volume/notifications. Run test_exam_quiet.py, existing auth/access/
+notification checks, and the FORKNITE campus-audio/fox-audio JS tests.

@@ -25,6 +25,7 @@ class Announcements:
         self.requests={};self.feed=[];self.last={};self.on_request=on_request
         self.flock_status=lambda:None
         self.search_summary=lambda:None
+        self.exam_quiet=None
 
     @property
     def policy(self):
@@ -99,10 +100,18 @@ class Announcements:
         statuses=[{k:r[k] for k in ('id','status','author')} for r in self.requests.values() if person and r['uid']==person['uid']]
         from .release import VERSION, RELEASE_DATE
         return dict(epoch=self.epoch,owner=self.owner,host=host,sequence=self.sequence,
-                    version=VERSION,release_date=RELEASE_DATE,flock=self.flock_status(),search_impact=self.search_summary(),
+                    version=VERSION,release_date=RELEASE_DATE,flock=self.flock_status(),search_impact=self.search_summary(),quiet=self.exam_quiet.state() if self.exam_quiet else None,
                     announcements=[e for e in self.feed if e['seq']>cursor],pending=pending[:8],statuses=statuses[-16:])
 
     def dispatch(self,route,data):
+        if route=='/announcements/quiet':
+            person,admin=self.identity(data,True)
+            if not admin or not self.exam_quiet or set(data)-{'session','admin','minutes'} or 'minutes' not in data:raise AuthError('Only a verified configured admin may set a bounded app-audio quiet window.')
+            return self.exam_quiet.manual(data['minutes'])
+        if route=='/announcements/exams':
+            self.identity(data,True)
+            if not self.exam_quiet:raise AuthError('Exam cache unavailable.')
+            return self.exam_quiet.schedule()
         if route=='/announcements/poll':return self.poll(data)
         if route=='/announcements/request':return self.submit(data)
         if route=='/announcements/decide':return self.decide(data)

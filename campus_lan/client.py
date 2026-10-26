@@ -26,6 +26,7 @@ from .updater import RestartRequested, generation
 from .completion import complete
 from .local_console import LocalConsole,History,shell_command
 from .notification_preferences import NotificationControls,IMPORTANT
+from .quiet_ui import QuietUI
 from .web_search import SearchControls
 from .quick_controls import QuickControls
 from .permission_setup import PermissionSetup
@@ -33,6 +34,7 @@ from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    "/quiet status: LAN42-only exam audio mute | /exams: cached SG schedule | admin /quiet MINUTES | release popups: max once/24h",
     "/search TERMS: chosen engine in your browser | /settings search: engine + aggregate counting opt-out | /search stats",
     "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",
     "Click footer buttons or use F2 sign in/out | F3 system mute | F4 output 0/30% | F5 uwu | F6 auto uwu",
@@ -95,7 +97,7 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
-class Client(SearchControls,NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
+class Client(QuietUI,SearchControls,NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
@@ -134,6 +136,8 @@ class Client(SearchControls,NotificationControls,QuickControls,PermissionSetup,L
         threading.Thread(target=self.receive,daemon=True).start()
 
     def sound_tick(self):
+        from .audio_quiet import active
+        if active():return
         if getattr(self,'role','lobby')!='lobby' or not self.connected or not self.id or getattr(self,'sound_prompt_queued',False):return
         from .koel_sound import SoundChoice
         choice=SoundChoice(self.name)
@@ -539,6 +543,7 @@ class Client(SearchControls,NotificationControls,QuickControls,PermissionSetup,L
         self.request_popup('notifications','Show desktop notification: '+safe(text)+'?',lambda:self._notify(text,throttle))
 
     def _notify(self,text,throttle=True):
+        from .audio_quiet import active
         now = time.monotonic()
         if not self.notification_allowed('chat') or (throttle and now-self.last_notice<3):
             return
@@ -547,7 +552,7 @@ class Client(SearchControls,NotificationControls,QuickControls,PermissionSetup,L
             # Positional args only, never invoke a shell with received text.
             def show():
                 try:
-                    subprocess.run(['notify-send','--app-name=42SG LAN','--expire-time=7000',
+                    subprocess.run(['notify-send',*(['--hint=boolean:suppress-sound:true'] if active() else []),'--app-name=42SG LAN','--expire-time=7000',
                                     '--','42SG LAN',safe(text)],
                                    stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3)
                 except (OSError,subprocess.TimeoutExpired):
@@ -555,7 +560,7 @@ class Client(SearchControls,NotificationControls,QuickControls,PermissionSetup,L
             threading.Thread(target=show,daemon=True).start()
         else:
             try:
-                curses.beep()
+                if not active():curses.beep()
             except curses.error:
                 pass
 
@@ -993,6 +998,7 @@ class Client(SearchControls,NotificationControls,QuickControls,PermissionSetup,L
             return False
 
     def settings_command(self, text):
+        if self.quiet_command(text):return True
         if self.search_command(text):return True
         if self.notification_command(text):return True
         if self.host_settings_command(text):return True
@@ -1291,6 +1297,7 @@ class Client(SearchControls,NotificationControls,QuickControls,PermissionSetup,L
             self.consume()
             self.tracking_tick()
             self.announcement_tick()
+            self.quiet_tick()
             self.uwu_auto_tick()
             self.permission_tick()
             self.auto_login_tick()

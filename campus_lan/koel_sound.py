@@ -41,6 +41,8 @@ class SoundChoice:
 
 def sound_hints(enabled):
     """None leaves normal notification policy unchanged; False explicitly silences."""
+    from .audio_quiet import active
+    if active():return {'suppress-sound':True}
     if enabled is None:return {}
     if not enabled:return {'suppress-sound':True}
     try:
@@ -51,10 +53,13 @@ def sound_hints(enabled):
 
 def play():
     """Play the bundled clip locally, without a shell or a desktop notification."""
+    from .audio_quiet import active
+    if active():return
     import shutil
     import subprocess
     import sys
     if 'sound-file' not in sound_hints(True):
+        if active():return
         raise OSError('The bundled koel sound is unavailable.')
     choices = [('afplay', [])] if sys.platform == 'darwin' else [
         ('paplay', []), ('pw-play', []), ('ffplay', ['-nodisp', '-autoexit', '-loglevel', 'quiet'])]

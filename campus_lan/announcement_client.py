@@ -69,7 +69,7 @@ class HostWatch:
     def __init__(self,inbox,clock=time.monotonic):
         self.inbox,self.clock=inbox,clock
         self.closed=threading.Event();self.online=False;self.cursor=0;self.epoch=None
-        self.next_locator=0;self.next_poll=0;self.reported_offline=None
+        self.next_locator=0;self.next_poll=0;self.reported_offline=None;self.offline_since=None
         self.thread=threading.Thread(target=self.run,daemon=True)
 
     def start(self):self.thread.start()
@@ -91,9 +91,11 @@ class HostWatch:
             data=auth_client.post(trust,'/announcements/poll',payload)
             if not isinstance(data.get('owner'),str) or not isinstance(data.get('epoch'),str):raise ValueError()
             changed=self.epoch!=data['epoch']
+            outage=now-self.offline_since if self.offline_since is not None else 0
+            notify_arrival=self.epoch is None or outage>=60
             if changed:self.cursor=0
             recovered=not self.online or changed
-            self.online=True;self.reported_offline=None;self.epoch=data['epoch'];self.next_poll=now+5
+            self.online=True;self.offline_since=None;self.reported_offline=None;self.epoch=data['epoch'];self.next_poll=now+5
             entries=data.get('announcements',[])
             if not isinstance(entries,list):raise ValueError()
             valid=[]
@@ -103,10 +105,11 @@ class HostWatch:
                         and isinstance(event.get('author'),str) and isinstance(event.get('text'),str)
                         and len(event['text'].encode())<=400 and type(event.get('is_host')) is bool):
                     valid.append(event);self.cursor=max(self.cursor,event['seq'])
-            self.put(online=True,recovered=recovered,host=trust['lobby_host'],port=trust['lobby_port'],
+            self.put(online=True,recovered=recovered,notify_arrival=notify_arrival,outage_seconds=outage,host=trust['lobby_host'],port=trust['lobby_port'],
                      auto_join=settings['auto_join'],auto_connect=settings['discovery'],retry_interval=settings['interval'],
                      data=dict(data,announcements=valid))
         except (OSError,ValueError,TypeError,KeyError):
+            if self.offline_since is None:self.offline_since=now
             if self.online or self.reported_offline is not configured:
                 self.put(online=False,configured=configured,retry_interval=settings['interval'])
             self.reported_offline=configured;self.online=False;self.next_poll=now+settings['interval']

@@ -122,6 +122,21 @@ class AnnouncementUI:
         if kind=='local_announcement_result':
             if event.get('error'):self.lines.append(event['error']);return True
             result=event.get('result',{})
+            if 'quiet_result' in result:
+                self.lines.append('Manual quiet window updated; scheduled exam defaults still apply. System volume is unchanged.');return True
+            if 'exam_schedule' in result:
+                schedule=result['exam_schedule']
+                self.lines.append('Visible Singapore exam cache: '+str(schedule.get('coverage',{}))+' | '+str(schedule.get('notice','')))
+                from .exam_quiet import stamp
+                from .audio_quiet import SGT
+                import datetime as dt
+                for window in schedule.get('windows',[])[:16]:
+                    try:
+                        start=dt.datetime.fromtimestamp(stamp(window['begin']),SGT)
+                        end=dt.datetime.fromtimestamp(stamp(window['end']),SGT)
+                        self.lines.append(start.strftime('%a %d %b %H:%M SGT')+' — '+end.strftime('%H:%M SGT'))
+                    except (ValueError,KeyError,TypeError,OverflowError):continue
+                return True
             self.lines.append('Announcement '+str(result.get('id',''))+': '+str(result.get('status','unknown'))+
                               (' — waiting for '+result['owner']+' to approve/reject' if result.get('status')=='pending' else ''))
             watch=getattr(self,'host_watch',None)
@@ -142,14 +157,19 @@ class AnnouncementUI:
             return True
         data=event['data'];self.announcement_status=dict(data,online=True)
         self.link_api_guest_node(event)
+        self.quiet_update(data)
         self.release_notification(data)
         self.flock_status(data)
         if event.get('recovered'):
             from .network import seat_label
             text=data['owner']+' (API host) is online at '+seat_label(event['host'])+' ('+event['host']+'). Use /signin, then /clusters or /clusters 2 for current campus seats.'
             self.lines.append(text)
-            if self.important_notification_allowed('host') and claim(data['epoch']+':online'):
-                self.desktop_notice('LAN42 API host online',text,data['owner'],category='host')
+            if (event.get('notify_arrival',True) and self.important_notification_allowed('host')
+                    and claim(data['epoch']+':online'+(':'+str(int(time.time()//60)) if event.get('outage_seconds',0)>=60 else ''))):
+                from .release_notices import reserve
+                try:notify=reserve('host-arrival-budget',60 if event.get('outage_seconds',0)>=60 else 900)
+                except (OSError,ValueError,TypeError):notify=False
+                if notify:self.desktop_notice('LAN42 API host online',text,data['owner'],category='host')
             if getattr(self,'role','lobby')=='lobby' and not getattr(self,'secure',False):
                 from .login_settings import auto_login_paused
                 if event.get('auto_join') and not auto_login_paused() and not getattr(self,'game',{}).get('room'):
@@ -192,16 +212,10 @@ class AnnouncementUI:
         version=data.get('version');date=data.get('release_date')
         if not isinstance(version,str) or not re.fullmatch(r'\d+\.\d+\.\d+(?:-beta\.\d+)?',version):return
         if not isinstance(date,str) or len(date)>80:return
-        from .local_console import local_path
-        from .auth import private_write
-        path=local_path('last-host-release')
-        try:previous=json.loads(private_read(path)).get('version')
-        except (OSError,ValueError,AttributeError):previous=None
-        if previous==version:return
-        try:private_write(path,json.dumps(dict(version=version)))
-        except OSError:return
+        from .release_notices import release
+        from .audio_quiet import active
+        try:changed,due=release(version,date,active() or not self.important_notification_allowed('releases'))
+        except (OSError,ValueError,TypeError):return
         text='The trusted host is running v'+version+' ('+date+'). Update/restart LAN42 for its bundled /changelog.'
-        self.lines.append(text)
-        # First contact establishes a baseline; host-online already announces it.
-        if previous and self.important_notification_allowed('releases') and claim('release:'+version):
-            self.desktop_notice('LAN42 server release: v'+version,text,data['owner'],category='releases')
+        if changed:self.lines.append(text)
+        if due:self.desktop_notice('LAN42 release digest: v'+version,text,data['owner'],category='releases')

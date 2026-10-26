@@ -60,6 +60,8 @@ def shell_command(screen,command):
 
 class LocalConsole:
     def with_audio_volume(self,action):
+        from . import audio_quiet
+        if audio_quiet.active():return
         if getattr(self,'shortcut_audio_muted',False):return
         from .volume import Volume
         try:
@@ -72,6 +74,7 @@ class LocalConsole:
         try:settings=json.loads(private_read(local_path('audio-volume')))
         except (OSError,ValueError):settings={}
         def enable():
+            if audio_quiet.active():return False
             try:volume.set(30);action();return True
             except (OSError,ValueError) as error:self.lines.append(str(error));return False
         if isinstance(settings,dict) and settings.get('auto_on') is True:enable();return

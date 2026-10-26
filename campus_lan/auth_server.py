@@ -126,6 +126,9 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
         try:return http.search_counts.summary() if http.search_counts else None
         except (OSError,ValueError,sqlite3.Error):return None
     http.announcements.search_summary=impact_summary
+    from .exam_quiet import ExamQuiet
+    exam_quiet=ExamQuiet(settings['host'])
+    http.announcements.exam_quiet=exam_quiet
     owner=http.announcements.owner
     from .desktop_notifications import Notifications
     announcement_inbox=queue.Queue(maxsize=32)
@@ -171,6 +174,7 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     else:
         private_write(root/'announcement-admin.json',json.dumps(dict(
             fingerprint=fingerprint(load_trust_for_owner(root)),token=http.announcements.admin_token,owner=owner)))
+    exam_task=asyncio.create_task(exam_quiet.run())
     flock_task=asyncio.create_task(koeldrop.maintain_public())
     ticker = asyncio.create_task(lobby.tick())
     print(f"LAN42 secure sign-in host ready: HTTPS {settings['broker_port']}, TLS lobby {settings['lobby_port']}.", flush=True)
@@ -182,6 +186,8 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
         if http.search_counts:http.search_counts.close()
         announcement_moderator.cancel();announcement_notifier.close()
         await asyncio.gather(announcement_moderator,return_exceptions=True)
+        exam_task.cancel()
+        await asyncio.gather(exam_task,return_exceptions=True)
         flock_task.cancel()
         await asyncio.gather(flock_task,return_exceptions=True)
         koeldrop.close()

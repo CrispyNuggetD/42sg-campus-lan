@@ -32,6 +32,12 @@ jobs:
       - run: python -m unittest discover -s tests -p test_koel_flock.py
       - run: python -m unittest discover -s tests -p test_web_search.py
       - run: python -m unittest discover -s tests -p test_permission_setup.py
+      - run: python -m unittest discover -s tests -p test_exam_quiet.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node minigames/forknite/campus-audio.test.js
+      - run: node minigames/forknite/fox-audio.test.js
       - run: PYTHONPATH=tests python -m unittest test_auth test_announcements test_profile_lookup test_client test_network test_tracking test_mesh test_file_sharing test_koeldrop_live
       - run: python -m unittest discover -s tests -p test_shell_features.py
       - run: python -m unittest discover -s tests -p test_about.py

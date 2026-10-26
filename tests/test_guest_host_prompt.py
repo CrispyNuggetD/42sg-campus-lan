@@ -6,6 +6,8 @@ from campus_lan.client import Client
 from campus_lan.announcement_client import HostWatch
 
 class GuestHostGuidance(unittest.TestCase):
+    def setUp(self):
+        budget=patch('campus_lan.release_notices.reserve',return_value=True);budget.start();self.addCleanup(budget.stop)
     def client(self,secure=False,role='lobby'):
         c=Client.__new__(Client);c.lines=[];c.inbox=queue.Queue();c.connected=True;c.id='1';c.role=role;c.secure=secure;c.notify_enabled=True
         return c

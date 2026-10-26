@@ -110,6 +110,13 @@ class API:
         if path==prefix+'/users' and not set(params)-common-{'filter[login]','filter[id]'}:return
         if (path==prefix+'/locations' and not set(params)-common-{'filter[active]','filter[user_id]'}
                 and params.get('filter[active]')==['true']):return
+        if path in (prefix+'/exams',prefix+'/events') and set(params)=={'range[begin_at]','page[number]','page[size]'}:
+            from .exam_quiet import stamp
+            start,end=[stamp(value) for value in params['range[begin_at]'][0].split(',')]
+            now=time.time()
+            if not 0<end-start<=8*86400 or start<now-2*86400 or end>now+8*86400:raise AuthError('Calendar requests must cover a bounded upcoming SG week.')
+            if int(params['page[number]'][0])>3 or params['page[size]']!=['100']:raise AuthError('Calendar pagination is bounded.')
+            return
         if path.startswith('users/') and path[6:] in self._members and not params:return
         raise AuthError('API endpoint or parameters are outside the Singapore read-only allowlist.')
 

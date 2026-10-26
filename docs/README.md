@@ -17,6 +17,9 @@
 [Web search and the impact counter](web-search.md) covers engine choices, the
 F4 Easter egg, permanent aggregates and privacy.
 
+[Exam quiet and release digests](exam-quiet.md) explains automatic app-only audio
+quiet, calendar updates and the release notification budget.
+
 ## Hosting and maintaining LAN42
 
 | Guide | What is inside |

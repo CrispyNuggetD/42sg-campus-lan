@@ -22,7 +22,7 @@ with friends.
 - **KoelDrop:** `/koel flock` — the host starts a **42 Singapore flock**; choose join once, always join or never show again. Join-folder and incoming-file consent stay separate; copies survive shutdown. `/uwu` introduces your bird courier.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
 - **Easy controls:** clickable footer or F2 sign in/out; F3 mute, F4 output 0/30%, F5 uwu once, F6 automatic uwu; Up/Down history and !COMMAND for your local shell.
-- **Useful alerts:** approved `/broadcast` messages and pinned host-arrival notices; `/notify` separates important alerts from quiet-by-default DMs/pokes, with an all-off override.
+- **Useful alerts:** moderated `/broadcast`, pinned host arrival and exam-time LAN42-only audio quiet. `/notify` separates alerts from DMs/pokes; release popups are coalesced and daily-limited.
 - **Versioned server:** startup shows version/date; `/changelog` explains releases. README-only edits do not bump the server.
 - **Web search:** `/search` defaults to Ecosia; Google/custom engines are optional. Permanent aggregate impact totals and estimated unique searches have a counting opt-out.
 <!-- shell-installer-features:end -->

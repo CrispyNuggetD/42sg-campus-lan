@@ -9,6 +9,7 @@ from campus_lan.volume import Volume
 
 class Console(unittest.TestCase):
     def setUp(self):
+        quiet=patch('campus_lan.audio_quiet.active',return_value=False);quiet.start();self.addCleanup(quiet.stop)
         tmp=tempfile.TemporaryDirectory();self.addCleanup(tmp.cleanup)
         patcher=patch('campus_lan.local_console.config_dir',return_value=Path(tmp.name));patcher.start();self.addCleanup(patcher.stop)
 

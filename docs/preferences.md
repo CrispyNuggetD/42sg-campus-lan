@@ -4,6 +4,7 @@
 
 - [Notification channels](#notification-channels)
 - [Web search and the impact counter](#web-search-and-the-impact-counter)
+- [Exam quiet and release digests](#exam-quiet-and-release-digests)
 - [Keyboard and clickable controls](#keyboard-and-clickable-controls)
 - [Account settings](#account-settings)
 - [Visual guide and popup permissions](#visual-guide-and-popup-permissions)
@@ -48,6 +49,20 @@ HTTPS engine in `/settings search`, and inspect the permanent host aggregate wit
 `/search stats`. Counting defaults to on; `/settings search counting off` opts out.
 Only a total and estimated uniqueness sketch persist, with no query history,
 identity records or result tracking. [Search, privacy and counter details](web-search.md).
+
+## Exam quiet and release digests
+
+Built-in SGT quiet hours are **Wednesday 15:00–18:00** and **every Saturday
+13:00–16:00**, including cancelled-exam days. The trusted host can add visible
+API exam dates or bounded admin mute windows. This silences LAN42, not your system
+or other apps. `/quiet status` explains the active policy; `/exams` reads the
+shared calendar cache. [Scheduling, privacy and trust boundaries](exam-quiet.md).
+
+Release desktop alerts wait for 30 minutes without another version change, then
+show at most once per 24 hours per computer. New versions replace the pending
+digest. Exam quiet defers these popups; `/changelog` and terminal version messages
+remain available. First contact is a silent baseline. Rapid host restarts suppress
+repeat arrival popups; meaningful outages still get an availability notification.
 
 ## Keyboard and clickable controls
 
