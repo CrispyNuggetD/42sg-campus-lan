@@ -1,5 +1,7 @@
 /* Optional copy controls: commands remain selectable without JavaScript. */
 (()=>{
+  const revealDisclosure=()=>{if(location.hash==='#ai-disclosure'){const panel=document.getElementById('ai-disclosure');if(panel){panel.open=true;panel.scrollIntoView({block:'start'});}}};
+  revealDisclosure();window.addEventListener('hashchange',revealDisclosure);
   if(!navigator.clipboard?.writeText)return;
   const status=document.getElementById('copy-status');
   document.querySelectorAll('[data-copy-command],[data-copy-source]').forEach(button=>{
