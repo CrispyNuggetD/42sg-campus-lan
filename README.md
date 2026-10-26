@@ -30,7 +30,7 @@ In the terminal, `/about` shows this purpose and source link. `/about repo` or
 - `/map` / `/track`: read-only campus seating maps and your own local people lists.
 - `/uwu`: meet the koel file courier; `/koel` for approved sharing; `/dm` / `/uwu LOGIN` for messages/pokes; `/volume` for audio.
 - `/games`: Tetris, Bluff, Hex Wars and FORKNITE—a multiplayer visualiser/game for the legacy 42 C Philosophers project; Up/Down history and !COMMAND for the local shell.
-- `/signin`: SG API views; guests keep chat/games; legacy owner-host approval migrates on startup.
+- `/signin`: verified SG members get selected API views; guests keep chat/games; API hosts require approval.
 - `/announce` / `/broadcast`: API host broadcasts; signed-in students request approval, credited to their Intra login.
 - Pinned host discovery: keep guest nodes running offline, then discover and reconnect when the API host returns.
 <!-- shell-installer-features:end -->
