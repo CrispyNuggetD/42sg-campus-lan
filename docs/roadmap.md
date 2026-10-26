@@ -10,7 +10,9 @@ features. Scope and feasibility may change; no delivery date is promised.
 Explore a [Textual-based frontend](frontend-milestone.md): a consistent LAN42
 terminal design, clearer guest/sign-in/host states, discoverable actions and
 keyboard-first workflows. This is also Christopher’s frontend engineering
-learning milestone. V3 beta is a working candidate, not a reserved release
+learning milestone. Start small with Textual; the [appendix](frontend-milestone.md#appendix-architecture-considerations-and-future-learning)
+records the shared-service API idea and other ecosystems as future learning
+options, not initial implementation scope. V3 beta is a working candidate, not a reserved release
 number; scope, compatibility and validation determine graduation.
 
 ## Possible milestone: Life OS × LAN42

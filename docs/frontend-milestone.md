@@ -84,3 +84,65 @@ versioning separate from the UI/product milestone.
 - [Textual CSS](https://textual.textualize.io/guide/CSS/)
 - [Workers](https://textual.textualize.io/guide/workers/)
 - [Headless interaction and snapshot testing](https://textual.textualize.io/guide/testing/)
+
+## Appendix: architecture considerations and future learning
+
+### Immediate scope: start small with Textual
+
+Christopher’s chosen starting point is a modest Textual prototype, not a
+framework competition or a general-purpose frontend platform. Learn one complete
+journey first: open LAN42, understand host availability, sign in and view a
+cluster snapshot. Use fake data initially, include loading/offline/denied states,
+and get feedback before expanding. The current client remains available during
+evaluation; choosing Textual for this first step does not commit every future
+interface to it.
+
+The learning goal includes interaction design: understandable navigation,
+keyboard and mouse use, visible focus, meaningful button states, feedback,
+error recovery and restrained transitions. Professional quality should follow
+from clear behaviour and evaluation, not from a framework name or visual theme.
+
+### Possible later boundary: one service, several frontends
+
+LAN42 already mediates selected 42 API reads with access policy and caching.
+A future evolution could formalize a LAN42 application contract consumed by
+curses, Textual or a browser frontend. This is an architectural consideration,
+not a commitment to ship a public API or support arbitrary third-party clients.
+
+Candidate operations include capability/host status, sign-in/out, cached cluster
+snapshots with freshness, messaging, flock discovery/join and appropriately
+scoped preferences. Extract only the operations needed by an actual journey;
+avoid designing a broad abstraction before a second consumer demonstrates its
+value. Version compatibility and deprecation would need an explicit policy if
+independent frontends become supported.
+
+Expose **LAN42 operations**, not an unrestricted proxy accepting arbitrary 42
+API paths. The service remains responsible for identity, Singapore scope,
+authorization, cache sharing and rate limits. Frontends do not receive the
+host’s upstream credentials or gain privileges by supplying a role field.
+Keep local file selection, browser opening, notifications and audio under the
+client’s own consent and capabilities. A browser and terminal may offer
+different features; capability discovery should explain those differences.
+
+### Other tools exist; learning can come later
+
+| Option | Future learning relevance | Current decision |
+| --- | --- | --- |
+| Textual / Python | Stateful terminal interfaces, widgets, layouts, events, styling and UI tests. | Start here with a small prototype. |
+| Bubble Tea / Go | An alternative TUI architecture and an opportunity to learn Go and its application ecosystem. | Awareness and possible later exploration; no Go rewrite planned. |
+| prompt_toolkit / Python | Command-entry and full-screen terminal interaction design. | An alternative to understand, not an additional dependency now. |
+| Browser UI, potentially React | Web components, browser interaction, responsive layout and accessibility. | A possible later learning project, not part of the initial Textual scope. |
+
+These tools occupy different roles. Flask is a Python web framework, Node.js a
+JavaScript runtime, React a UI library and Bootstrap a frontend toolkit; they
+are not interchangeable choices on one list. HTML and CSS remain useful
+foundations. Knowing that these ecosystems exist in professional development
+helps guide future learning; adopting all of them would not make LAN42 more
+professional by itself. There is no universal “TUI gold standard” selected here.
+
+Further primary references:
+[Bubble Tea](https://github.com/charmbracelet/bubbletea),
+[prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/en/master/),
+[React](https://react.dev/learn), [Flask](https://flask.palletsprojects.com/),
+[Node.js](https://nodejs.org/en/about),
+[Bootstrap](https://getbootstrap.com/docs/5.3/getting-started/introduction/).
