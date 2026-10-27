@@ -10,6 +10,8 @@ with friends.
 [All guides](docs/README.md) · [Release history](CHANGELOG.md) ·
 [Roadmap & collaboration](https://crispynuggetd.github.io/42sg-campus-lan/roadmap.html)
 
+The website supports mobile browsers; desktop with a mouse or trackpad gives the full cursor experience. LAN42 itself runs in a terminal.
+
 [Highlights](#highlights) · [Quick start](#quick-start) · [Games](#games) ·
 [Guides](#guides) · [About](#about) · [Contributors](#contributors)
 
