@@ -89,9 +89,11 @@ All four launch from HQ with `/game NAME`; friends use `/join ROOM_NUMBER`.
 Hi, I’m **Christopher Nah** (**hnah** on Intra), a student at **42 Singapore**.
 Questions or ideas? Find me on the **global 42 Slack**, or [here on GitHub](https://github.com/CrispyNuggetD).
 
-**AI-assisted, human-directed.** I use Codex and other AI tools as coding assistants and teachers. I’m learning through 42’s peer-led approach rather than a lecture-based degree programme, so I use AI to explore unfamiliar concepts and engineering practices, ask questions, and work through implementation details. Substantial parts of the code are AI-assisted; I guide the project and test its behaviour.
+**AI-assisted, human-directed.** I build these projects through reading, design experiments and repeated testing, drawing on textbooks, research papers, documentation and peer discussion. I use AI to learn unfamiliar concepts, challenge ideas and help implement them—including substantial new code, refactoring, build files, header maintenance and repetitive formatting.
 
-I’m still building technical depth, and I don’t always know which questions to ask. AI explanations can be wrong, and passing tests does not prove correctness or security. I aim to check explanations against documentation, experiments and peer feedback. I remain responsible for what I publish, communicating limitations and fixing mistakes.
+I set the questions and engineering goals, investigate algorithms and trade-offs, and review and test the resulting implementation. Correctness, input validation, error handling and understanding the code are part of the work, beyond meeting the minimum requirements. AI assistance reduces manual work; it also needs checking. I remain responsible for what I publish, explaining its limitations and fixing mistakes.
+
+My [42 project notes](https://github.com/CrispyNuggetD/42_Singapore_SUTD) document the wider learning process, including algorithm investigations and project-specific AI contributions. LAN42 is part of that ongoing practice: design, implementation, testing and revision.
 
 Beta since **Tuesday 27 October 2026, 00:48 SGT**, starting at **2.0.0-beta.1**.
 
