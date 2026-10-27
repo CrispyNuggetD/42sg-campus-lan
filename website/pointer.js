@@ -8,7 +8,7 @@
   const pointer=document.createElement('div');pointer.className='lan-pointer';pointer.setAttribute('aria-hidden','true');document.body.append(pointer);
   const toggle=document.createElement('button');toggle.type='button';toggle.className='pointer-toggle';
   const tools=document.createElement('aside');tools.className='pointer-tools';tools.setAttribute('aria-label','Pointer preferences and open-source code');
-  const source=document.createElement('a');source.href='https://github.com/CrispyNuggetD/RykerTorch-FOSS-Toolbox/tree/main/web-apps/adaptive-pointer';source.textContent='Get this effect ↗';source.className='pointer-source';
+  const source=document.createElement('a');source.href='https://crispynuggetd.github.io/42_Singapore_SUTD/#toolkit';source.textContent='Get these tools ↗';source.className='pointer-source';
   tools.append(toggle,source);document.body.append(tools);document.documentElement.classList.add('has-pointer-tools');
   const eligible=()=>fine.matches&&!reduced.matches&&!contrast.matches;
   let x=0,y=0,inside=false,frame=0,last=0,current=null,goal=null;
