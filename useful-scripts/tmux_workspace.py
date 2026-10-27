@@ -119,7 +119,9 @@ def attached(session):
     for row in rows:
         name, _, count = row.partition("\t")
         if name == session:
-            return int(count)
+            # A vanished session or incomplete format result is not an
+            # attachment. Keep waiting instead of crashing the GUI launch.
+            return int(count) if count.isdecimal() else 0
     return 0
 
 def maximize_enabled():
@@ -171,7 +173,10 @@ def show(session, window=None, reuse_terminal=False):
                       ' do script (item 1 of argv)\n' +
                       (' set zoomed of front window to true\n' if maximize_enabled() else '') +
                       ' activate\n end tell\nend run')
-            desktop = ["osascript", "-e", script, shlex.join(attach)]
+            # zsh expands unquoted =NAME as a command path, unlike POSIX sh.
+            # shlex.join considers '=' safe, so quote the exact-session target.
+            shell_command = shlex.join(attach[:-1]) + " '=" + session + "'"
+            desktop = ["osascript", "-e", script, shell_command]
         elif shutil.which("gnome-terminal"):
             desktop = ["gnome-terminal", "--window", "--title=" + ("LAN42" if session == session_name("lan42") else "Work workspace"),
                        *(["--maximize"] if maximize_enabled() else []), "--", *attach]
@@ -208,7 +213,12 @@ def main():
     actions.add_parser("list")
     args = parser.parse_args()
     if not shutil.which("tmux"):
-        raise RuntimeError("tmux is required. Install it before launching daily terminals.")
+        if sys.platform == "darwin":
+            solution = ("Run: brew install tmux" if shutil.which("brew") else
+                        "Install Homebrew from https://brew.sh, then run: brew install tmux")
+        else:
+            solution = "Install tmux with your system package manager (Debian/Ubuntu: sudo apt install tmux)."
+        raise RuntimeError("tmux is missing. " + solution + " Then rerun dailylogin.")
     migrate_layout()
     session = session_name(args.role if args.action == "open" else None)
     if args.action == "list":
