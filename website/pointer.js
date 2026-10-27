@@ -27,6 +27,7 @@
       const rects=[...target.getClientRects()];
       const box=rects.find(r=>y>=r.top&&y<=r.bottom&&x>=r.left&&x<=r.right)||target.getBoundingClientRect();
       goal={x:box.left+box.width/2,y:box.top+box.height/2,w:box.width+10,h:box.height+8,r:Math.min(14,(box.height+8)/2),t:0};
+      if(target.dataset.pointerShape==='circle'){const size=Math.max(goal.w,goal.h);goal.w=size;goal.h=size;goal.r=size/2;}
     }
     pointer.classList.toggle('morphed',Boolean(target));pointer.classList.toggle('text-beam',Boolean(text));
     // A single shape and continuously interpolated centre preserve entry/exit continuity.
