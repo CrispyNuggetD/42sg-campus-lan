@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.8.5-beta.1 · 2026-10-27T11:31:37+08:00
+
+- fix: support scoped local operator login-hour API requests
+
 ## 2.8.4-beta.1 · 2026-10-27T11:13:26+08:00
 
 - fix: sync terminal helper quoting and attachment recovery
