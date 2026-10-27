@@ -46,3 +46,6 @@ separately from server releases.
 
 Private credentials, keys, sessions, student exports, photos and shared file
 contents stay outside public project documentation and Git.
+
+Built by Christopher Nah (hnah), 42 Singapore. More projects and learning notes:
+[My 42 portfolio](https://crispynuggetd.github.io/42_Singapore_SUTD/) · [Main 42 repository & README](https://github.com/CrispyNuggetD/42_Singapore_SUTD).

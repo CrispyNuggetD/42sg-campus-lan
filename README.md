@@ -87,6 +87,7 @@ All four launch from HQ with `/game NAME`; friends use `/join ROOM_NUMBER`.
 ## About
 
 Hi, I’m **Christopher Nah** (**hnah** on Intra), a student at **42 Singapore**.
+Explore my [42 portfolio](https://crispynuggetd.github.io/42_Singapore_SUTD/) or the [main 42 repository & README](https://github.com/CrispyNuggetD/42_Singapore_SUTD) for my projects and learning notes.
 Questions or ideas? Find me on the **global 42 Slack**, or [here on GitHub](https://github.com/CrispyNuggetD).
 
 **AI-assisted, human-directed.** I build these projects through reading, design experiments and repeated testing, drawing on textbooks, research papers, documentation and peer discussion. I use AI to learn unfamiliar concepts, challenge ideas and help implement them—including substantial new code, refactoring, build files, header maintenance and repetitive formatting.
