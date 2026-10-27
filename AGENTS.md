@@ -16,7 +16,7 @@ when LAN42 is missing. It is separate from this repository's dailylogin helper.
 - Online installers read the current upstream README; publishing the README
   update makes it available without a separate hard-coded feature list.
 - For the offline installer snapshot, if the shell helpers clone is available,
-  run `python3 /path/to/42_Singapore_SUTD/lan42_recommend.py --refresh-features
+  run `python3 /path/to/42_Singapore_SUTD/tools/lan42_recommend.py --refresh-features
   --clone /path/to/42sg-campus-lan`. Review and commit the changed snapshot in
   that public shell repository. Otherwise mention the offline snapshot update
   in the handoff. Never copy private settings or credentials across repositories.
@@ -27,10 +27,10 @@ carry the workflow to fresh agent sessions.
 ## Standalone tmux launcher
 
 `useful-scripts/tmux_workspace.py` is a vendored copy of the canonical
-`daily_terminal.py` in `CrispyNuggetD/42_Singapore_SUTD`. It lets standalone LAN42
+`tools/daily_terminal.py` in `CrispyNuggetD/42_Singapore_SUTD`. It lets standalone LAN42
 users get the same desktop/tmux behavior without installing the full shell suite.
 Do not maintain separate fixes in the generated copy: edit the canonical helper,
-run its `test_daily_terminal.py`, then copy it here and run
+run its `tests/test_daily_terminal.py`, then copy it here and run
 `python3 -m unittest discover -s tests -p test_terminal_setup.py`.
 `open_terminal.py` prefers an explicitly configured shared helper and otherwise
 uses this bundled copy. Preserve separate LAN42 sessions and normal Mac/Linux
