@@ -169,3 +169,13 @@ becomes a terminal command. Clients and the FORKNITE audio reader reject extra
 fields, foreign scope, stale/replayed issuance and invalid/overlong windows.
 The overlay can suppress app audio but cannot choose files/processes, modify
 system volume, enable sound consent or cancel built-in quiet defaults.
+
+## Local operator login-hour reports
+
+The shell's hours helper may request the enrolled local API operator's own
+Singapore location history. `users/LOGIN/locations` is resolved through verified
+SG membership and must match the numeric local operator ID. Requests use
+`campus/64/locations`, a fixed operator user filter, 100-record pages (at most
+50), and either a bounded recent end-time range of at most eight days or active
+sessions. Existing host approval, operator enrollment and pacing apply.
+No student/guest socket route or other-account history access is added.

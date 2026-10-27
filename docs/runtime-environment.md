@@ -81,3 +81,16 @@ decoded Ogg digest exactly. Native afconvert also decoded the original Ogg to
 all 37,485 frames, so inspection did not establish an Ogg decoding failure.
 Audible playback and the reported device-specific truncation still require
 user confirmation; no real sound or student notification was triggered by tests.
+
+## Own-operator login-hour API — 27 October 2026 SGT
+
+The maintainer Mac completed a live, explicitly requested hours fetch as the
+configured API login hnah, independent of its OS username. Both hours and
+before-noon reports rendered verified API intervals. The new route uses
+operator-only campus-64 locations with bounded range/pagination, not a guest
+route. No credentials or raw location records are published here.
+
+The 162-test policy/auth/profile/client/network/tracking/mesh/KoelDrop/website
+selection had 160 passes, one skip and the previously documented Mac failure
+binding 127.0.0.2. Website build passed. The shell's 14 login-hour tests pass,
+including Linux hnah fallback and nonfatal skips on Mac/other accounts.

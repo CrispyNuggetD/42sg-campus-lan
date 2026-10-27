@@ -110,6 +110,26 @@ class API:
         if path==prefix+'/users' and not set(params)-common-{'filter[login]','filter[id]'}:return
         if (path==prefix+'/locations' and not set(params)-common-{'filter[active]','filter[user_id]'}
                 and params.get('filter[active]')==['true']):return
+        if path==prefix+'/locations' and 'filter[user_id]' in params:
+            # Local operator's own bounded history only; never a guest route.
+            from .access import Policy
+            uid=Policy().local_operator()
+            keys=set(params)
+            required={'filter[user_id]','sort','page[number]','page[size]'}
+            if (params['filter[user_id]'] != [str(uid)] or params.get('sort') != ['-begin_at']
+                    or params.get('page[size]') != ['100']):
+                raise AuthError('Location history is restricted to the local API operator.')
+            if keys==required|{'filter[active]'} and params['filter[active]']==['true']:return
+            if keys==required|{'range[end_at]'}:
+                try:
+                    start,end=[datetime.fromisoformat(v.replace('Z','+00:00')) for v in params['range[end_at]'][0].split(',')]
+                    now=datetime.now(timezone.utc)
+                    if (start.tzinfo is not None and end.tzinfo is not None and
+                            0<(end-start).total_seconds()<=8*86400 and
+                            0<=(now-start).total_seconds()<=9*86400 and
+                            -60<=(now-end).total_seconds()<=86400):return
+                except (ValueError,TypeError):pass
+            raise AuthError('Location history must cover a bounded recent week.')
         if path in (prefix+'/exams',prefix+'/events') and set(params)=={'range[begin_at]','page[number]','page[size]'}:
             from .exam_quiet import stamp
             start,end=[stamp(value) for value in params['range[begin_at]'][0].split(',')]
@@ -121,7 +141,20 @@ class API:
         raise AuthError('API endpoint or parameters are outside the Singapore read-only allowlist.')
 
     def get(self,path,**params):
+        location=re.fullmatch(r'users/([A-Za-z0-9_.-]{1,32})/locations',path)
+        if location:
+            from .access import Policy,SG_CAMPUS_ID
+            uid=Policy().local_operator()
+            person=self.member_profile(location[1])
+            if person.get('id')!=uid:
+                raise AuthError('Location history is restricted to the local API operator.')
+            # The campus endpoint scopes both current and historical locations.
+            query=dict(params)
+            if 'filter[user_id]' in query:raise AuthError('User scope overrides are denied.')
+            query['filter[user_id]']=uid
+            return self.request('https://api.intra.42.fr/v2/campus/'+str(SG_CAMPUS_ID)+'/locations?'+urllib.parse.urlencode(query))
         if path.startswith('users/'):
+
             return self.member_profile(path[6:])
         return self.request('https://api.intra.42.fr/v2/'+path+('?' + urllib.parse.urlencode(params) if params else ''))
 
