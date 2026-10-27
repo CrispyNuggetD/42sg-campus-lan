@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.8.3-beta.1 · 2026-10-27T11:02:08+08:00
+
+- fix: use padded native PCM for Mac uwu playback
+
 ## 2.8.2-beta.1 · 2026-10-27T07:03:42+08:00
 
 - fix: name LAN42 adapted koel sound uwu.ogg
