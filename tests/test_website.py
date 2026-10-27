@@ -11,6 +11,15 @@ spec=importlib.util.spec_from_file_location('lan42_website',ROOT/'website/build.
 site=importlib.util.module_from_spec(spec);spec.loader.exec_module(site)
 
 class Website(unittest.TestCase):
+    def test_external_links_preserve_the_site_and_internal_links_stay_local(self):
+        source="""<a href="https://github.com/example">Source</a><a href="#section" target="_blank">Section</a><a href="https://crispynuggetd.github.io/42sg-campus-lan/" target="_blank">Campus HQ</a><script>const sample='<a href="https://example.com">';</script>"""
+        result=site.protect_external_links(source)
+        self.assertIn('href="https://github.com/example" target="_blank"',result)
+        self.assertIn('rel="noopener noreferrer"',result)
+        self.assertIn('<a href="#section">',result)
+        self.assertIn('<a href="https://crispynuggetd.github.io/42sg-campus-lan/">',result)
+        self.assertIn("""<script>const sample='<a href="https://example.com">';</script>""",result)
+
     def test_current_help_is_shared_with_offline_visual_guide(self):
         guide=(ROOT/'docs/quick-guide.html').read_text()
         self.assertEqual(guide,site.guide())

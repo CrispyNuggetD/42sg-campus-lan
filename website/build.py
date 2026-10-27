@@ -13,6 +13,31 @@ START='<!-- runtime-help:start -->'
 END='<!-- runtime-help:end -->'
 
 
+
+def protect_external_links(document):
+    """Keep Campus HQ navigation local; external HTTP(S) links get a new tab."""
+    from html.parser import HTMLParser
+    from urllib.parse import urlsplit
+    offsets=[0]
+    for line in document.splitlines(keepends=True):offsets.append(offsets[-1]+len(line))
+    edits=[]
+    class Links(HTMLParser):
+        def handle_starttag(self,tag,attrs):
+            if tag!='a':return
+            attributes=dict(attrs);url=urlsplit(attributes.get('href') or '')
+            if url.scheme and url.scheme not in ('http','https'):return
+            external=bool(url.netloc and url.netloc.lower()!='crispynuggetd.github.io')
+            raw=self.get_starttag_text()
+            cleaned=re.sub(r"\s+target\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+)",'',raw,flags=re.I)
+            if external:
+                cleaned=re.sub(r"\s+rel\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+)",'',cleaned,flags=re.I)
+                rel=set((attributes.get('rel') or '').split())|{'noopener','noreferrer'}
+                cleaned=cleaned[:-1]+' target="_blank" rel="'+escape(' '.join(sorted(rel)),quote=True)+'"'+(' title="Opens in a new tab"' if 'title' not in attributes else '')+'>'
+            line,column=self.getpos();begin=offsets[line-1]+column;edits.append((begin,begin+len(raw),cleaned))
+    Links(convert_charrefs=True).feed(document)
+    for begin,end,replacement in reversed(edits):document=document[:begin]+replacement+document[end:]
+    return document
+
 def help_lines():
     tree=ast.parse((ROOT/'campus_lan/client.py').read_text())
     return next(ast.literal_eval(node.value) for node in tree.body if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='HELP' for t in node.targets))
@@ -105,7 +130,7 @@ def build(output):
         source=page.read_text()
         source=source.replace('</head>','<style>'+pointer_style+'</style></head>',1)
         source=source.replace('</body>','<script>'+pointer_script+'</script></body>',1)
-        page.write_text(source)
+        page.write_text(protect_external_links(source))
     (output/'.nojekyll').touch()
 
 

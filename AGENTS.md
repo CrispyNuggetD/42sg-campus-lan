@@ -234,3 +234,8 @@ docs/README.md as a task index, with topic Markdown pages mapped in DOCUMENT_PAG
 Do not turn it back into a README mirror. Full searchable help is commands.html;
 local /help still uses docs/quick-guide.html. Keep existing public URLs working,
 site-local topic links valid, and roadmap plans separate from instructions.
+
+Campus HQ link policy: same-site links (including the shared Pages host) stay
+in the same tab. External HTTP(S) links open a new tab with noopener/noreferrer;
+apply this to generated Markdown and dynamic controls too. Keep no-JS ordinary
+link fallbacks, and never auto-redirect visitors away to an external site.

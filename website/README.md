@@ -148,3 +148,11 @@ MIT cursor package; the adaptive pointer injects a compact, fixed bottom-right
 preference dock with an immediate toggle and “Get this effect” source link.
 The off switch stays reachable throughout long pages. Keep safe-area spacing,
 bottom breathing room, keyboard focus and native/reduced-motion fallbacks.
+
+## Preserve the visitor's place
+
+The build enforces new tabs with `noopener noreferrer` for external HTTP(S)
+anchors, including rendered Markdown. Relative/fragment links and links across
+the same Campus HQ Pages host stay in the current tab. Dynamic links must follow
+the same rule; never add an automatic off-site redirect. Preserve native links
+for no-JavaScript visitors. Test both internal and external destinations.
