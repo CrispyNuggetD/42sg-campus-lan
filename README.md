@@ -56,7 +56,9 @@ Setup backs up and appends to your `.zshrc`; it needs no sudo.
 Try `/who`, `/join` to connect to a friend, `/games`, or `/help`.
 Click **Sign in** / press **F2** in HQ when the approved campus host is online.
 `/uwu` tries the koel call with your sound permission; `/koel help` explains
-file sharing. Nothing starts sharing just because you try the bird.
+file sharing. Nothing starts sharing just because you try the bird. Mac playback
+uses the same call in a native WAV copy with brief silent padding; see the
+[audio controls](docs/file-sharing.md).
 
 ## Games
 

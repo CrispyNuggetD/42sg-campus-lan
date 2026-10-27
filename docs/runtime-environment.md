@@ -71,3 +71,13 @@ account and verified campus/TLS/SG conditions; existing or revoked policies and
 new installations are never automatically approved. Migration/startup tests use
 isolated configs with fake credentials and mocked provider/system operations;
 this Mac is not evidence that migration ran on the school terminal.
+
+## macOS short-call playback — 27 October 2026 SGT
+
+The Mac playback path now uses a PCM WAV copy of the unchanged 0.85-second call,
+with 200 ms lead-in and 250 ms tail silence. All 29 targeted sound, uwu and exam
+quiet tests passed with playback mocked. The PCM call samples match the published
+decoded Ogg digest exactly. Native afconvert also decoded the original Ogg to
+all 37,485 frames, so inspection did not establish an Ogg decoding failure.
+Audible playback and the reported device-specific truncation still require
+user confirmation; no real sound or student notification was triggered by tests.

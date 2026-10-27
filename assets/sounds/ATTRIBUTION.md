@@ -58,3 +58,12 @@ For sharing, keep a visible caption linking this page and crediting the original
 recording. Container comments or extra Ogg streams can carry text, but clients
 may ignore or discard them. A filename, fingerprint or hidden marker does not
 ensure attribution survives forwarding or re-uploading.
+
+## macOS playback copy
+
+`uwu-mac.wav` contains the exact decoded samples of `uwu.ogg` as mono,
+44,100 Hz, signed 16-bit PCM, with 200 ms of leading silence and 250 ms of
+trailing silence. Total duration is 1.30 seconds; the call remains 0.85 seconds.
+This native playback copy avoids the short Ogg playback path and gives audio
+hardware time to start and drain. No call samples are trimmed or repeated.
+It carries the same Philip Eapen credit and CC BY-SA 4.0 license above.

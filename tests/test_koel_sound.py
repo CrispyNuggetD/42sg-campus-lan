@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock,patch
-from campus_lan.koel_sound import SoundChoice,sound_hints,ASSET
+from campus_lan.koel_sound import SoundChoice,sound_hints,ASSET,MAC_ASSET,play
 from campus_lan.client import Client
 from campus_lan.file_sharing.workflow import file_notice
 from campus_lan.file_sharing.sync import Offer
@@ -74,3 +74,26 @@ class KoelSound(unittest.TestCase):
         offer=Offer('dthoo/funny.txt','1'*32,'2'*64,5,2,'dthoo',False)
         notice=file_notice(offer,Path('/tmp/example'))
         self.assertEqual(notice.title,'🔊 uwu, dthoo sent you funny.txt');self.assertFalse(notice.koel_sound)
+
+class Playback(unittest.TestCase):
+    def test_platform_player_uses_full_file_without_time_limit(self):
+        for platform, name, asset in [('darwin','afplay',MAC_ASSET),('linux','paplay',ASSET)]:
+            with self.subTest(platform=platform), patch('sys.platform',platform), \
+                 patch('campus_lan.audio_quiet.active',return_value=False), \
+                 patch('shutil.which',return_value='/usr/bin/'+name), \
+                 patch('subprocess.Popen') as launch:
+                play()
+                self.assertEqual(launch.call_args.args[0],['/usr/bin/'+name,str(asset)])
+                self.assertTrue(launch.call_args.kwargs['start_new_session'])
+
+    def test_mac_pcm_has_complete_call_and_device_padding(self):
+        import wave
+        with wave.open(str(MAC_ASSET)) as clip:
+            self.assertEqual((clip.getnchannels(),clip.getsampwidth(),clip.getframerate()),(1,2,44100))
+            self.assertEqual(clip.getnframes(),57330)  # .2 + .85 + .25 seconds
+            data=clip.readframes(clip.getnframes())
+        self.assertEqual(data[:8820*2],b'\0'*(8820*2))
+        self.assertEqual(data[-11025*2:],b'\0'*(11025*2))
+        import hashlib
+        self.assertEqual(hashlib.sha256(data[8820*2:-11025*2]).hexdigest(),
+                         '9aca6b777b4c8dcf66a8b45dec4c71c2a76894554a698e1d489e73fa5e292bdf')

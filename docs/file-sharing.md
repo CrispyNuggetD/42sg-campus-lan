@@ -133,7 +133,9 @@ other students. Repeating the command does not reset an active timer.
 take on a carrier pigeon: this bird delivers your files. Once per window, it
 invites you to try `/koel` or read `/koel help`; it never starts sharing itself.
 It also plays one short koel call (0.85 seconds, no repeated calls) on your own computer for the running joke
-or an audio test. If sound is off, it asks first; Enter keeps it off. `a` offers
+or an audio test. macOS uses a native PCM copy with 200 ms of silence before
+and 250 ms after the unchanged call, allowing audio hardware to start and drain.
+If sound is off, it asks first; Enter keeps it off. `a` offers
 always-on with the existing second confirmation. Change it with
 `/settings koel-sound on|off|always`. `/uwu LOGIN` sends a private poke to a
 connected person. Their notification permission and their own sound choice apply;
