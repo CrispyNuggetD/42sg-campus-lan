@@ -26,7 +26,7 @@ class Evidence:
 
 class FileSharing(unittest.TestCase):
     def setUp(self):
-        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.tmp=tempfile.TemporaryDirectory(dir=Path(tempfile.gettempdir()).resolve());self.addCleanup(self.tmp.cleanup)
         self.now=1000.;self.clock=lambda:self.now
         self.broker=Broker(Mock(),clock=self.clock);self.proofs=Evidence(self.clock);self.gate=Gate(self.broker,self.proofs,self.clock)
         self.tokens={};self.actors={}

@@ -22,7 +22,7 @@ from campus_lan.desktop_notifications import Notifications
 
 class FlockTests(unittest.TestCase):
     def setUp(self):
-        tmp=tempfile.TemporaryDirectory();self.addCleanup(tmp.cleanup);self.root=Path(tmp.name)
+        tmp=tempfile.TemporaryDirectory(dir=Path(tempfile.gettempdir()).resolve());self.addCleanup(tmp.cleanup);self.root=Path(tmp.name)
         env=patch.dict(os.environ,{'XDG_CONFIG_HOME':tmp.name});env.start();self.addCleanup(env.stop)
         self.policy=Mock();self.policy.local_operator.return_value=1
         self.broker=Broker(Mock(),policy_factory=lambda:self.policy)
@@ -168,7 +168,7 @@ class FlockTests(unittest.TestCase):
 
 class FlockUITests(unittest.TestCase):
     def setUp(self):
-        tmp=tempfile.TemporaryDirectory();self.addCleanup(tmp.cleanup);self.root=Path(tmp.name)
+        tmp=tempfile.TemporaryDirectory(dir=Path(tempfile.gettempdir()).resolve());self.addCleanup(tmp.cleanup);self.root=Path(tmp.name)
         env=patch.dict(os.environ,{'XDG_CONFIG_HOME':tmp.name});env.start();self.addCleanup(env.stop)
         campus=patch('campus_lan.auth_daily.current_seat',return_value='10.11.1.2');campus.start();self.addCleanup(campus.stop)
         self.c=Client.__new__(Client);self.c.role='lobby';self.c.secure=True;self.c.uid=2

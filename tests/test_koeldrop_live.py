@@ -21,7 +21,7 @@ from campus_lan.file_sharing.http import Requests
 
 class KoelDropLive(unittest.TestCase):
     def setUp(self):
-        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.tmp=tempfile.TemporaryDirectory(dir=Path(tempfile.gettempdir()).resolve());self.addCleanup(self.tmp.cleanup)
         self.env=patch.dict(os.environ,XDG_CONFIG_HOME=self.tmp.name);self.env.start();self.addCleanup(self.env.stop)
         self.broker=Broker(Mock());self.tokens={'hnah':'1'*64,'dthoo':'2'*64}
         self.peers={'hnah':'10.11.3.6','dthoo':'10.11.4.2'}
