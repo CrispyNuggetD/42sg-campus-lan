@@ -2,7 +2,7 @@
 const assert=require('assert'),run=require('./avatar_batch');
 (async()=>{
  const rows=[],calls=[];
- const names=['42singapore_tech','bad/input','no-photo','cached','browser','timeout','expired','interrupted','last','LAST'];
+ const names=['missing-user','bad/input','no-photo','cached','browser','timeout','expired','interrupted','last','LAST'];
  const result=await run(names,{polls:2,wait:async()=>{},log:row=>rows.push(row),call:async(path,raw)=>{
   const data=JSON.parse(raw);calls.push([path,data]);
   if(path==='/job_status'){
@@ -10,7 +10,7 @@ const assert=require('assert'),run=require('./avatar_batch');
    if(data.job==='timeout')return {status:'waiting_for_browser_save'};
    return {status:'expired'};
   }
-  if(data.login==='42singapore_tech')throw Error('Profile unavailable');
+  if(data.login==='missing-user')throw Error('Profile unavailable');
   if(data.login==='no-photo')return {status:'skipped',reason:'No photo available'};
   if(data.login==='interrupted')throw Error('Network interrupted');
   if(['browser','timeout','expired'].includes(data.login))return {job:data.login};
@@ -31,18 +31,18 @@ const source=fs.readFileSync(__dirname+'/avatar_admin.py','utf8');
 const script=source.split('<script>')[1].split('</script>')[0].replace('AVATAR_BATCH_SCRIPT',fs.readFileSync(__dirname+'/avatar_batch.js','utf8')).replace('PHOTO_CONSENT','true');
 const elements={};const element=id=>elements[id]||(elements[id]={value:'',textContent:'',before(){}});
 let batchTask;
-vm.runInNewContext(script,{URLSearchParams,URL,Blob:class {},console:{log(){}},location:{search:'?logins=42singapore_tech+ljohn',hash:'#key=fixture',pathname:'/'},history:{replaceState(){ /* Browser removes query here. */ }},document:{getElementById:element,createElement:()=>({click(){batchTask=this.onclick();}})},setInterval(){},setTimeout(fn){fn();},fetch:async(path,options)=>{
+vm.runInNewContext(script,{URLSearchParams,URL,Blob:class {},console:{log(){}},location:{search:'?logins=missing-user+fixture-user',hash:'#key=fixture',pathname:'/'},history:{replaceState(){ /* Browser removes query here. */ }},document:{getElementById:element,createElement:()=>({click(){batchTask=this.onclick();}})},setInterval(){},setTimeout(fn){fn();},fetch:async(path,options)=>{
  const data=JSON.parse(options.body);
  let body;
  if(path==='/photo_permission')body={mode:'allow'};
  else if(path==='/downloads_directory')body={directory:'/tmp'};
- else body=data.login==='42singapore_tech'?{status:'failed',reason:'Profile lookup failed'}:{status:'cached'};
+ else body=data.login==='missing-user'?{status:'failed',reason:'Profile lookup failed'}:{status:'cached'};
  return {ok:true,json:async()=>body};
 }});
 Promise.resolve().then(()=>batchTask).then(()=>{
- assert.equal(element('login').value,'42singapore_tech ljohn');
- assert(element('batch-log').textContent.includes('42singapore_tech — failed: Profile lookup failed'));
- assert(element('batch-log').textContent.includes('ljohn — success: Photo cached'));
+ assert.equal(element('login').value,'missing-user fixture-user');
+ assert(element('batch-log').textContent.includes('missing-user — failed: Profile lookup failed'));
+ assert(element('batch-log').textContent.includes('fixture-user — success: Photo cached'));
  assert(element('status').textContent.includes('Requested 2, skipped 0, failed 1, success 1'));
  assert.equal(element('download-log').hidden,false);
  console.log('PASS: real panel retains launch inputs and prints per-login results plus downloadable summary');

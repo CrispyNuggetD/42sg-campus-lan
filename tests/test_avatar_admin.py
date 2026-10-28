@@ -20,25 +20,25 @@ class Admin(unittest.TestCase):
         def server(*args,**kwargs):
             result=ThreadingHTTPServer(*args,**kwargs);servers.append(result);return result
         with patch('campus_lan.access.Policy.local_operator',return_value=234449),tempfile.TemporaryDirectory() as tmp,patch.dict(os.environ,{'XDG_CACHE_HOME':tmp}),patch.object(avatar_admin,'private_read',return_value=b'{}'),patch.object(avatar_admin.webbrowser,'open',side_effect=browser),patch.object(avatar_admin,'ThreadingHTTPServer',side_effect=server),patch.object(avatar_admin,'BrowserImports',side_effect=lambda cache:BrowserImports(cache,Path(tmp)/'Downloads')):
-            thread=threading.Thread(target=avatar_admin.launch,kwargs={'approved':True,'photos_approved':True,'logins':['ljohn','hnah']},daemon=True);thread.start()
+            thread=threading.Thread(target=avatar_admin.launch,kwargs={'approved':True,'photos_approved':True,'logins':['fixture-user','fixture-owner']},daemon=True);thread.start()
             self.assertTrue(opened.wait(3))
             url=urlsplit(address[0]);base=url.scheme+'://'+url.netloc;token=parse_qs(url.fragment)['key'][0]
             def post(key,origin):
-                req=urllib.request.Request(base+'/import?login=hnah',data=b'\x89PNG\r\n\x1a\nfixture',headers={'Origin':origin,'X-LAN42-Admin':key,'Content-Type':'application/octet-stream'})
+                req=urllib.request.Request(base+'/import?login=fixture-owner',data=b'\x89PNG\r\n\x1a\nfixture',headers={'Origin':origin,'X-LAN42-Admin':key,'Content-Type':'application/octet-stream'})
                 with urllib.request.urlopen(req,timeout=3) as response:return json.load(response)
             try:
-                self.assertEqual(parse_qs(url.query)['logins'],['ljohn hnah'])
+                self.assertEqual(parse_qs(url.query)['logins'],['fixture-user fixture-owner'])
                 with urllib.request.urlopen(base+'/?'+url.query) as response:
                     self.assertEqual(response.status,200)
                     self.assertIn(b'LAN42',response.read())
                 with self.assertRaises(urllib.error.HTTPError) as rejected:
-                    urllib.request.urlopen(base+'/missing?logins=ljohn')
+                    urllib.request.urlopen(base+'/missing?logins=fixture-user')
                 self.assertEqual(rejected.exception.code,404)
                 for key,origin in [('',base),(token,'http://attacker.example')]:
                     with self.assertRaises(urllib.error.HTTPError) as rejected:post(key,origin)
                     self.assertEqual(rejected.exception.code,403)
                 self.assertEqual(post(token,base)['status'],'cached')
-                req=urllib.request.Request(base+'/prepare',data=b'{"login":"hnah"}',headers={'Origin':base,'X-LAN42-Admin':token,'Content-Type':'application/json'})
+                req=urllib.request.Request(base+'/prepare',data=b'{"login":"fixture-owner"}',headers={'Origin':base,'X-LAN42-Admin':token,'Content-Type':'application/json'})
                 with urllib.request.urlopen(req) as response:job=json.load(response)
                 self.assertEqual(len(job['job']),32)
                 def batch_one(login):
