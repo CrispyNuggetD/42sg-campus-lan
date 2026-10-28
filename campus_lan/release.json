@@ -1,8 +1,16 @@
 {
-  "version": "2.9.1-beta.1",
-  "date": "2026-10-28T19:01:22+08:00",
-  "source": "fab0440c1f21e0dc7fd92fdb3dc2d2f865286e10",
+  "version": "2.10.0-beta.1",
+  "date": "2026-10-28T20:19:40+08:00",
+  "source": "3f2749ca67e22cbedf303a725932d8101288a96b",
   "history": [
+    {
+      "version": "2.10.0-beta.1",
+      "date": "2026-10-28T20:19:40+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: add opt-in Mac remote guest approval and consent-gated reload"
+      ]
+    },
     {
       "version": "2.9.1-beta.1",
       "date": "2026-10-28T19:01:22+08:00",
@@ -274,5 +282,5 @@
       ]
     }
   ],
-  "runtime_sha256": "24115f9e7c4cf1b7a83cd0bd6e86f7c4c68ce5bb14d430a6db3d48c57215d771"
+  "runtime_sha256": "5de5ee139bd5cdc84ca8003a9e1513e5afca888b49150a5c9a84bb9f4fbc1a22"
 }

@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.10.0-beta.1 · 2026-10-28T20:19:40+08:00
+
+- feat: add opt-in Mac remote guest approval and consent-gated reload
+
 ## 2.9.1-beta.1 · 2026-10-28T19:01:22+08:00
 
 - fix: allow LAN42 restart lock probes on NFS
