@@ -115,6 +115,29 @@ class Gate(unittest.IsolatedAsyncioTestCase):
             finally:await gate.close()
             self.assertFalse((Path(tmp)/'control.sock').exists())
 
+    async def test_vpn_listener_retries_without_leaving_a_partial_port_open(self):
+        from campus_lan.auth_server import maintain_remote_listeners
+        partial=Mock();partial.wait_closed=AsyncMock()
+        web=Mock();web.wait_closed=AsyncMock()
+        lobby=Mock();lobby.wait_closed=AsyncMock()
+        settings=dict(broker_port=31416,lobby_port=31417)
+        real_sleep=asyncio.sleep
+        with patch('campus_lan.auth_server.asyncio.start_server',new=AsyncMock(side_effect=[partial,OSError('VPN down'),web,lobby])) as start,patch('campus_lan.auth_server.asyncio.sleep',new=AsyncMock()):
+            task=asyncio.create_task(maintain_remote_listeners(Mock(),Mock(),'192.168.42.5',settings,Mock()))
+            try:
+                for _ in range(100):
+                    if start.await_count==4:break
+                    await real_sleep(.001)
+                self.assertEqual(start.await_count,4)
+                partial.close.assert_called_once()
+                partial.wait_closed.assert_awaited_once()
+                self.assertEqual([call.args[1] for call in start.await_args_list],['192.168.42.5']*4)
+            finally:
+                task.cancel()
+                await asyncio.gather(task,return_exceptions=True)
+            web.close.assert_called_once()
+            lobby.close.assert_called_once()
+
     async def test_genuine_signin_and_remote_approval_coexist_without_api_grant(self):
         from campus_lan import PROTOCOL
         broker=Mock();broker.authenticate.return_value=dict(uid=234449,login='hnah',session_key='test-session')

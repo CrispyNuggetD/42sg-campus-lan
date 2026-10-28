@@ -37,12 +37,16 @@ Mac, choose the Mac's actual VPN/private address (replace the example):
 python3 -m campus_lan.auth_server serve --bind 192.168.42.10 --remote-guests
 ```
 
-Do not combine this with `--current-seat`. The bind address must be an actual
-192.168.x.x address assigned to this Mac. No firewall, VPN, routing, certificate
-pin or private configuration is changed by this command. It fails if another
-host process already owns the configured ports; stop that existing instance
-locally before starting this explicitly enabled mode. Default broker/lobby ports
-are 31416/31417; use your configured lobby port in management commands.
+Do not combine this with `--current-seat`. The bind address must be the Mac's
+192.168.x.x VPN/private address. This mode keeps the same broker and lobby ports
+on `127.0.0.1` for local sign-in and opens those ports on the specified address
+for remote guests. It does not listen on the Wi-Fi address unless that address
+is specified. If the VPN address is unavailable at startup, local sign-in still
+works and the remote listeners retry every 15 seconds. No firewall, VPN, routing,
+certificate pin or private configuration is changed by this command. It fails
+if another host process already owns the local ports; stop that instance locally
+before starting this mode. Default broker/lobby ports are 31416/31417; use your
+configured lobby port in management commands.
 
 The host prints a request ID when an eligible connection arrives. In another
 terminal under the same host OS account:

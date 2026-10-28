@@ -110,6 +110,31 @@ async def maintain_campus_presence():
         await asyncio.sleep(60)
 
 
+async def maintain_remote_listeners(http, lobby, bind, settings, context):
+    """Expose the VPN address when assigned, without making local sign-in depend on it."""
+    unavailable = False
+    while True:
+        web = server = None
+        try:
+            web = await asyncio.start_server(http.handle, bind, settings['broker_port'], ssl=context,
+                                             ssl_handshake_timeout=5, limit=16384)
+            server = await asyncio.start_server(lobby.handle, bind, settings['lobby_port'], ssl=context,
+                                                ssl_handshake_timeout=5, limit=65536)
+            print(f'LAN42 remote guest listeners ready on {bind}.', flush=True)
+            unavailable = False
+            await asyncio.Future()
+        except OSError:
+            if not unavailable:
+                print(f'LAN42 remote guest address {bind} unavailable; local sign-in stays ready. Retrying.', flush=True)
+                unavailable = True
+        finally:
+            for listener in (server, web):
+                if listener:
+                    listener.close()
+                    await listener.wait_closed()
+        await asyncio.sleep(15)
+
+
 async def serve_auth(bind='127.0.0.1', current_seat=False, remote_guests=False):
     from .server import Lobby
     if remote_guests:
@@ -189,7 +214,7 @@ async def serve_auth(bind='127.0.0.1', current_seat=False, remote_guests=False):
     announcement_moderator=asyncio.create_task(moderate_announcements())
     if lobby.remote_gate:await lobby.remote_gate.start(settings['lobby_port'])
     try:
-        web = await asyncio.start_server(http.handle, bind, settings['broker_port'], ssl=context,
+        web = await asyncio.start_server(http.handle, '127.0.0.1' if remote_guests else bind, settings['broker_port'], ssl=context,
                                          ssl_handshake_timeout=5, limit=16384)
     except Exception:
         if lobby.remote_gate:await lobby.remote_gate.close()
@@ -198,7 +223,7 @@ async def serve_auth(bind='127.0.0.1', current_seat=False, remote_guests=False):
         if http.search_counts:http.search_counts.close()
         raise
     try:
-        server = await asyncio.start_server(lobby.handle, bind, settings['lobby_port'], ssl=context,
+        server = await asyncio.start_server(lobby.handle, '127.0.0.1' if remote_guests else bind, settings['lobby_port'], ssl=context,
                                             ssl_handshake_timeout=5, limit=65536)
     except Exception:
         web.close()
@@ -219,12 +244,16 @@ async def serve_auth(bind='127.0.0.1', current_seat=False, remote_guests=False):
     exam_task=asyncio.create_task(exam_quiet.run())
     flock_task=asyncio.create_task(koeldrop.maintain_public())
     ticker = asyncio.create_task(lobby.tick())
+    remote_task = asyncio.create_task(maintain_remote_listeners(http,lobby,bind,settings,context)) if remote_guests else None
     print(f"LAN42 secure sign-in host ready: HTTPS {settings['broker_port']}, TLS lobby {settings['lobby_port']}.", flush=True)
     reload_package = False
     try:
         async with web, server:
             reload_package = await wait_for_host_move(settings)
     finally:
+        if remote_task:
+            remote_task.cancel()
+            await asyncio.gather(remote_task,return_exceptions=True)
         if lobby.remote_gate:await lobby.remote_gate.close()
         if http.search_counts:http.search_counts.close()
         announcement_moderator.cancel();announcement_notifier.close()
