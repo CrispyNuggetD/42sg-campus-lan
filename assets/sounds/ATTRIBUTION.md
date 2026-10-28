@@ -59,32 +59,26 @@ recording. Container comments or extra Ogg streams can carry text, but clients
 may ignore or discard them. A filename, fingerprint or hidden marker does not
 ensure attribution survives forwarding or re-uploading.
 
-## macOS playback copy
+## Official WAV and MP3 editions
 
-`uwu-mac.wav` contains the exact decoded samples of `uwu.ogg` as mono,
-44,100 Hz, signed 16-bit PCM, with 200 ms of leading silence and 250 ms of
-trailing silence. Total duration is 1.30 seconds; the call remains 0.85 seconds.
-This native playback copy avoids the short Ogg playback path and gives audio
-hardware time to start and drain. No call samples are trimmed or repeated.
-It carries the same Philip Eapen credit and CC BY-SA 4.0 license above.
+[`uwu.wav`](uwu.wav) is the official LAN42 PCM edition. It contains the exact
+0.85-second decoded call from `uwu.ogg`, as mono 44,100 Hz, signed 16-bit PCM,
+with 200 ms of leading silence and 250 ms of trailing silence. Its total
+duration is 1.30 seconds. macOS playback uses this file. It is an edit of the
+credited recording, not the original field recording or an archive.
 
-## Archived WAV edition
+[`uwu.mp3`](uwu.mp3) is an MP3 edition encoded directly from `uwu.ogg` at
+192 kbit/s, mono, 44,100 Hz, for convenient sharing. It is 0.85 seconds long
+and has no WAV playback padding. Its lossy encoding means the decoded samples
+are not byte-identical to either the Ogg or WAV. Linux playback and desktop
+sound hints continue to use `uwu.ogg`.
 
-`uwu.wav` is the platform-neutral archival filename for the PCM edition.
-It is a byte-for-byte copy of `uwu-mac.wav`: the same 0.85-second call with
-200 ms leading silence and 250 ms trailing silence (1.30 seconds total), mono,
-44,100 Hz, signed 16-bit PCM. It is not the original unedited field recording.
-The original recording remains credited to Philip Eapen; Christopher Nah (hnah)
-distributes the LAN42 adaptation. Both WAV filenames remain CC BY-SA 4.0, with
-the source, license and modification details above.
+All three LAN42 editions carry Philip Eapen’s credit and the CC BY-SA 4.0
+license above. Christopher Nah (hnah) distributes the LAN42 adaptation.
+Include this attribution link and the original credit when sharing a file;
+metadata and filenames alone may not survive forwarding.
 
-Linux continues to use `uwu.ogg`. Adding the archive does not change playback
-selection or establish a future macOS support model. The existing
-`uwu-mac.wav` filename is retained for the current playback implementation.
+Exact-file SHA-256 fingerprints:
 
-Archived on 28 October 2026 (SGT). Exact-file SHA-256 for `uwu.wav`:
-
-`31c36b176ae978d56b8ece69370c7e6a5450821ba90069879825ff25feb64edd`
-
-For attribution when sharing, include this file's canonical attribution link
-and the Philip Eapen / CC BY-SA 4.0 credit; do not rely on the filename alone.
+- `uwu.wav`: `31c36b176ae978d56b8ece69370c7e6a5450821ba90069879825ff25feb64edd`
+- `uwu.mp3`: `a1ee11d78144765d265e1f690612f5f053c5f4e26fef2e59ae793aa3f8c5cb28`

@@ -67,7 +67,11 @@ Try `/who`, `/join` to connect to a friend, `/games`, or `/help`.
 Click **Sign in** / press **F2** in HQ when the approved campus host is online.
 `/uwu` tries the koel call with your sound permission; `/koel help` explains
 file sharing. Nothing starts sharing just because you try the bird. Mac playback
-uses the same call in a native WAV copy with brief silent padding; see the
+uses the official [uwu.wav](assets/sounds/uwu.wav), with brief silent padding.
+Download the [MP3 edition](assets/sounds/uwu.mp3), made directly from the
+unpadded Ogg call, for sharing. Both use the
+LAN42 edit of Philip Eapen’s Asian Koel recording under CC BY-SA 4.0; keep the
+[credit and license](assets/sounds/ATTRIBUTION.md) with either file. See the
 [audio controls](docs/file-sharing.md).
 
 Tracking additions and person-targeted commands check a **private local Singapore

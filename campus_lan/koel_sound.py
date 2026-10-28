@@ -5,7 +5,7 @@ from .auth import private_read,private_write,config_dir
 from .popup_permissions import Permissions
 
 ASSET=Path(__file__).resolve().parents[1]/'assets/sounds/uwu.ogg'
-MAC_ASSET=ASSET.with_name('uwu-mac.wav')
+MAC_ASSET=ASSET.with_name('uwu.wav')
 
 
 class SoundChoice:
@@ -78,8 +78,8 @@ def play():
         raise OSError('The bundled koel sound is unavailable.')
     choices = [('afplay', [])] if sys.platform == 'darwin' else [
         ('paplay', []), ('pw-play', []), ('ffplay', ['-nodisp', '-autoexit', '-loglevel', 'quiet'])]
-    # Native PCM avoids the short Vorbis playback path on macOS. The padded
-    # copy contains the same decoded call, with room for device startup/drain.
+    # Native PCM avoids the short Vorbis playback path on macOS. The official
+    # WAV contains the same decoded call, with room for device startup/drain.
     asset = MAC_ASSET if sys.platform == 'darwin' else ASSET
     if not asset.is_file():
         raise OSError('The bundled Mac sound is unavailable; update LAN42 and retry.')
