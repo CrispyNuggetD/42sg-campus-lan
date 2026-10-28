@@ -1,8 +1,16 @@
 {
-  "version": "2.15.4-beta.1",
-  "date": "2026-10-29T04:10:34+08:00",
-  "source": "52942d67916ea40769a5b1f1cf2cc93e766eb519",
+  "version": "2.15.5-beta.1",
+  "date": "2026-10-29T04:17:56+08:00",
+  "source": "bf5cbcb772639c508c7e61988a1a871a372cd16e",
   "history": [
+    {
+      "version": "2.15.5-beta.1",
+      "date": "2026-10-29T04:17:56+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: reject avatar batch selectors before lookup"
+      ]
+    },
     {
       "version": "2.15.4-beta.1",
       "date": "2026-10-29T04:10:34+08:00",
@@ -420,5 +428,5 @@
       ]
     }
   ],
-  "runtime_sha256": "be4598721dff4b8d0a52721567d35848332fad88dfdbbc38f5dec43451624490"
+  "runtime_sha256": "6e75e13d6a8de3e8f4553576cab11c307888730892dd57b2519a2573c7cffb54"
 }
