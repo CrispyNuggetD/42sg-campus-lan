@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.16.0-beta.1 · 2026-10-29T04:26:59+08:00
+
+- feat: expand local SG selectors in photo and game commands
+
 ## 2.15.5-beta.1 · 2026-10-29T04:17:56+08:00
 
 - fix: reject avatar batch selectors before lookup
