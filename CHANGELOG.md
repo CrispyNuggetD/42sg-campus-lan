@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.14.2-beta.1 · 2026-10-29T03:12:41+08:00
+
+- fix: keep Mac LAN42 in Work Terminal tabs
+
 ## 2.14.1-beta.1 · 2026-10-29T02:59:12+08:00
 
 - Keep local LAN42 sign-in while exposing approved VPN guests
