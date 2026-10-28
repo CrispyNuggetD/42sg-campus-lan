@@ -1,8 +1,16 @@
 {
-  "version": "2.12.2-beta.1",
-  "date": "2026-10-28T21:22:57+08:00",
-  "source": "0de2f7d1aff8a50bfe0d301f62d6bcfaa75d0d04",
+  "version": "2.12.3-beta.1",
+  "date": "2026-10-28T21:26:05+08:00",
+  "source": "4ba9ff2968872e47a4004e765655d2c9b98ad45e",
   "history": [
+    {
+      "version": "2.12.3-beta.1",
+      "date": "2026-10-28T21:26:05+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: continue avatar batches after individual failures"
+      ]
+    },
     {
       "version": "2.12.2-beta.1",
       "date": "2026-10-28T21:22:57+08:00",
@@ -322,5 +330,5 @@
       ]
     }
   ],
-  "runtime_sha256": "a7e8cf98cc00fd9a921daa12e33dee05344b9b09fd3393b8c1aff76d387b6a0e"
+  "runtime_sha256": "afb821325e456bb463c5607ade403554027c701bffd7b26f8ecd0b831ac71226"
 }
