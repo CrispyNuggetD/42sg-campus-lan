@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.16.1-beta.1 · 2026-10-29T05:00:00+08:00
+
+- fix: use official uwu wav and add ogg-derived mp3
+
 ## 2.16.0-beta.1 · 2026-10-29T04:26:59+08:00
 
 - feat: expand local SG selectors in photo and game commands

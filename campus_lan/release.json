@@ -1,8 +1,16 @@
 {
-  "version": "2.16.0-beta.1",
-  "date": "2026-10-29T04:26:59+08:00",
-  "source": "5a618128928e7ea35109508a23ac0bf98aa85e74",
+  "version": "2.16.1-beta.1",
+  "date": "2026-10-29T05:00:00+08:00",
+  "source": "ee147de80aa7300b01ae4b031cf5e6551d59a90a",
   "history": [
+    {
+      "version": "2.16.1-beta.1",
+      "date": "2026-10-29T05:00:00+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: use official uwu wav and add ogg-derived mp3"
+      ]
+    },
     {
       "version": "2.16.0-beta.1",
       "date": "2026-10-29T04:26:59+08:00",
@@ -436,5 +444,5 @@
       ]
     }
   ],
-  "runtime_sha256": "d1d596b16064606917a685c467ee8119f8756afe04267fe145cac133ef6345fc"
+  "runtime_sha256": "40fe1b807c2c2d73fc40837d260c170e60a9bed3b066df2deff7dc62510ef07a"
 }
