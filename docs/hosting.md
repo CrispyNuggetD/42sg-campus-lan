@@ -192,6 +192,11 @@ For automatic batches, use `/tool LOGIN...` and install or reload the
 [avatar-saver extension](../browser-tools/avatar-saver/README.md) in Chrome.
 Extension 1.3 closes each batch photo tab after its download completes; failed
 saves remain open. Keep the local admin terminal open for cache import.
+Batch failures affect only that login: invalid input and missing photos are
+skipped; lookup, network and import errors are reported as failures, and the
+next login is tried. The panel prints one result per input and a final requested,
+skipped, failed and successful count. Use **Download batch log** to save the
+report locally. Existing API and photo request budgets still apply.
 
 Nothing reads or exports Chrome cookies/profiles. Cache files are kept outside
 Git at `~/.cache/42sg-campus-lan/avatars` with private permissions. Joined players

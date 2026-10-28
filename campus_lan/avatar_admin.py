@@ -21,8 +21,9 @@ PAGE=r'''<!doctype html><meta charset="utf-8"><title>LAN42 · private avatar too
 <p><a id="photo" target="_blank" rel="noopener noreferrer" hidden>Open photo in my browser</a></p>
 <details><summary>Chrome download folder</summary><p>Set the folder Chrome uses, not the private avatar cache.</p><input id="downloads" size="55"><button id="save-downloads">Use this folder</button></details>
 <div id="drop">If the photo opens in your normal browser, save it there. Then choose or drop that image here to cache it locally.<br><input id="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></div>
-<pre id="status">Ready.</pre><p>PNG/JPEG/GIF/WebP · maximum 1 MiB · no screenshots, browser state or credentials are collected.</p>
+<pre id="status">Ready.</pre><button id="download-log" hidden>Download batch log</button><pre id="batch-log" aria-label="Batch results" role="log"></pre><p>PNG/JPEG/GIF/WebP · maximum 1 MiB · no screenshots, browser state or credentials are collected.</p>
 <script>
+const initialLogins=new URLSearchParams(location.search).get('logins')||'';
 const token=new URLSearchParams(location.hash.slice(1)).get('key');history.replaceState(null,'',location.pathname);
 const $=id=>document.getElementById(id);let photoUrl=null;
 let photoConsent=PHOTO_CONSENT;
@@ -30,9 +31,23 @@ function question(text,yesLabel='Allow once'){return new Promise(resolve=>{const
 async function consentPhotos(){const p=await call('/photo_permission',JSON.stringify({}));if(p.mode==='deny')return false;if(p.mode==='allow')return true;if(photoConsent){photoConsent=false;return true;}return question('Allow photo tabs and extension saves for this batch?');}
 async function rememberPhotos(){const p=await call('/photo_permission',JSON.stringify({}));if(p.mode==='ask'&&await question('Always allow photo tabs and extension saves for this account?','Always allow'))await call('/photo_permission',JSON.stringify({always:true}));}
 
-$('login').value=new URLSearchParams(location.search).get('logins')||'';
+$('login').value=initialLogins;
+AVATAR_BATCH_SCRIPT
+let batchLog=[];
+$('download-log').onclick=()=>{const url=URL.createObjectURL(new Blob([batchLog.join('\n')+'\n'],{type:'text/plain'}));const link=document.createElement('a');link.href=url;link.download='lan42-avatar-batch.txt';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 const batch=document.createElement('button');batch.textContent='Cache all logins';$('lookup').before(batch);
-batch.onclick=async()=>{if(!await consentPhotos()){$('status').textContent='Photo batch skipped. /settings permissions photos allow enables future batches.';return;}batch.disabled=true;const names=[...new Set($('login').value.trim().split(/\s+/).filter(Boolean))];try{let opened=false;for(let i=0;i<names.length;i++){$('status').textContent='Saving '+(i+1)+' of '+names.length+' · '+names[i];const d=await call('/batch_one',JSON.stringify({login:names[i],photo_consent:true}));if(d.job){opened=true;let complete=false;for(let n=0;n<240;n++){await new Promise(r=>setTimeout(r,1500));const j=await call('/job_status',JSON.stringify({job:d.job}));if(j.status==='cached'){complete=true;break;}if(j.status!=='waiting_for_browser_save')throw Error(names[i]+': '+j.status);}if(!complete)throw Error('Waiting for browser photo save timed out for '+names[i]);}}$('status').textContent='Saved '+names.length+' of '+names.length;if(opened)await rememberPhotos();}catch(e){$('status').textContent=e.message;}finally{batch.disabled=false;}};
+batch.onclick=async()=>{
+ if(!await consentPhotos()){$('status').textContent='Photo batch skipped. /settings permissions photos allow enables future batches.';return;}
+ batch.disabled=true;batchLog=[];$('batch-log').textContent='';$('download-log').hidden=false;
+ const names=$('login').value.trim().split(/\s+/).filter(Boolean);
+ const append=line=>{batchLog.push(line);$('batch-log').textContent=batchLog.join('\n');console.log(line);};
+ try{
+  const result=await runAvatarBatch(names,{call,progress:(i,total,name)=>{$('status').textContent='Processing '+i+' of '+total+' · '+name;},log:r=>append(r.number+'. '+r.login+' — '+r.outcome+': '+r.reason)});
+  const summary='Requested '+result.requested+', skipped '+result.skipped+', failed '+result.failed+', success '+result.success+'. See batch log below or Download batch log.';
+  $('status').textContent=summary;append(summary);
+  if(result.opened){try{await rememberPhotos();}catch(e){append('Photo preference could not be saved.');}}
+ }finally{batch.disabled=false;}
+};
 if($('login').value)setTimeout(()=>batch.click(),500);
 async function call(path,body,type='application/json'){const r=await fetch(path,{method:'POST',headers:{'X-LAN42-Admin':token||'','Content-Type':type},body});const data=await r.json();if(!r.ok)throw Error(data.error||'Request failed');return data;}
 async function lookup(){const login=$('login').value.trim();const data=await call('/lookup',JSON.stringify({login}));photoUrl=data.avatar;$('photo').hidden=!photoUrl;$('photo').href=photoUrl||'#';$('status').textContent=JSON.stringify(data,null,2);return data;}
@@ -47,7 +62,7 @@ $('lookup').onclick=()=>lookup().catch(e=>$('status').textContent=e.message);
 $('fetch').onclick=async()=>{try{await lookup();const data=await call('/fetch',JSON.stringify({login:$('login').value.trim()}));$('status').textContent=JSON.stringify(data,null,2);}catch(e){$('status').textContent=e.message;}};
 async function upload(file){if(!file)return;try{if(file.size>1048576)throw Error('Image exceeds 1 MiB');const login=$('login').value.trim();if(!/^[A-Za-z0-9_.-]{1,32}$/.test(login))throw Error('Enter the Intra login first');const data=await call('/import?login='+encodeURIComponent(login),file,'application/octet-stream');$('status').textContent='Cached locally for '+login+'. In FORKNITE click Reload cached photo.\n'+JSON.stringify(data,null,2);}catch(e){$('status').textContent=e.message;}}
 $('file').onchange=e=>upload(e.target.files[0]);$('drop').ondragover=e=>e.preventDefault();$('drop').ondrop=e=>{e.preventDefault();upload(e.dataTransfer.files[0]);};
-</script>'''
+</script>'''.replace('AVATAR_BATCH_SCRIPT', (Path(__file__).with_name('avatar_batch.js')).read_text())
 
 
 def launch(logins=(),approved=False,photos_approved=False,owner=None):
@@ -107,10 +122,15 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                 login=data.get('login')
                 future=asyncio.run_coroutine_threadsafe(lookup.lookup_many([login]),loop)
                 profiles,errors=future.result(timeout=25)
-                if not profiles:raise ValueError('Profile lookup failed; check the login, API configuration or limits')
+                if not profiles:
+                    if url.path=='/batch_one':
+                        self.reply(200,dict(status='failed',reason='Profile lookup failed: login unavailable, not a Singapore member, or API limits reached'));return
+                    raise ValueError('Profile lookup failed; check the login, API configuration or limits')
                 profile=profiles[0]
                 if url.path=='/lookup':result=profile
                 elif url.path in ('/fetch','/batch_one'):
+                    if url.path=='/batch_one' and not profile.get('avatar'):
+                        self.reply(200,dict(status='skipped',reason='No photo available'));return
                     result=cache.fetch(login,profile['avatar'])
                     if url.path=='/batch_one' and result.get('status')!='cached':
                         from .popup_permissions import Permissions
@@ -119,7 +139,8 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                         if not profile.get('avatar'):raise ValueError('No photo available')
                         result=imports.prepare(login)
                         photo=urllib.parse.urlsplit(profile['avatar'])
-                        webbrowser.open(urllib.parse.urlunsplit(photo._replace(fragment=urllib.parse.urlencode({'lan42-import':result['job']}))))
+                        opened=webbrowser.open(urllib.parse.urlunsplit(photo._replace(fragment=urllib.parse.urlencode({'lan42-import':result['job']}))))
+                        if not opened:result=dict(status='failed',reason='Browser could not open the photo tab')
                 else:self.reply(404,{'error':'Not found'});return
                 self.reply(200,result)
             except Exception:

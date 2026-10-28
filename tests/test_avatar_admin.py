@@ -8,7 +8,7 @@ import unittest
 import urllib.request
 import urllib.error
 from http.server import ThreadingHTTPServer
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 from urllib.parse import urlsplit,parse_qs
 from campus_lan import avatar_admin
 
@@ -41,6 +41,17 @@ class Admin(unittest.TestCase):
                 req=urllib.request.Request(base+'/prepare',data=b'{"login":"hnah"}',headers={'Origin':base,'X-LAN42-Admin':token,'Content-Type':'application/json'})
                 with urllib.request.urlopen(req) as response:job=json.load(response)
                 self.assertEqual(len(job['job']),32)
+                def batch_one(login):
+                    request=urllib.request.Request(base+'/batch_one',data=json.dumps({'login':login,'photo_consent':True}).encode(),headers={'Origin':base,'X-LAN42-Admin':token,'Content-Type':'application/json'})
+                    with urllib.request.urlopen(request,timeout=3) as response:return json.load(response)
+                # A rejected lookup or missing photo is a per-login result, not a
+                # batch-ending HTTP error; subsequent cached photos still work.
+                with patch.object(avatar_admin.ProfileLookup,'lookup_many',new_callable=AsyncMock) as lookup,patch.object(avatar_admin.AvatarCache,'fetch',return_value={'status':'cached'}) as fetch:
+                    lookup.side_effect=[([],['missing']),([{'login':'no-photo','avatar':None}],[]),([{'login':'valid','avatar':'https://cdn.intra.42.fr/photo.jpg'}],[])]
+                    self.assertEqual(batch_one('missing')['status'],'failed')
+                    self.assertEqual(batch_one('no-photo')['status'],'skipped')
+                    self.assertEqual(batch_one('valid')['status'],'cached')
+                    fetch.assert_called_once_with('valid','https://cdn.intra.42.fr/photo.jpg')
                 with urllib.request.urlopen(base) as response:self.assertIn(b'cannot read your Chrome profile',response.read())
             finally:
                 servers[0].shutdown();thread.join(3)

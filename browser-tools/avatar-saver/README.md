@@ -65,3 +65,9 @@ Version 1.3 closes automatic batch photo tabs after Chrome confirms the exact
 job download completed. Failed/interrupted saves stay open. Only the same CDN
 tab carrying that saved job can request closure; other tabs are untouched.
 Reload the unpacked extension at chrome://extensions to apply this update.
+
+The admin batch panel continues after individual lookup/save errors. Its visible
+log records each login and a reason, then totals requested, skipped, failed and
+successful inputs. Download batch log exports that report locally. Duplicate or
+malformed inputs and missing photos are skipped; lookup/import failures remain
+visible. Existing request budgets are preserved.
