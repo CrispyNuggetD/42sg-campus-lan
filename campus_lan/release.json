@@ -1,8 +1,16 @@
 {
-  "version": "2.8.9-beta.1",
-  "date": "2026-10-28T18:39:48+08:00",
-  "source": "044015ff5a7741c66b09f2ea73f0cc327237a0ae",
+  "version": "2.9.0-beta.1",
+  "date": "2026-10-28T18:58:09+08:00",
+  "source": "bcc72ac93f4ced09d9dfe30109e3ad679fa8b38a",
   "history": [
+    {
+      "version": "2.9.0-beta.1",
+      "date": "2026-10-28T18:58:09+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: report tracked offline, seat and lobby identity changes"
+      ]
+    },
     {
       "version": "2.8.9-beta.1",
       "date": "2026-10-28T18:39:48+08:00",
@@ -258,5 +266,5 @@
       ]
     }
   ],
-  "runtime_sha256": "6c733ef50e57e3ef4ba9c0e31a558ad4e400516b1ba48b7bcc28f20740b4a147"
+  "runtime_sha256": "d83adef2d7039175efa2237990a98ceea363406a29904f4eca5983cb94ba8f96"
 }

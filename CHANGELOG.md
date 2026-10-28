@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.9.0-beta.1 · 2026-10-28T18:58:09+08:00
+
+- feat: report tracked offline, seat and lobby identity changes
+
 ## 2.8.9-beta.1 · 2026-10-28T18:39:48+08:00
 
 - fix: restore campus host startup on Python 3.10
