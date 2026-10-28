@@ -1,8 +1,16 @@
 {
-  "version": "2.12.1-beta.1",
-  "date": "2026-10-28T21:18:14+08:00",
-  "source": "cf57e1cb59020795dbdd0f5dc69b0241108f98d1",
+  "version": "2.12.2-beta.1",
+  "date": "2026-10-28T21:22:57+08:00",
+  "source": "0de2f7d1aff8a50bfe0d301f62d6bcfaa75d0d04",
   "history": [
+    {
+      "version": "2.12.2-beta.1",
+      "date": "2026-10-28T21:22:57+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: close batch avatar tabs after successful downloads"
+      ]
+    },
     {
       "version": "2.12.1-beta.1",
       "date": "2026-10-28T21:18:14+08:00",
@@ -314,5 +322,5 @@
       ]
     }
   ],
-  "runtime_sha256": "071670ca2bd879938ae9539d3dbb2bb55c3edc88fe608b5451ed13209252f5f9"
+  "runtime_sha256": "a7e8cf98cc00fd9a921daa12e33dee05344b9b09fd3393b8c1aff76d387b6a0e"
 }
