@@ -67,3 +67,24 @@ trailing silence. Total duration is 1.30 seconds; the call remains 0.85 seconds.
 This native playback copy avoids the short Ogg playback path and gives audio
 hardware time to start and drain. No call samples are trimmed or repeated.
 It carries the same Philip Eapen credit and CC BY-SA 4.0 license above.
+
+## Archived WAV edition
+
+`uwu.wav` is the platform-neutral archival filename for the PCM edition.
+It is a byte-for-byte copy of `uwu-mac.wav`: the same 0.85-second call with
+200 ms leading silence and 250 ms trailing silence (1.30 seconds total), mono,
+44,100 Hz, signed 16-bit PCM. It is not the original unedited field recording.
+The original recording remains credited to Philip Eapen; Christopher Nah (hnah)
+distributes the LAN42 adaptation. Both WAV filenames remain CC BY-SA 4.0, with
+the source, license and modification details above.
+
+Linux continues to use `uwu.ogg`. Adding the archive does not change playback
+selection or establish a future macOS support model. The existing
+`uwu-mac.wav` filename is retained for the current playback implementation.
+
+Archived on 28 October 2026 (SGT). Exact-file SHA-256 for `uwu.wav`:
+
+`31c36b176ae978d56b8ece69370c7e6a5450821ba90069879825ff25feb64edd`
+
+For attribution when sharing, include this file's canonical attribution link
+and the Philip Eapen / CC BY-SA 4.0 credit; do not rely on the filename alone.

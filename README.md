@@ -20,7 +20,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 ## Highlights
 
 <!-- shell-installer-features:start -->
-- **Campus HQ:** `lan42` opens a separate tmux workspace for your lobby, games and tools.
+- **Campus HQ:** no-sudo setup checks Python/curses and prepares missing tmux in your account on Ubuntu; `lan42` opens a separate workspace.
 - **Find your people:** `/who`, `/join`, private DMs and `/track` lists; `/clusters` shows current SG seats while the approved campus host is online.
 - **KoelDrop:** `/koel flock` joins the host’s 42 Singapore flock: once, always or never. Daily folders survive reconnects; optional sgoinfre link saves home quota. Upload/receive consent stays separate. `/uwu` introduces your courier.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
@@ -40,8 +40,12 @@ host is offline; stable, always-on hosting is future work.
 
 ## Quick start
 
-You need Git, tmux, Python 3.9+ with curses, and a terminal at least **76 × 28**.
-Install tmux with `sudo apt install tmux` (Ubuntu) or `brew install tmux` (Mac).
+On school Ubuntu, clone and run setup in your normal account: **no sudo**.
+Setup checks your existing Python **3.9+ with curses**; it does not install Python.
+Core guest chat/games need no pip packages or API credentials. Setup reuses tmux
+or attempts a user-level package download/extraction if it is missing; no system
+packages are installed. Use a terminal at least **76 × 28**.
+[What setup configures and what must already exist →](docs/getting-started.md#dependencies-without-sudo)
 
 ```sh
 git clone https://github.com/CrispyNuggetD/42sg-campus-lan.git

@@ -217,7 +217,7 @@ def main():
             solution = ("Run: brew install tmux" if shutil.which("brew") else
                         "Install Homebrew from https://brew.sh, then run: brew install tmux")
         else:
-            solution = "Install tmux with your system package manager (Debian/Ubuntu: sudo apt install tmux)."
+            solution = "Run dailylogin or LAN42 setup.sh for user-level tmux setup without sudo."
         raise RuntimeError("tmux is missing. " + solution + " Then rerun dailylogin.")
     migrate_layout()
     session = session_name(args.role if args.action == "open" else None)

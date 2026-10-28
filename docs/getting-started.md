@@ -13,7 +13,7 @@ You'll need Git, tmux, Python 3.9 or newer with curses support, and a terminal a
 when needed; terminals that do not support resize requests show a manual resize
 message instead. There are no pip packages to install.
 
-Install tmux with `sudo apt install tmux` on Ubuntu or `brew install tmux` on Mac.
+Setup checks the dependencies and attempts user-level tmux recovery; see [dependencies without sudo](#dependencies-without-sudo).
 `lan42` uses a separate tmux workspace for HQ, games and tools, even without the
 larger dailylogin shell setup. Terminals default to maximized rather than OS
 fullscreen; set `DAILY_TMUX_MAXIMIZE=FALSE` to disable maximizing.
@@ -52,8 +52,8 @@ directly instead:
 ```
 
 The launcher checks for updates and prints the version, commit and date before
-starting. Everything runs from this clone; setup needs no sudo and installs
-nothing in `/bin` or `~/.local/bin`.
+starting. LAN42 runs from this clone; setup needs no sudo. Optional tmux recovery uses
+`~/.local/share/42-tools/tmux`, not system directories.
 
 ## Zsh commands and daily login
 
@@ -130,3 +130,29 @@ Live API permissions and campus data still need testing. See
 and [the user endpoint](https://api.intra.42.fr/apidoc/2.0/users/show.html).
 
 </details>
+
+## Dependencies without sudo
+
+| Dependency | What setup does | If unavailable |
+| --- | --- | --- |
+| Git | Uses the existing executable | Needed to clone/update; load the school-provided Git |
+| Python 3.9+ | Checks the active Python version | Not auto-installed; select an available school/system Python on PATH |
+| curses | Imports it to verify the Python build | Not a pip package; try the school system Python, usually `/usr/bin/python3` |
+| tmux | Reuses it; on Ubuntu/Debian downloads tmux and its direct libraries from configured package repositories, extracts them privately, and checks `tmux -V` | Use `./lan42.sh` / `lan42_here` without a workspace, then retry setup when mirrors/tools are available |
+| zsh | Appends the helper source block when available | Direct launcher remains usable without shell binding |
+| Core guest Python packages | None; uses the standard library | No pip step |
+| API-host TLS packages, game compilers and other optional tools | Separate feature-specific requirements | Installing the lobby does not provision an approved API host or every optional game tool |
+
+Ubuntu recovery uses `apt-get download`, `apt-cache` and `dpkg-deb --extract`.
+It never runs sudo, `apt-get install`, `apt-get update`, or package maintainer
+scripts. It uses existing repository metadata, so stale metadata, blocked
+network/mirrors or unavailable tools can prevent recovery. Downloaded files and
+libraries stay below `~/.local/share/42-tools/tmux` (override base with
+`FORTYTWO_TOOLS_ROOT`). Libraries apply only to the tmux wrapper.
+The sourced helper adds that private bin directory to PATH when it exists;
+sourcing itself never downloads anything. This is a package-based attempt,
+not a guarantee for every managed workstation or permission to override school policy.
+
+On Mac, missing tmux uses an existing Homebrew installation; Homebrew itself
+is not installed automatically. The current school terminal has not been
+retested from this Mac; no new campus compatibility claim is made here.

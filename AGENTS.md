@@ -239,3 +239,12 @@ Campus HQ link policy: same-site links (including the shared Pages host) stay
 in the same tab. External HTTP(S) links open a new tab with noopener/noreferrer;
 apply this to generated Markdown and dynamic controls too. Keep no-JS ordinary
 link fallbacks, and never auto-redirect visitors away to an external site.
+
+## User-level tmux bootstrap
+
+`useful-scripts/ensure_tmux.py` is vendored from the shell repository's
+`tools/ensure_tmux.py`. Edit the canonical file, run `test_ensure_tmux.py` there,
+then copy the helper here. Ubuntu setup must not invoke sudo, apt install/update
+or system package scripts. Keep private library paths scoped to its wrapper.
+Do not claim Python itself or optional game/API-host dependencies are automatically
+installed. Validate Python/curses and retain direct-terminal fallback.

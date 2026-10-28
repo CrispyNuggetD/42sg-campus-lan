@@ -3,6 +3,11 @@
 # Personal settings belong BEFORE the source line in ~/.zshrc.
 [[ -n "$ZSH_VERSION" ]] || return 1
 typeset -g LAN42_REPO_ROOT="${${(%):-%N}:A:h:h}"
+# Reuse the private tmux wrapper installed by setup; sourcing never downloads.
+if [[ -x "${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/tmux/bin/tmux" ]]; then
+  typeset -U path
+  path=("${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/tmux/bin" $path)
+fi
 : ${LAN42_DOCUMENTS_ROOT:=$HOME/Documents}
 : ${LAN42_PULL_OTHER_REPOS:=0}
 : ${LAN42_OPEN_ON_LOGIN:=1}

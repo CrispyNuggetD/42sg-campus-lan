@@ -94,3 +94,14 @@ The 162-test policy/auth/profile/client/network/tracking/mesh/KoelDrop/website
 selection had 160 passes, one skip and the previously documented Mac failure
 binding 127.0.0.2. Website build passed. The shell's 14 login-hour tests pass,
 including Linux hnah fallback and nonfatal skips on Mac/other accounts.
+
+## No-sudo dependency setup — 28 October 2026 SGT
+
+Setup now checks the active Python 3.9+ and curses, reuses existing tmux, or
+attempts user-level package extraction on Ubuntu/Debian. The rootless installer
+tests use fake package tools; terminal setup, exported feature and website tests
+passed on the maintainer Mac, and the website build passed. These checks do not
+prove the package mirrors, execution permissions or dependency availability on
+today's school terminal. No sudo, system package install, maintainer scripts or
+new campus snapshot was run. Python itself and optional host/game dependencies
+are not silently installed by the lobby setup.

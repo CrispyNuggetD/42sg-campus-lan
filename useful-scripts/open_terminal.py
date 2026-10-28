@@ -24,7 +24,7 @@ def terminal_command(repo, platform=sys.platform, which=shutil.which, args=()):
 
 def main():
     if not shutil.which('tmux'):
-        install = 'brew install tmux' if sys.platform == 'darwin' else 'sudo apt install tmux'
+        install = 'sh '+str(REPO/'setup.sh')
         raise RuntimeError('tmux is required for LAN42 workspaces. Install it: ' + install +
                            '. Use lan42_here to run directly in this terminal meanwhile.')
     subprocess.run(terminal_command(REPO, args=sys.argv[1:]), check=True)

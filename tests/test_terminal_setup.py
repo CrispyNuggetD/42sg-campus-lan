@@ -44,7 +44,7 @@ class TerminalSetup(unittest.TestCase):
                     self.assertNotIn('osascript', command)
 
     def test_missing_tmux_has_platform_install_hint(self):
-        for platform, hint in [('linux', 'sudo apt install tmux'), ('darwin', 'brew install tmux')]:
+        for platform, hint in [('linux', 'setup.sh'), ('darwin', 'setup.sh')]:
             with patch.object(module.sys, 'platform', platform), patch.object(module.shutil, 'which', return_value=None):
                 with self.assertRaisesRegex(RuntimeError, hint):
                     module.main()
