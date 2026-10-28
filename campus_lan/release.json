@@ -1,8 +1,16 @@
 {
-  "version": "2.8.8-beta.1",
-  "date": "2026-10-28T17:15:25+08:00",
-  "source": "200ae282b72ac27a27ddfd41ffd39a02470d21e6",
+  "version": "2.8.9-beta.1",
+  "date": "2026-10-28T18:39:48+08:00",
+  "source": "044015ff5a7741c66b09f2ea73f0cc327237a0ae",
   "history": [
+    {
+      "version": "2.8.9-beta.1",
+      "date": "2026-10-28T18:39:48+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: restore campus host startup on Python 3.10"
+      ]
+    },
     {
       "version": "2.8.8-beta.1",
       "date": "2026-10-28T17:15:25+08:00",
@@ -250,5 +258,5 @@
       ]
     }
   ],
-  "runtime_sha256": "eb09e83038fc01bc7dc25a784fe297cefa5841cfab394bbdc302fee54be16092"
+  "runtime_sha256": "6c733ef50e57e3ef4ba9c0e31a558ad4e400516b1ba48b7bcc28f20740b4a147"
 }
