@@ -15,6 +15,7 @@ from .auth import NoRedirect, provider_tls_context
 
 MAX_IMAGE=1024*1024
 TTL=86400
+PHOTO_FETCHES_PER_HOUR=600
 
 
 def cache_root():
@@ -92,7 +93,7 @@ class AvatarCache:
         try:recent=json.loads(ratefile.read_text()).get('requests',[])
         except (OSError,ValueError):recent=[]
         now=time.time();recent=[n for n in recent if isinstance(n,(int,float)) and n>now-3600]
-        if len(recent)>=300:return dict(status='local_photo_budget_exhausted')
+        if len(recent)>=PHOTO_FETCHES_PER_HOUR:return dict(status='local_photo_budget_exhausted')
         if recent:time.sleep(max(0,recent[-1]+1-now))
         recent.append(time.time());self._atomic(ratefile,json.dumps(dict(requests=recent)).encode())
         opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),urllib.request.HTTPSHandler(context=provider_tls_context()),NoRedirect())

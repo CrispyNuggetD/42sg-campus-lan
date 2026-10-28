@@ -198,7 +198,8 @@ before any API lookup. A missing/invalid whitelist is reported as a failure.
 Lookup, network and import errors are reported as failures, and the
 next login is tried. The panel prints one result per input and a final requested,
 skipped, failed and successful count. Use **Download batch log** to save the
-report locally. Existing API and photo request budgets still apply.
+report locally. LAN42 permits 600 uncached profile lookups and 600 direct photo
+download attempts per rolling hour per process/cache; upstream API limits still apply.
 
 `/tool LOGIN...` accepts explicit logins. `/tool cohort1` selects cohort 1 from
 the local private Singapore student cache; `/tool all`, `/tool sg` and

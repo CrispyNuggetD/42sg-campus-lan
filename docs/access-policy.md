@@ -139,7 +139,7 @@ the consenting account and check SG admission; its raw profile is not retained.
 
 Queries are paginated with 100 records/page and at most 50 pages/5,000 records per
 operation. The existing cross-process two-request/second pacing and retry bounds
-remain; game profiles allow 300 uncached lookups/hour per server and a 60-second
+remain; game and admin profiles allow 600 uncached lookups/hour per process and a 60-second
 minimal-profile cache. Seat snapshots use the existing 30-second shared cache;
 client tracking polls about every five minutes. These are limits, not permission
 to collect everything the upstream credential can access.

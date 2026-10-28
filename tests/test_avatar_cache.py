@@ -5,7 +5,7 @@ import tempfile
 import unittest
 import urllib.error
 from unittest.mock import Mock, patch
-from campus_lan.avatar_cache import AvatarCache,key,image_type
+from campus_lan.avatar_cache import AvatarCache,PHOTO_FETCHES_PER_HOUR,key,image_type
 
 PNG=b'\x89PNG\r\n\x1a\n'+b'fixture'
 
@@ -43,3 +43,17 @@ class Cache(unittest.TestCase):
             c=AvatarCache(tmp)
             for url in ('http://cdn.intra.42.fr/a','https://localhost/a','https://evil.example/a','https://user:pass@cdn.intra.42.fr/a'):
                 self.assertEqual(c.fetch('hnah',url)['status'],'invalid_photo_url')
+
+    def test_direct_photo_budget_allows_six_hundredth_attempt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(PHOTO_FETCHES_PER_HOUR,600)
+            c=AvatarCache(tmp)
+            (c.root/'acquisition.json').write_text(json.dumps({'requests':[9000]*599}))
+            with patch('campus_lan.avatar_cache.time.time',return_value=10000), \
+                 patch('campus_lan.avatar_cache.urllib.request.build_opener') as opener:
+                opener.return_value.open.side_effect=OSError('offline')
+                self.assertEqual(c.fetch('first','https://cdn.intra.42.fr/one.jpg')['status'],
+                                 'invalid_image_or_network_error')
+                self.assertEqual(c.fetch('second','https://cdn.intra.42.fr/two.jpg')['status'],
+                                 'local_photo_budget_exhausted')
+                self.assertEqual(opener.return_value.open.call_count,1)

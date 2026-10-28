@@ -9,6 +9,8 @@ import time
 import urllib.parse
 from .auth import AuthError
 
+PROFILE_LOOKUPS_PER_HOUR=600
+
 
 class ProfileLookup:
     def __init__(self, clock=time.monotonic):
@@ -23,7 +25,7 @@ class ProfileLookup:
         if cached and cached['expires']>self.clock():return cached['profile']
         now=self.clock()
         while self.requests and self.requests[0]<=now-3600:self.requests.popleft()
-        if len(self.requests)>=300:raise AuthError('SG profile budget reached; try later.')
+        if len(self.requests)>=PROFILE_LOOKUPS_PER_HOUR:raise AuthError('SG profile budget reached; try later.')
         self.requests.append(now)
         from .campus_info import API
         user=API().member_profile(login)

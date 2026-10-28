@@ -1,7 +1,7 @@
 import json
 import unittest
 from unittest.mock import Mock,patch
-from campus_lan.profile_lookup import ProfileLookup
+from campus_lan.profile_lookup import PROFILE_LOOKUPS_PER_HOUR, ProfileLookup
 from campus_lan.auth import AuthError
 
 class Lookup(unittest.IsolatedAsyncioTestCase):
@@ -33,6 +33,11 @@ class Lookup(unittest.IsolatedAsyncioTestCase):
 
     async def test_hourly_budget_stops_requests(self):
         with patch('campus_lan.campus_info.API') as api:
-            lookup=ProfileLookup(clock=lambda:100);lookup.requests.extend([100]*300)
+            self.assertEqual(PROFILE_LOOKUPS_PER_HOUR,600)
+            lookup=ProfileLookup(clock=lambda:100);lookup.requests.extend([100]*599)
+            api.return_value.member_profile.return_value={'login':'thtay','image':{}}
             profiles,errors=await lookup.lookup_many(['thtay'])
-            self.assertEqual(profiles,[]);self.assertEqual(errors,['thtay']);api.assert_not_called()
+            self.assertEqual([p['login'] for p in profiles],['thtay']);self.assertFalse(errors)
+            profiles,errors=await lookup.lookup_many(['dthoo'])
+            self.assertEqual(profiles,[]);self.assertEqual(errors,['dthoo'])
+            self.assertEqual(api.return_value.member_profile.call_count,1)
