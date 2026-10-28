@@ -1,7 +1,7 @@
 import collections
 import unittest
 from campus_lan.client import Client
-from campus_lan.lobby_view import LAYOUT, lobby_lines, roster, guest_style
+from campus_lan.lobby_view import LAYOUT, lobby_lines, roster, guest_style, relationship_overlay, player_style, GUEST_STYLE
 
 
 def player(name, seat='unknown', id=''):
@@ -37,10 +37,30 @@ class LobbyView(unittest.TestCase):
         ordered = roster(peers)
         self.assertEqual([p['name'] for _,p,_ in ordered], ['hnah','thtay','home'])
         rows=lobby_lines(peers, 'map', 1)
-        self.assertTrue(any('[#1]' in text and style==guest_style('hnah') for line in rows for text,style in line))
+        self.assertTrue(any('[#1]' in text and style==GUEST_STYLE for line in rows for text,style in line))
         self.assertNotEqual(guest_style('hnah'),1)  # verified green remains reserved
         peers.append(player('other','c1r8s6'))
         self.assertTrue(any('[++]' in text for line in lobby_lines(peers,'map',1) for text,_ in line))
+
+    def test_relationship_colors_have_distinct_categories_and_priority(self):
+        people=[dict(player('friend','c1r1s1'),verified=True),
+                dict(player('listed','c1r1s2'),api_presence=True),
+                dict(player('signed','c1r1s3'),verified=True),
+                player('guest','c1r1s4'),dict(player('api','c1r1s5'),api_presence=True)]
+        data=dict(people={'friend':dict(relationship='friends')},lists={'lunch':['friend','listed']})
+        decorated=relationship_overlay(people,data)
+        styles=[player_style(p) for p in decorated]
+        self.assertEqual(len(set(styles)),5)
+        self.assertEqual(decorated[0]['local_relationship'],'friend')
+        self.assertEqual(decorated[1]['local_relationship'],'list')
+        self.assertNotIn('local_relationship',people[0])
+        rows=lobby_lines(decorated,'map',1)
+        self.assertIn('Empty*',''.join(text for text,_ in rows[1]))
+        self.assertTrue(any(style==0 and text=='[06]' for row in rows for text,style in row))
+
+    def test_guest_name_cannot_claim_friend_or_list_color(self):
+        decorated=relationship_overlay([player('friend')],dict(people={'friend':dict(relationship='friends')},lists={'lunch':['friend']}))
+        self.assertEqual(player_style(decorated[0]),GUEST_STYLE)
 
     def test_small_terminal_paging_keeps_roster_and_chat_accessible(self):
         c=Client.__new__(Client)

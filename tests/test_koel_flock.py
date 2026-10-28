@@ -1,4 +1,6 @@
 """Public flock: controlled campus evidence, private temporary folders, mocked GUI."""
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import io
 import json
 import os
@@ -81,7 +83,7 @@ class FlockTests(unittest.TestCase):
         self.assertEqual(self.dispatch('GET','/v1/groups/'+gid+'/manifest').status,403)
         self.assertEqual(self.join().status,200)
         manifest=json.loads(self.dispatch('GET','/v1/groups/'+gid+'/manifest').body)
-        self.assertEqual(manifest['files'][0]['path'],'dthoo/kept.txt')
+        self.assertEqual(manifest['files'][0]['path'],'dthoo/kept_dthoo_1.txt')
         self.assertEqual(self.runtime.requests.store.db.execute('SELECT count(*) FROM groups').fetchone()[0],1)
 
     def test_revocation_and_host_presence_fail_closed_without_deleting_files(self):
@@ -100,11 +102,12 @@ class FlockTests(unittest.TestCase):
         self.assertEqual(self.join().status,200)
 
     def test_existing_destinations_never_get_imported_renamed_or_erased(self):
-        base=self.root/'chosen';old=base/'42-singapore';old.mkdir(parents=True)
+        base=self.root/'chosen';old=base/'42-singapore';old.mkdir(parents=True,mode=0o700)
         (old/'personal.txt').write_bytes(b'private')
         fp='a'*64;epoch='b'*32
         first=fresh_folder(base,fp,epoch);(first/'retained.txt').write_bytes(b'previous')
         second=fresh_folder(base,fp,epoch)
+        self.assertEqual(first,base/'42-singapore'/datetime.now(ZoneInfo('Asia/Singapore')).date().isoformat())
         self.assertEqual(first,second)
         self.assertEqual((first/'retained.txt').read_bytes(),b'previous')
         self.assertEqual((old/'personal.txt').read_bytes(),b'private')
@@ -114,9 +117,9 @@ class FlockTests(unittest.TestCase):
             tomorrow=fresh_folder(base,fp,epoch)
         self.assertNotEqual(first,tomorrow)
         self.assertFalse((tomorrow/'retained.txt').exists())
-        account=fresh_folder(base,fp,epoch,2,'group-a')
-        self.assertNotEqual(account,first)
-        with self.assertRaises(Denied):fresh_folder(base,fp,epoch,2,'group-b')
+        with self.assertRaises(Denied):fresh_folder(base,fp,epoch,2,'group-a')
+        with self.assertRaises(Denied):fresh_folder(base,'d'*64,epoch)
+        with self.assertRaises(Denied):fresh_folder(base,fp,epoch,0,'group-b')
         marker=first/'.lan42-flock';marker.unlink()
         with self.assertRaises(Denied):fresh_folder(base,fp,epoch)
         self.assertEqual((first/'retained.txt').read_bytes(),b'previous')
@@ -147,17 +150,17 @@ class FlockTests(unittest.TestCase):
             worker.perform('sync',())
             store.put(self.runtime.requests.host,info['group'],'download.txt',b'needs approval')
             worker.perform('sync',())
-            self.assertFalse((worker.sync.mirror.path/'download.txt').exists())
+            self.assertFalse((worker.sync.mirror.path/'download_hnah_1.txt').exists())
             worker.perform('receive',(next(iter(worker.sync.pending)),))
-            folder=worker.sync.mirror.path;self.assertEqual((folder/'download.txt').read_bytes(),b'needs approval')
+            folder=worker.sync.mirror.path;self.assertEqual((folder/'download_hnah_1.txt').read_bytes(),b'needs approval')
             worker.perform('leave',())
-            self.assertTrue((folder/'download.txt').exists());self.assertIsNone(worker.sync)
+            self.assertTrue((folder/'download_hnah_1.txt').exists());self.assertIsNone(worker.sync)
             worker.perform('flock',(info['group'],'hnah',info['epoch'],str(base),'a'*64))
             self.assertEqual(worker.sync.mirror.path,folder)
             before=store.db.execute('SELECT count(*) FROM versions').fetchone()[0]
             worker.perform('sync',())
             self.assertEqual(store.db.execute('SELECT count(*) FROM versions').fetchone()[0],before)
-            self.assertEqual((folder/'download.txt').read_bytes(),b'needs approval')
+            self.assertEqual((folder/'download_hnah_1.txt').read_bytes(),b'needs approval')
             worker.perform('leave',())
             paths=[r['path'] for r in store.db.execute('SELECT path FROM versions')]
             self.assertNotIn('personal.txt',paths)
@@ -184,7 +187,8 @@ class FlockUITests(unittest.TestCase):
         c.flock_notification_action(dict(action='flock_always',context='key'))
         self.worker.submit.assert_not_called();self.assertEqual(self.preferences.mode,'ask')
         description,accept=c.popup_prompts().confirm.call_args.args
-        self.assertIn('Incoming files and deletions need separate approval',description)
+        self.assertIn('Incoming files need separate approval',description)
+        self.assertIn('shared deletion is disabled',description)
         self.assertIn('Same-day reconnects reuse this folder',description)
         self.assertIn('other existing folders are refused',description)
         accept();self.worker.submit.assert_called_once_with('flock','b'*32,'hnah','c'*32,str(self.root/'service'),'a'*64)

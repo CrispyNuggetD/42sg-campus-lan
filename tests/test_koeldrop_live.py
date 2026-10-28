@@ -66,22 +66,26 @@ class KoelDropLive(unittest.TestCase):
         bob=self.courier('dthoo');bob.perform('accept',(gid,'hnah',invitation['invite']))
         (host.sync.mirror.path/'funny.txt').write_bytes(b'uwu')
         host.perform('sync',());bob.perform('sync',())
-        self.assertFalse((bob.sync.mirror.path/'funny.txt').exists())
+        self.assertFalse((bob.sync.mirror.path/'funny_hnah_1.txt').exists())
         version=next(iter(bob.sync.pending));bob.perform('receive',(version,))
-        self.assertEqual((bob.sync.mirror.path/'funny.txt').read_bytes(),b'uwu')
-        (bob.sync.mirror.path/'funny.txt').write_bytes(b'lunch?')
+        self.assertEqual((bob.sync.mirror.path/'funny_hnah_1.txt').read_bytes(),b'uwu')
+        (bob.sync.mirror.path/'funny_hnah_1.txt').write_bytes(b'lunch?')
         bob.perform('sync',());host.perform('sync',())
         host.perform('receive',(next(iter(host.sync.pending)),))
-        self.assertEqual((host.sync.mirror.path/'funny.txt').read_bytes(),b'lunch?')
+        self.assertEqual((host.sync.mirror.path/'funny_dthoo_1.txt').read_bytes(),b'lunch?')
+        self.assertEqual((host.sync.mirror.path/'funny_hnah_1.txt').read_bytes(),b'uwu')
         bob.perform('leave',())
         with self.assertRaises(Denied):bob.remote.manifest(None,gid)
-        self.assertTrue((Path(self.tmp.name)/'mirror-dthoo'/'funny.txt').exists())
+        self.assertTrue((Path(self.tmp.name)/'mirror-dthoo'/'funny_hnah_1.txt').exists())
 
-    def test_stale_write_cannot_overwrite_and_off_blocks_remote_before_connection(self):
+    def test_stale_write_adds_without_overwrite_and_off_blocks_remote_before_connection(self):
         remote=self.remote('hnah');gid=remote.create()
         one=remote.put(None,gid,'a.txt',b'one')
         remote.put(None,gid,'a.txt',b'two',one['version'])
-        with self.assertRaises(Conflict):remote.put(None,gid,'a.txt',b'stale',one['version'])
+        third=remote.put(None,gid,'a.txt',b'stale',one['version'])
+        self.assertEqual(third['path'],'a_hnah_3.txt')
+        self.assertEqual(remote.read(None,gid,one['version'])[1],b'one')
+        with self.assertRaises(Denied):remote.delete(None,gid,one['path'],one['version'])
         remote.cancelled=lambda:True
         with patch('campus_lan.auth_client.PinnedHTTPSConnection') as connection:
             with self.assertRaises(Denied):remote.manifest(None,gid)

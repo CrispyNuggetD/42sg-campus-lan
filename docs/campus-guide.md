@@ -118,7 +118,8 @@ last 500 event lines. Text input currently supports ASCII.
 | `/invite-room` | Share your room invitation across the connected nodes. |
 | `/notify` | View channels; `/notify dms on`, `/notify host off`, or `/notify all off`. |
 | `/signin` | When the approved on-campus host is online, SG students can sign in and use `/clusters`. |
-| `/clusters [1|2]` | Needs sign-in and the running campus host; shows API-reported occupied seats/logins and a snapshot timestamp. |
+| `F7` | Open both clusters through the same authorization as `/clusters`. |
+| `/clusters [1|2]` | Needs sign-in and the running campus host; shows both clusters by default, or one with `1`/`2`, plus API-reported occupied seats/logins and a snapshot timestamp. Aliases: `/cluster 1`, `/cluster1`, `/c1` (and `2` equivalents); `./clusters` shows both. |
 | `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
 | `/settings signout` | Revoke this device's session and return to guest HQ. |
 | `/quit` | Close the app and stop your node. |
@@ -147,7 +148,7 @@ sign-in and fresh cluster views are unavailable; guest chat/games remain availab
 **Stable, always-on hosting is future work**, not an existing service guarantee.
 
 With the campus host online, run
-`/signin`, then `/clusters` (cluster 1) or `/clusters 2`. The ASCII floor plan is
+`/signin`, then `/clusters` (both clusters), `/cluster 1` or `/cluster 2` (one cluster); `/cluster1` and `/c1` are aliases for cluster 1, with matching aliases for cluster 2. `./clusters` also selects both clusters. The ASCII floor plan is
 the layout; occupied seats and student logins are fetched from the 42 API, with
 the snapshot time shown. This is reported workstation login activity, rather
 than a guarantee of physical attendance or instantaneous updates.
@@ -326,3 +327,5 @@ Cluster names can also appear alongside rule filters:
 In cluster settings, `c1`/`cluster1` and `c2`/`cluster2` select the location rather
 than being added as logins. The include/exclude lists still contain people or
 cohort selectors. `login:c1` addresses a literal login with that spelling.
+
+Cluster map colors: **magenta** friends/mutuals/oomf; **cyan** members of your named lists; **green** signed-in LAN42 users; **yellow** guests; **blue** API-only logins; **dim** desks with no reported occupant. Friend coloring takes priority over list coloring. Local relationship/list labels stay on your computer; unverified guest names cannot claim friend/list colors. The map legend and roster labels explain the colors. An unreported desk is not proof that it is physically empty.

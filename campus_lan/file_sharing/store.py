@@ -17,7 +17,11 @@ MAX_FILE=8*1024*1024
 MAX_STORAGE=128*1024*1024
 MAX_FILES=512
 MAX_MEMBERS=16
-WELCOME=b'# LAN42 file sharing\n\nCampus-only group. Files are data; nothing is executed or extracted.\nMember folders are owner-writable and group-readable. Shared root files are collaborative.\nLocal copies remain on leave or host shutdown. No directory expiry or automatic cleanup; manage retained copies yourself.\n'
+SHARED_ADDITIONS_PER_MINUTE=6
+OWN_ADDITIONS_PER_MINUTE=30
+SHARED_BYTES_PER_MINUTE=24*1024*1024
+OWN_BYTES_PER_MINUTE=96*1024*1024
+WELCOME=b'# LAN42 file sharing\n\nCampus-only group. Files are data; nothing is executed or extracted.\nMember folders are owner-writable and group-readable. All uploads are additions named by the host with sender and revision; edits and renames add files, never replace or delete.\nLocal copies remain on leave or host shutdown. No directory expiry or automatic cleanup; manage retained copies yourself.\n'
 
 
 class Store:
@@ -46,6 +50,8 @@ class Store:
                 CREATE TABLE IF NOT EXISTS invites(digest TEXT PRIMARY KEY,gid TEXT,uid INTEGER,login TEXT,expires REAL,used INTEGER DEFAULT 0);
                 CREATE TABLE IF NOT EXISTS files(gid TEXT,path TEXT,version TEXT,deleted INTEGER,PRIMARY KEY(gid,path));
                 CREATE TABLE IF NOT EXISTS versions(version TEXT PRIMARY KEY,gid TEXT,path TEXT,digest TEXT,size INTEGER,author_uid INTEGER,author TEXT,deleted INTEGER);
+                CREATE TABLE IF NOT EXISTS additions(gid TEXT,uid INTEGER,source TEXT,digest TEXT,path TEXT,number INTEGER,version TEXT,at REAL,own INTEGER,PRIMARY KEY(gid,uid,source,digest));
+                CREATE INDEX IF NOT EXISTS additions_rate ON additions(uid,own,at);
                 CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY AUTOINCREMENT,gid TEXT,payload TEXT,previous TEXT,hash TEXT);
             ''')
             self.lock=threading.RLock();self.rates={}
@@ -193,9 +199,43 @@ class Store:
             self._group(actor,gid)
             files=[dict(row) for row in self.db.execute('SELECT f.path,f.version,f.deleted,v.digest,v.size,v.author_uid,v.author FROM files f JOIN versions v ON f.version=v.version WHERE f.gid=? ORDER BY f.path',(gid,))]
             members=[row['login'] for row in self.db.execute('SELECT login FROM identities WHERE gid=?',(gid,))]
-            return dict(files=files,members=members,welcome=WELCOME.decode(),limits=dict(file_bytes=MAX_FILE,retained_bytes=MAX_STORAGE))
+            return dict(files=files,members=members,welcome=WELCOME.decode(),append_only=True,limits=dict(file_bytes=MAX_FILE,retained_bytes=MAX_STORAGE,shared_additions_per_minute=SHARED_ADDITIONS_PER_MINUTE,own_additions_per_minute=OWN_ADDITIONS_PER_MINUTE,shared_bytes_per_minute=SHARED_BYTES_PER_MINUTE,own_bytes_per_minute=OWN_BYTES_PER_MINUTE))
 
     def put(self,actor,gid,path,data,expected=None):
+        """Authenticated, idempotent add; existing shared files never change."""
+        if not isinstance(data,bytes) or len(data)>MAX_FILE:raise Limit('A file must be at most 8 MiB.')
+        with self.lock:
+            self._group(actor,gid)
+            path=self._write_allowed(actor,gid,path)
+            source=path
+            # Editing an assigned name advances its original lineage for this sender.
+            lineage=self.db.execute('SELECT source FROM additions WHERE gid=? AND path=?',(gid,path)).fetchone()
+            if lineage:source=lineage['source']
+            digest=hashlib.sha256(data).hexdigest()
+            request_key=hashlib.sha256(json.dumps([path,expected,digest],separators=(',',':')).encode()).hexdigest()
+            prior=self.db.execute('SELECT * FROM additions WHERE gid=? AND uid=? AND source=? AND digest=?',(gid,actor.uid,source,request_key)).fetchone()
+            if prior:return dict(path=prior['path'],number=prior['number'],author=actor.login,version=prior['version'],digest=digest,size=len(data))
+            own=int(path.split('/')[0]==actor.login and '/' in path)
+            rows=self.db.execute('SELECT count(*) AS n,coalesce(sum(v.size),0) AS bytes FROM additions a JOIN versions v ON a.version=v.version WHERE a.uid=? AND a.own=? AND a.at>?',(actor.uid,own,self.clock()-60)).fetchone()
+            if rows['n']>=(OWN_ADDITIONS_PER_MINUTE if own else SHARED_ADDITIONS_PER_MINUTE) or rows['bytes']+len(data)>(OWN_BYTES_PER_MINUTE if own else SHARED_BYTES_PER_MINUTE):
+                raise Limit('Addition rate reached; own-folder uploads have a higher limit. Retry after one minute.')
+            original=Path(source)
+            suffix=original.suffix
+            stem=original.name[:-len(suffix)] if suffix else original.name
+            number=self.db.execute('SELECT coalesce(max(number),0)+1 FROM additions WHERE gid=? AND uid=? AND source=?',(gid,actor.uid,source)).fetchone()[0]
+            while True:
+                # Fit the existing logical-path component limit without splitting UTF-8.
+                tail='_'+actor.login+'_'+str(number)+suffix
+                budget=120-len(tail.encode())
+                if budget<1:raise Denied('Filename extension is too long.')
+                short=stem.encode()[:budget].decode('utf-8','ignore') or 'file'
+                assigned=logical_path(str(original.parent/(short+tail)))
+                if not self.db.execute('SELECT 1 FROM files WHERE gid=? AND path=?',(gid,assigned)).fetchone():break
+                number+=1
+            result=self._put_history(actor,gid,assigned,data,addition=(source,number,own,request_key))
+            return dict(result,path=assigned,number=number,author=actor.login)
+
+    def _put_history(self,actor,gid,path,data,expected=None,addition=None):
         if not isinstance(data,bytes) or len(data)>MAX_FILE:raise Limit('A file must be at most 8 MiB.')
         version=secrets.token_hex(16);written=False
         try:
@@ -220,6 +260,9 @@ class Store:
                 digest=hashlib.sha256(data).hexdigest()
                 self.db.execute('INSERT INTO versions VALUES(?,?,?,?,?,?,?,0)',(version,gid,path,digest,len(data),actor.uid,actor.login))
                 self.db.execute('INSERT OR REPLACE INTO files VALUES(?,?,?,0)',(gid,path,version))
+                if addition:
+                    source,number,own,request_key=addition
+                    self.db.execute('INSERT INTO additions VALUES(?,?,?,?,?,?,?,?,?)',(gid,actor.uid,source,request_key,path,number,version,self.clock(),own))
                 self._event(gid,actor,'write',path=path,version=version,previous=expected,digest=digest,size=len(data))
             return dict(version=version,digest=digest,size=len(data))
         except Exception:
@@ -227,6 +270,9 @@ class Store:
             raise
 
     def delete(self,actor,gid,path,expected):
+        raise Denied('KoelDrop is add-only; shared files cannot be deleted.')
+
+    def _delete_history(self,actor,gid,path,expected):
         with self.transaction():
             self._group(actor,gid);path=self._write_allowed(actor,gid,path)
             old=self.db.execute('SELECT * FROM files WHERE gid=? AND path=?',(gid,path)).fetchone()

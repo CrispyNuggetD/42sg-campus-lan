@@ -106,7 +106,7 @@ def fresh_folder(base,fingerprint,epoch,uid=0,group=''):
     if type(uid) is not int or uid<0 or not isinstance(group,str):raise Denied('Invalid flock folder scope.')
     base=Path(base).expanduser().absolute()
     if base in (Path('/'),Path.home()) or '..' in base.parts or any(p.startswith('.') for p in base.parts[1:]):raise Denied('Choose a dedicated service directory.')
-    root=base/SCOPE/fingerprint[:16]/str(uid)
+    root=base/SCOPE
     if any((p/'.git').exists() for p in (root,*root.parents)):raise Denied('Flock folders must be outside Git.')
     fd=private_directory(root,create=True)
     name=datetime.now(ZoneInfo('Asia/Singapore')).date().isoformat()

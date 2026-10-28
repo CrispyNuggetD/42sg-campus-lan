@@ -30,9 +30,37 @@ def plain(text):
     return [(text, 0)]
 
 
+FRIEND_STYLE=4  # magenta
+LIST_STYLE=2    # cyan
+SIGNED_STYLE=1  # green
+GUEST_STYLE=3   # yellow
+API_STYLE=5     # blue
+
+
+def relationship_overlay(players, data):
+    """Local display decoration only; never send relationship/list data to peers."""
+    people=data.get('people',{})
+    listed={name for members in data.get('lists',{}).values() for name in members}
+    result=[]
+    for player in players:
+        name=player.get('name','').lower()
+        trusted=player.get('verified') or player.get('api_presence')
+        friendly=people.get(name,{}).get('relationship') in {'friends','mutuals','oomf'}
+        kind='friend' if trusted and friendly else 'list' if trusted and name in listed else None
+        result.append(dict(player,local_relationship=kind))
+    return result
+
+
 def player_style(player):
-    if player.get('api_presence') and not player.get('lan42_peer'):return 7
-    return 1 if player.get('verified') or player.get('remote_approved') else guest_style(player.get('name','guest'))
+    if player.get('local_relationship')=='friend':return FRIEND_STYLE
+    if player.get('local_relationship')=='list':return LIST_STYLE
+    if player.get('api_presence') and not player.get('lan42_peer'):return API_STYLE
+    return SIGNED_STYLE if player.get('verified') or player.get('remote_approved') else GUEST_STYLE
+
+
+def map_legend():
+    return [('Friend ',FRIEND_STYLE),('List ',LIST_STYLE),('Signed/approved ',SIGNED_STYLE),
+            ('Guest ',GUEST_STYLE),('API only ',API_STYLE),('Empty* ',0),('[++]: shared',0)]
 
 
 def overlay_campus(players, peers):
@@ -51,10 +79,17 @@ def player_line(number, player, location):
     label = f'c{location[0]}r{location[1]}s{location[2]}' if location else 'Unknown / off campus'
     name = str(player.get('name','guest'))[:24]
     status=('Remote approved / '+('42 signed in' if player.get('verified') else 'unverified')) if player.get('remote_approved') else ('LAN42 verified' if player.get('verified') else 'LAN42 guest') if player.get('lan42_peer') else 'API login' if player.get('api_presence') else '42 Verified' if player.get('verified') else 'Guest'
+    relation=player.get('local_relationship')
+    if relation:status+=' / '+relation
     return [(f'{number:>3}. {name:<24}', player_style(player)),(f' {label:<22} {status}',0)]
 
 
 def lobby_lines(players, view='roster', cluster=1):
+    if cluster == 0 and view != 'roster':
+        first = lobby_lines(players, view, 1)
+        second = lobby_lines(players, view, 2)
+        marker = plain('CURRENTLY ONLINE - map markers match these roster numbers')
+        return first[:first.index(marker)-1] + [plain('')] + second
     entries = roster(players)
     if view == 'roster':
         lines = []
@@ -68,7 +103,7 @@ def lobby_lines(players, view='roster', cluster=1):
         return lines
 
     lines = [plain(f'CLUSTER {cluster} - physical seat map (even desks above odd desks)'),
-             plain('Plain [02]: desk | coloured [#1]/[10]: roster # | [++]: shared')]
+             map_legend()]
     occupied = {}
     for n,p,s in entries:
         if s and s[0]==cluster:
@@ -83,7 +118,8 @@ def lobby_lines(players, view='roster', cluster=1):
                 members = occupied.get((row,desk), [])
                 token,style = f'[{desk:02}]',0
                 if members:
-                    n,p = members[0]
+                    priority={'friend':0,'list':1}
+                    n,p = min(members,key=lambda item:priority.get(item[1].get('local_relationship'),2 if item[1].get('verified') else 3 if item[1].get('lan42_peer') else 4))
                     token = '[++]' if len(members)>1 else (f'[#{n}]' if n<10 else f'[{n:02}]' if n<100 else '[**]')
                     style = player_style(p)
                 line.append((token,style))

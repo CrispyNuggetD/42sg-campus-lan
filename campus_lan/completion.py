@@ -2,7 +2,7 @@
 import os
 
 GAMES = ('bluff', 'forknite', 'hexwars', 'tetris')
-COMMANDS = ('/quiet','/exams','/search','/key4','/changelog','/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
+COMMANDS = ('/quiet','/exams','/search','/key4','/changelog','/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/cluster', '/cluster1', '/cluster2', '/c1', '/c2', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
             '/help', '/info', '/info_campus', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
             '/lobby', '/map', '/next', '/meals', '/notify', '/practice', '/prev', '/preset', '/profile', '/quit', '/settings',
             '/restart', '/roster', '/rooms', '/signin', '/start', '/stop', '/status', '/storm', '/timings',
@@ -43,7 +43,7 @@ def complete(text):
         elif command in ('/roadmap','/experimental') and len(parts)<=2:
             choices=('koeldrop','files')
         elif command in ('/files','/koel','/koeldrop') and len(parts)<=2:
-            choices=('status','help','flock','flock-dir','create','invite','accept','decline','dir','pending','receive','reject','trust','sync','leave')
+            choices=('status','help','dock','bookmark','sidebar','favorite','flock','flock-dir','create','invite','accept','decline','dir','pending','receive','reject','resolve','trust','sync','leave')
         elif command in ('/files','/koel','/koeldrop') and parts[1:2]==['flock'] and len(parts)<=3:
             choices=('once','always','never','ask','status')
         elif command in ('/setup','/allow') and len(parts)<=2:

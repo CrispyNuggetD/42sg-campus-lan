@@ -124,6 +124,31 @@ def attached(session):
             return int(count) if count.isdecimal() else 0
     return 0
 
+def gnome_parent(session):
+    """Recover only GNOME's two routing values from an attached tmux client.
+
+    tmux panes deliberately discard these stale values, but the outer client
+    still has the correct desktop tab identity. Never expose its environment.
+    """
+    rows = tmux("list-clients", "-F", "#{client_pid}\t#{client_session}", check=False).stdout.splitlines()
+    for row in rows:
+        pid, _, name = row.partition("\t")
+        if name != session or not pid.isdecimal():continue
+        try:
+            entries = (Path('/proc')/pid/'environ').read_bytes().split(b'\0')
+            values = {}
+            for entry in entries:
+                key, _, value = entry.partition(b'=')
+                if key in (b'GNOME_TERMINAL_SCREEN', b'GNOME_TERMINAL_SERVICE'):
+                    values[key.decode()] = value.decode()
+            if (re.fullmatch(r'/org/gnome/Terminal/screen/[A-Za-z0-9_]+', values.get('GNOME_TERMINAL_SCREEN', ''))
+                    and re.fullmatch(r':[0-9]+\.[0-9]+', values.get('GNOME_TERMINAL_SERVICE', ''))):
+                return values
+        except (OSError, UnicodeError):continue
+    return {key: os.environ[key] for key in ('GNOME_TERMINAL_SCREEN', 'GNOME_TERMINAL_SERVICE')
+            if key in os.environ}
+
+
 def maximize_enabled():
     return os.environ.get("DAILY_TMUX_MAXIMIZE", "TRUE").lower() in ("1", "true", "yes", "on")
 
@@ -178,7 +203,10 @@ def show(session, window=None, reuse_terminal=False):
             shell_command = shlex.join(attach[:-1]) + " '=" + session + "'"
             desktop = ["osascript", "-e", script, shell_command]
         elif shutil.which("gnome-terminal"):
-            desktop = ["gnome-terminal", "--window", "--title=" + ("LAN42" if session == session_name("lan42") else "Work workspace"),
+            # A terminal tab is a separate tmux client/session, not nested tmux.
+            # The parent screen below explicitly selects the Work terminal window.
+            lan_tab = session == session_name("lan42")
+            desktop = ["gnome-terminal", "--tab" if lan_tab else "--window", "--title=" + ("LAN42" if lan_tab else "Work workspace"),
                        *(["--maximize"] if maximize_enabled() else []), "--", *attach]
         elif shutil.which("xterm"):
             desktop = ["xterm", *(["-maximized"] if maximize_enabled() else []), "-T", "Daily workspace", "-e", *attach]
@@ -189,6 +217,10 @@ def show(session, window=None, reuse_terminal=False):
         for key in ("DAILY_TMUX_BATCH", "GNOME_TERMINAL_SCREEN", "GNOME_TERMINAL_SERVICE",
                     "GIO_LAUNCHED_DESKTOP_FILE", "GIO_LAUNCHED_DESKTOP_FILE_PID"):
             env.pop(key, None)
+        if sys.platform != "darwin" and desktop[0] == "gnome-terminal" and "--tab" in desktop:
+            # --tab alone creates another window when the parent identity is
+            # absent. Explicitly target Work's outer terminal, not a tmux pane.
+            env.update(gnome_parent(session_name()))
         # Hold the launch lock until attached, preventing simultaneous GUI requests.
         process = subprocess.Popen(desktop, env=env, start_new_session=True,
                                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -229,9 +261,18 @@ def main():
             print("No daily windows yet.")
     elif args.action == "show-all":
         lan = session_name("lan42")
-        if lan != session and exists(lan):
-            show(lan)
-        show(session, reuse_terminal=True)
+        desktop_batch = (sys.platform != "darwin" and shutil.which("gnome-terminal")
+                         and (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+                         and (not sys.stdin.isatty() or os.environ.get("TMUX")))
+        if desktop_batch:
+            # Establish Work first so LAN42's --tab joins that terminal window.
+            show(session)
+            if lan != session and exists(lan):show(lan)
+        else:
+            # Open LAN42's second tab before the blocking Work attachment in
+            # the caller's original terminal tab.
+            if lan != session and exists(lan):show(lan)
+            show(session, reuse_terminal=True)
     elif args.action == "show":
         show(session)
     else:

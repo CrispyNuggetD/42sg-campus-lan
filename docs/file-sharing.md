@@ -57,8 +57,7 @@ The chosen service root can already contain files: those files are not scanned.
 The first join each Singapore calendar day creates a dedicated subdirectory:
 
 ```text
-~/KoelDrop/42-singapore/<trusted-host-fingerprint>/<student-id>/
-  2026-10-27/
+~/KoelDrop/42-singapore/2026-10-27/
 ```
 
 Same-day reconnects, including after lunch or a host restart, reuse that folder.
@@ -142,3 +141,13 @@ connected person. Their notification permission and their own sound choice apply
 the toast closes after two seconds and is not resident in notification history.
 Only a poke message crosses the network; each client plays its own local asset.
 Pokes share the two-second direct-message rate limit.
+
+## Add-only sharing and upload limits
+
+The host names additions `report_dthoo_1.pdf`, `report_dthoo_2.pdf`, and so on using the verified uploader. Edits and renames add files; they do not replace or remove shared copies. The uploader sees the assigned name in HQ and gets a matching local copy; the original is kept. Other group members see receive offers through the existing pinned connection.
+
+Shared locations allow 6 additions/minute (24 MiB); your own member folder allows 30/minute (96 MiB). These rolling limits survive reconnects/restarts. HQ explains throttling and retries. Shared deletion is disabled.
+
+## Ubuntu desktop shortcuts
+
+Startup asks separately about a **dock launcher** and a **Files sidebar bookmark**, skipping existing entries. Enter declines. `/koel dock` asks to pin the launcher; `/koel bookmark` (or `/koel sidebar`) asks to pin `~/KoelDrop` inside GNOME Files. `/koel favorite` remains a legacy alias for the dock launcher. Neither shortcut joins a flock or approves transfers.

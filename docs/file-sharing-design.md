@@ -124,7 +124,7 @@ paths on the host computer.
 <chosen group folder>/
   hnah/                 hnah writes; accepted members read/copy
   dthoo/                dthoo writes; accepted members read/copy
-  funny.txt             shared root file; all members may edit/delete
+  funny_dthoo_1.txt     immutable addition at the shared root
   shared/               optional shared nested files
   welcome.md            generated, read-only explanation
   logs/activity.json    generated, read-only audit snapshot
@@ -144,27 +144,15 @@ actually enforced by the service. The local OS user can still edit their own
 copies or change their permissions; the service refuses publishing those edits
 to another member's namespace.
 
-## Writes, deletes and history
+## Add-only uploads, names and history
 
-A new file uses an explicit create condition. Replacing or deleting a file needs
-its current version; stale writers receive a conflict. SQLite transactions
-serialize changes so simultaneous writes have one winner.
+The public file API accepts additions only. The host derives the sender from the authenticated Intra identity and assigns `stem_<intra>_<number>.extension`, preserving the requested directory. For example, dthoo adding `report.pdf` produces `report_dthoo_1.pdf`; a later edit becomes `report_dthoo_2.pdf`. A rename starts another filename lineage and adds another file. Editing a host-assigned filename advances its original lineage. Existing shared files are never overwritten or deleted by upload requests; DELETE is denied, including for the group host. Older retained data stays in place.
 
-Every version has an immutable generated object name, SHA-256, byte count and
-verified author. Deletes create tombstones, rather than destroying old content.
-History records actor, time, operation, logical path, previous version and digest.
-There are no tokens, private broker configuration or file contents in audit
-records. The hash chain helps detect accidental audit damage; a malicious host
-can rewrite its own database, so it is not proof against the operator.
+The pinned HTTPS upload response returns the assigned path, sender, revision number, immutable object ID and SHA-256. The uploader verifies the content hash and keeps a local copy under the assigned name without removing the source or overwriting another local file. Members discover additions through their existing authenticated manifest poll, normally every five seconds; normal incoming-file consent still applies. This is group file delivery, not a campus-wide announcement or permission to run commands. A repeated identical upload request returns its prior receipt rather than allocating another file; version preconditions also identify retries, not permission to replace a file.
 
-A receive operation checks the current local file against its known baseline.
-A local edit becomes a conflict. Replaced/deleted copies are retained privately
-under `.lan42-file-backups`. Incoming installation uses an atomic no-overwrite
-link, so a new file created by an editor during receive is not clobbered.
-Automatic receive permissions for friends do **not** automatically approve
-remote deletion. Restoring old contents uses an ordinary version-checked write.
-A Git-style text diff viewer is future UI work; retained versions already make
-comparison possible. File bytes and logs are not committed to Git.
+Each student's shared-root and `shared/` uploads are limited to 6 additions and 24 MiB per rolling minute. Their own verified member folder permits 30 additions and 96 MiB per rolling minute. Counts span groups on this host and are stored with accepted additions, so reconnects and host restarts do not reset them. Existing per-file, retained-storage and request limits still apply. HQ reports rate/storage throttling and retries while retaining local files. Another student's folder cannot be used to bypass these rules.
+
+Every retained object has SHA-256, size and verified author. Audit records include actor, timestamp and assigned path. A receive operation still refuses to overwrite an independently changed local file. Old mutable-data fixtures remain covered by tests; the public API no longer exposes replacement or deletion.
 
 ## Request and storage boundaries
 
@@ -232,3 +220,20 @@ not join a group or authorize incoming files.
 - [Desktop notification sound hints](https://specifications.freedesktop.org/notification/latest/hints.html)
 - `tests/test_file_sharing.py`: admission, invitations, ownership, path escapes,
   expiry, quota, HTTP boundaries, concurrent writes and receive conflicts.
+
+## Ubuntu dock launcher and Files sidebar bookmark
+
+LAN42 HQ startup on Ubuntu/GNOME offers two separate yes/no choices. Enter declines each one; an existing pin/bookmark skips its prompt.
+
+- `/koel dock` asks to pin a launcher to the Ubuntu dock. Clicking opens `~/KoelDrop` in Files, creating the folder if needed. `/koel favorite` remains a legacy alias for the dock launcher.
+- `/koel bookmark` or `/koel sidebar` asks to add `~/KoelDrop` to pinned locations inside the GNOME Files sidebar. Other bookmarks and their order are preserved. Bookmarking does not create the folder; it becomes usable once KoelDrop storage is set up.
+
+These choices do not join a flock or approve any transfers.
+
+The default campus flock folder is `~/KoelDrop/42-singapore/YYYY-MM-DD/` (Singapore date), or the same relative path under your chosen service root. Host/account/group checks live in hidden metadata rather than extra folder levels. Existing older nested folders are retained; new joins use the simpler daily path without importing those old folders automatically.
+
+## Resolving same-path conflicts
+
+An upload or local-edit conflict appears in HQ. When there is a current incoming file offer for that path, KoelDrop also offers a desktop notification with **Keep both** and **Later**, subject to Files and notification permissions. Repeated polls do not repeat the same conflict notification. Other upload failures, such as quotas or permissions, still appear in HQ.
+
+Use `/koel pending`, then `/koel resolve NUMBER`, or click **Keep both**. A confirmation explains that your local copy will be uploaded under your own member folder, for example `hnah/report_hnah_<unique-id>.pdf`, before the shared version is received at `report.pdf`. The previous local original is also backed up. Neither server version is overwritten by this resolution. If the shared offer changed, refresh and choose again; concurrent local edits remain protected. **Later** lists pending offers without resolving or rejecting them. There is no automatic merging or blanket conflict-resolution permission.

@@ -16,6 +16,16 @@ class Controls(QuickControls):
 
 
 class QuickControlTests(unittest.TestCase):
+    def test_f7_clusters_uses_local_access_or_existing_authenticated_command(self):
+        c=Controls();c.local_api_command=Mock(return_value=False);c.send=Mock()
+        self.assertTrue(c.quick_key(curses.KEY_F0+7))
+        c.local_api_command.assert_called_once_with('/clusters')
+        c.send.assert_called_once_with(dict(type='command',text='/clusters'))
+        c.send.reset_mock();c.local_api_command.return_value=True
+        c.quick_key(curses.KEY_F0+7);c.send.assert_not_called()
+        c.role='game';c.local_api_command.reset_mock()
+        c.quick_key(curses.KEY_F0+7);c.local_api_command.assert_not_called()
+
     def test_clickable_guest_prompt_and_signed_out_button(self):
         c=Controls();c.draw_quick_controls(Canvas())
         self.assertTrue(c.quick_click(20,25));c.start_signin.assert_called_once()
@@ -46,7 +56,7 @@ class QuickControlTests(unittest.TestCase):
 
     def test_footer_fits_minimum_width_and_auto_status(self):
         c=Controls();c.uwu_auto_due=0;c.draw_quick_controls(Canvas())
-        self.assertEqual(len(c.control_hits),6)
+        self.assertEqual(len(c.control_hits),7)
         for row,left,right,action in c.control_hits:self.assertLessEqual(right,75)
         self.assertTrue(any('Auto:on' in call.args[2] for call in c.line.call_args_list))
 

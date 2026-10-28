@@ -89,7 +89,7 @@ class Requests:
                     if match is None and headers.get('if-none-match')!='*':raise Conflict('Explicit create or current version required.')
                     if match is not None and 'if-none-match' in headers:raise Conflict('Ambiguous write conditions.')
                     return response(201,self.store.put(actor,gid,path,body,match))
-                if method=='DELETE' and not body and match:return response(200,self.store.delete(actor,gid,path,match))
+                if method=='DELETE':raise Denied('KoelDrop is add-only.')
             raise Denied('Unsupported operation.')
         except Conflict:return response(409,dict(error='Version conflict or missing write precondition.'))
         except Limit:return response(429,dict(error='File-sharing quota or request budget reached.'))

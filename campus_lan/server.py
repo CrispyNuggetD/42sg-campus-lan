@@ -186,7 +186,8 @@ class Lobby:
 
     async def command(self, pid, raw):
         c = self.clients[pid]
-        text = clean(raw)
+        from .cluster_commands import normalize_cluster_command
+        text = normalize_cluster_command(clean(raw))
         if not text:
             return
         if c.get('remote_approved') and text.startswith('/'):
@@ -252,7 +253,7 @@ class Lobby:
             await self.event('Loading campus API seats (cached for 30 seconds); API calls may queue.',{pid})
             try:players,stamp=await asyncio.to_thread(snapshot)
             except (OSError,ValueError,KeyError):raise ValueError('Campus seats unavailable. Check the API host configuration; retry later.') from None
-            await self.send(c,dict(type='clusters',players=players,updated_at=stamp,cluster=int(arg or '1')))
+            await self.send(c,dict(type='clusters',players=players,updated_at=stamp,cluster=int(arg or '0')))
         elif cmd == '/browser':
             if not room or room['game'] != 'forknite':
                 raise ValueError('Join a FORKNITE room first with /game forknite or /join ROOM.')

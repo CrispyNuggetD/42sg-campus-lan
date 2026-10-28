@@ -85,7 +85,7 @@ class FlockUI:
         if not approved:
             self.popup_prompts().confirm(
                 ('Always join this trusted host’s ' if mode=='always' else 'Join once: ')+LABEL+'? Service directory: '+preferences.base+
-                '/42-singapore/<trusted-host>/<student-id>/<SGT-date>/. Same-day reconnects reuse this folder. Files left or added there upload to admitted SG flock members and remain on the host across restarts, subject to quotas. Incoming files and deletions need separate approval. Only LAN42-marked daily folders for this host/account/group are reused; other existing folders are refused. Folders are never renamed or erased; local copies survive shutdown and remain until you remove them yourself.',
+                '/42-singapore/<SGT-date>/. Same-day reconnects reuse this folder. Files left or added there upload to admitted SG flock members and remain on the host across restarts, subject to quotas. Incoming files need separate approval. Edits and renames add sender/version-named copies; shared deletion is disabled. Shared locations allow 6 additions/minute, your own folder 30/minute. Only LAN42-marked daily folders for this host/account/group are reused; other existing folders are refused. Folders are never renamed or erased; local copies survive shutdown and remain until you remove them yourself.',
                 lambda:self.flock_join(mode,approved=True))
             return
         from .flock import sgoinfre_target,link_sgoinfre

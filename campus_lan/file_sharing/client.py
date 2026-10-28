@@ -50,6 +50,8 @@ class Courier:
             if flock_epoch:self.remote.join_flock(gid,flock_epoch)
             elif invite:self.remote.accept(gid,invite)
             manifest=self.remote.manifest(None,gid)
+            if manifest.get('append_only') is not True:
+                raise Denied('Update/restart the KoelDrop host before joining: add-only sharing is required.')
             offers=mirror.offers(manifest)
             if flock_epoch:
                 # Resume matching copies without re-uploading or re-offering them.
@@ -67,7 +69,7 @@ class Courier:
             except (ValueError,OSError):pass
             raise
         self.emit(lines=['KoelDrop joined. Folder: '+str(mirror.path),
-                         'Files added to this dedicated folder upload to this group every '+str(self.interval)+' seconds. Incoming files need approval.',
+                         'Add-only: the host assigns _'+self.login+'_<revision> names. New/changed files upload every '+str(self.interval)+' seconds. Incoming files need approval.',
                          'Root files are shared; '+self.login+'/ is yours. /koel pending | receive NUMBER | trust LOGIN | leave. Local deletions are not synced.'])
 
     def _step(self):
@@ -77,10 +79,17 @@ class Courier:
         lines=[]
         for path in result['uploaded']:lines.append('KoelDrop uploaded: '+path)
         for path in result['received']:lines.append('KoelDrop received: '+path)
-        for path in result['conflicts']:lines.append('KoelDrop conflict; review the local file: '+path)
+        conflict_paths=set(result['conflicts'])
+        for path in sorted(conflict_paths-getattr(self,'conflict_paths',set())):lines.append('KoelDrop conflict; review the local file: '+path)
+        self.conflict_paths=conflict_paths
+        limited=set(result.get('limited',[]))
+        for path in sorted(limited-getattr(self,'limited_paths',set())):
+            lines.append('KoelDrop upload waiting (rate or storage limit): '+path+'. Shared locations allow 6 additions/minute; your own folder allows 30. Retrying; local files are kept.')
+        self.limited_paths=limited
         pending=list(self.sync.pending.values())
         # Stable file IDs are the immutable server versions, never arbitrary paths or URLs.
-        self.emit(lines=lines,offers=[dict(version=o.version,path=o.path,author=o.author,deleted=o.deleted,size=o.size) for o in pending],
+        conflicts=[dict(version=o.version,path=o.path,author=o.author) for o in pending if o.path in result['conflicts'] and not o.deleted]
+        self.emit(lines=lines,conflicts=conflicts,offers=[dict(version=o.version,path=o.path,author=o.author,deleted=o.deleted,size=o.size) for o in pending],
                   notices=[dict(version=o.version,path=o.path,author=o.author,deleted=o.deleted,size=o.size) for o in pending
                            if o.version not in before])
 
@@ -113,6 +122,10 @@ class Courier:
             for name in args[0]:
                 invitation=self.remote.invite(None,self.sync.group,name)
                 self.emit(deliver=dict(type='koel_deliver',group=self.sync.group,invite=invitation['invite']))
+        elif operation=='resolve':
+            if not self.sync:raise Denied('No KoelDrop group is joined.')
+            path=self.sync.keep_both(args[0])
+            self.emit(lines=['KoelDrop kept your copy as '+path+' and received the shared version.'])
         elif operation in ('receive','decline'):
             if not self.sync:raise Denied('No KoelDrop group is joined.')
             offer=self.sync.pending.get(args[0])
@@ -123,7 +136,7 @@ class Courier:
         elif operation=='trust':
             if not self.sync:raise Denied('Join a group before setting its receive policy.')
             self.sync.mirror.policy=ReceivePolicy(friend_names=frozenset(args[0]))
-            self.emit(lines=['KoelDrop automatically receives files from: '+(', '.join(args[0]) or 'nobody')+'. Deletions still require approval.'])
+            self.emit(lines=['KoelDrop automatically receives files from: '+(', '.join(args[0]) or 'nobody')+'. Shared files are add-only; deletions are not supported.'])
         elif operation!='sync':raise Denied('Unknown KoelDrop operation.')
         self._step()
 

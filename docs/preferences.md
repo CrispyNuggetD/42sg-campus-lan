@@ -202,3 +202,5 @@ can remember permission to do this automatically on this device. This remains
 separate from permission to play the koel sound. Manage it with
 `/settings audio-auto-on on|off`. `/volume` itself applies your explicit request
 without a permission prompt.
+
+Press **F7** in HQ to open both campus clusters, using the same sign-in and local-operator checks as `/clusters`. `/c1` and `/c2` select one cluster.

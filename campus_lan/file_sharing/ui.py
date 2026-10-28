@@ -10,6 +10,52 @@ from .flock_ui import FlockUI
 
 
 class KoelUI(FlockUI):
+    def koel_favorite(self, startup=False):
+        from . import desktop
+        if startup:
+            if getattr(self, 'koel_favorite_offered', False):return
+            self.koel_favorite_offered = True
+        if not desktop.supported():
+            if not startup:self.lines.append('KoelDrop dock launchers require Ubuntu/GNOME.')
+            return
+        if not desktop.needs_favorite():
+            if not startup:self.lines.append('KoelDrop is already pinned to the dock, or dock favorites could not be read.')
+            return
+        def accept():
+            import subprocess
+            try:
+                desktop.add_favorite()
+                self.lines.append('KoelDrop launcher added to your Ubuntu dock.')
+            except (OSError, ValueError, SyntaxError, subprocess.SubprocessError):
+                self.lines.append('KoelDrop launcher could not be pinned to the dock. Try /koel dock again.')
+        self.popup_prompts().confirm(
+            'Pin a KoelDrop launcher to your Ubuntu dock? It opens ~/KoelDrop in Files (creates that folder on first click). File sharing still needs separate consent. [y/N]', accept)
+
+
+    def koel_bookmark(self, startup=False):
+        from . import desktop
+        if startup:
+            if getattr(self, 'koel_bookmark_offered', False):return
+            self.koel_bookmark_offered=True
+        if not desktop.bookmark_supported():
+            if not startup:self.lines.append('Files sidebar bookmarks require Ubuntu/GNOME.')
+            return
+        try:
+            if desktop.bookmarked():
+                if not startup:self.lines.append('KoelDrop is already bookmarked in the Files sidebar.')
+                return
+        except (OSError, ValueError):
+            if not startup:self.lines.append('Files bookmarks could not be read; nothing changed.')
+            return
+        def accept():
+            try:
+                desktop.add_bookmark()
+                self.lines.append('KoelDrop bookmarked in the GNOME Files sidebar.')
+            except (OSError, ValueError):
+                self.lines.append('Could not add the Files sidebar bookmark. Try /koel bookmark again.')
+        self.popup_prompts().confirm(
+            'Add ~/KoelDrop to pinned locations in the GNOME Files sidebar? This bookmarks the folder without starting file sharing. [y/N]', accept)
+
     def koel_worker(self):
         if not getattr(self,'secure',False) or getattr(self,'role','lobby')!='lobby':raise Denied('Use KoelDrop from your signed-in HQ lobby.')
         worker=getattr(self,'courier',None)
@@ -33,6 +79,10 @@ class KoelUI(FlockUI):
             self.lines.extend(roadmap());return True
         try:
             action=parts[1] if len(parts)>1 else 'status';args=parts[2:]
+            if action in ('dock','favorite') and not args:
+                self.koel_favorite();return True
+            if action in ('bookmark','sidebar') and not args:
+                self.koel_bookmark();return True
             if action=='help' or (action=='status' and not getattr(self,'secure',False)):
                 self.lines.extend(roadmap())
                 return True
@@ -55,6 +105,11 @@ class KoelUI(FlockUI):
                 if not invite or invite['expires']<=time.time():raise Denied('Invitation missing or expired; ask the host to invite again.')
                 if action=='accept':worker.submit('accept',invite['group'],invite['host'],invite['invite'])
                 else:self.koel_invites.pop(int(args[0]));self.lines.append('KoelDrop invitation declined.')
+            elif action=='resolve' and len(args)==1:
+                offer=getattr(self,'koel_offers',{}).get(int(args[0]))
+                if not offer or offer['deleted']:raise Denied('Choose a current file offer from /koel pending.')
+                version=offer['version']
+                self.popup_prompts().confirm('Keep both copies of '+offer['path']+'? Publish your local copy under your member folder, then receive the shared version from '+offer['author']+' at the original path. [y/N]',lambda:worker.submit('resolve',version))
             elif action in ('receive','reject') and len(args)==1:
                 offer=getattr(self,'koel_offers',{}).get(int(args[0]))
                 if not offer:raise Denied('No such file offer. /koel pending')
@@ -77,7 +132,7 @@ class KoelUI(FlockUI):
         for number,invite in getattr(self,'koel_invites',{}).items():
             if invite['expires']>time.time():lines.append('Invitation '+str(number)+' from '+invite['host']+' — /koel accept '+str(number)+' (opts into folder uploads) or /koel decline '+str(number))
         for number,offer in getattr(self,'koel_offers',{}).items():
-            lines.append('File '+str(number)+': '+offer['author']+' → '+offer['path']+' ('+('delete request' if offer['deleted'] else str(offer['size'])+' bytes')+') — /koel receive '+str(number)+' or /koel reject '+str(number))
+            lines.append('File '+str(number)+': '+offer['author']+' → '+offer['path']+' ('+('delete request' if offer['deleted'] else str(offer['size'])+' bytes')+') — /koel receive '+str(number)+' or /koel reject '+str(number)+(' | /koel resolve '+str(number)+' to keep both if conflicting' if not offer['deleted'] else ''))
         self.lines.extend(lines or ['No pending KoelDrop invitations or files.'])
 
     def koel_invitation(self,message):
@@ -99,7 +154,7 @@ class KoelUI(FlockUI):
                          'Accept to join and upload files added to a dedicated folder. Incoming files need separate approval.',host,
                          '/koel accept '+str(number),'/koel decline '+str(number),False)
 
-    def koel_notice(self,title,body,name,accept,decline,sound):
+    def koel_notice(self,title,body,name,accept,decline,sound,labels=None):
         contexts=getattr(self,'koel_actions',{})
         if len(contexts)>=100:contexts.pop(next(iter(contexts)))
         key=secrets.token_hex(16);contexts[key]=(accept,decline);self.koel_actions=contexts
@@ -109,7 +164,7 @@ class KoelUI(FlockUI):
                 from ..desktop_notifications import Notifications
                 self.tracking_notifier=Notifications(self.inbox)
             self.tracking_notifier.show(title,body,name,koel_sound=sound,
-                                       custom_actions={'koel_accept':'Approve','koel_decline':'Decline'},action_context=key)
+                                       custom_actions={'koel_accept':(labels or ('Approve','Decline'))[0],'koel_decline':(labels or ('Approve','Decline'))[1]},action_context=key)
         if self.notification_allowed('files'):self.request_popup('notifications','Show KoelDrop notification: '+title+'?',show)
 
     def koel_local(self,message):
@@ -125,8 +180,22 @@ class KoelUI(FlockUI):
                 if key is None:number+=1;key=number
                 offers[key]=offer
             self.koel_offers=offers;self.koel_offer_number=number
+        conflicts=message.get('conflicts',[])
+        current={(o['path'],o['version']) for o in conflicts}
+        seen=getattr(self,'koel_conflicts_seen',set())
+        for conflict in conflicts:
+            identity=(conflict['path'],conflict['version'])
+            if identity in seen:continue
+            key=next((key for key,o in self.koel_offers.items() if o['version']==conflict['version']),None)
+            if key is None:continue
+            title='KoelDrop file conflict: '+conflict['path'].rsplit('/',1)[-1]
+            body='Shared version from '+conflict['author']+'. Your local copy is kept. /koel resolve '+str(key)+' keeps both after confirmation.'
+            self.lines.extend([title,body])
+            self.koel_notice(title,body,conflict['author'],'/koel resolve '+str(key),'/koel pending',False,labels=('Keep both','Later'))
+        self.koel_conflicts_seen=current
         from ..koel_sound import SoundChoice
         for notice in message.get('notices',[]):
+            if (notice['path'],notice['version']) in current:continue
             key=next((key for key,o in self.koel_offers.items() if o['version']==notice['version']),None)
             if key is None:continue
             title=(notice['author']+' requested deleting ' if notice['deleted'] else '🔊 uwu, '+notice['author']+' sent you ')+notice['path'].rsplit('/',1)[-1]

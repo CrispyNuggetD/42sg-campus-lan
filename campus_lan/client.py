@@ -37,7 +37,7 @@ HELP = [
     "/quiet status: LAN42-only exam audio mute | /exams: cached SG schedule | admin /quiet MINUTES | release popups: max once/24h",
     "/search TERMS: chosen engine in your browser | /settings search: engine + aggregate counting opt-out | /search stats",
     "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",
-    "Click footer buttons or use F2 sign in/out | F3 system mute | F4 output 0/30% | F5 uwu | F6 auto uwu",
+    "Click footer buttons or use F2 sign in/out | F3 system mute | F4 output 0/30% | F5 uwu | F6 auto uwu | F7 clusters",
     '/changelog: server release history and alpha testing credits',
     'API views: verified Singapore sign-in; enrolled API operators may use local /clusters and /info offsite.',
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
@@ -50,7 +50,7 @@ HELP = [
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
     '/tool LOGIN...: batch private photos | /info [FILTER] [PAGE]: API-operator campus directory',
-    '/clusters [1|2]: campus seats | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
+    '/clusters: both clusters | /cluster 1|2, /c1, /c2: one cluster | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
     '/track help: relationships/lists | /settings clusters: include/exclude arrival rules',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
@@ -386,6 +386,8 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
 
     def local_api_command(self, text):
         """Keyboard/local tracking path only; never dispatch this from wire messages."""
+        from .cluster_commands import normalize_cluster_command
+        text=normalize_cluster_command(text)
         command,_,argument=text.partition(' ')
         if command not in ('/clusters','/campus-presence','/info','/info_campus') or getattr(self,'secure',False):return False
         from .auth import config_dir
@@ -409,7 +411,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                     from .clusters import snapshot
                     players,stamp=snapshot()
                     kind='clusters' if command=='/clusters' else 'campus_presence'
-                    self.inbox.put(dict(type=kind,players=players,updated_at=stamp,cluster=int(argument or '1')))
+                    self.inbox.put(dict(type=kind,players=players,updated_at=stamp,cluster=int(argument or '0')))
             except (OSError,ValueError,KeyError,TypeError):
                 self.inbox.put(dict(type='campus_presence',error='Local Singapore API view unavailable; check enrollment, credentials or API budget.'))
             finally:self.local_api_busy=False
@@ -638,7 +640,10 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             elif kind == 'clusters':
                 self.cluster_players=msg.get('players',[])
                 self.cluster_stamp=msg.get('updated_at',0)
-                self.cluster=msg.get('cluster',1)
+                self.cluster=msg.get('cluster',0)
+                self.focus_name=None
+                self.focus_location=None
+                self.focus_pending=False
                 self.cluster_source=True
                 self.lobby_view,self.lobby_page='map',0
                 self.show_lobby,self.play=True,False
@@ -831,6 +836,9 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         h,w = screen.getmaxyx()
         campus=getattr(self,'cluster_source',False)
         if campus:players=overlay_campus(getattr(self,'cluster_players',[]),players)
+        from .lobby_view import relationship_overlay
+        tracker=getattr(self,'tracker',None)
+        players=relationship_overlay(players,getattr(tracker,'data',{}))
         content = lobby_lines(players,getattr(self,'lobby_view','roster'),getattr(self,'cluster',1))
         if campus:
             content[-1]=[('API seat snapshot; unmarked desks have no active reported login. /clusters refreshes.',0)]
@@ -850,7 +858,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         else:
             heading=f"CURRENTLY ONLINE: {len(players)} | " + ('TLS lobby: sign-in and remote approval are separate' if getattr(self, 'secure', False) else 'Guest names are unverified')
         self.line(screen,3,heading,curses.A_BOLD)
-        controls=f'/clusters 1|2 | Tab: map/roster | /next /prev | page {self.lobby_page+1}/{pages}'
+        controls=f'/clusters: both | /c1 /c2 | Tab: map/roster | /next /prev | page {self.lobby_page+1}/{pages}'
         if getattr(self,'focus_name',None):controls='SELECTED '+self.focus_name+' | c%dr%ds%d'%self.focus_location+' | /next /prev'
         self.line(screen,4,controls)
         for y,segments in enumerate(content[self.lobby_page*capacity:(self.lobby_page+1)*capacity],5):
@@ -863,6 +871,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 player=ordered.get(int(match[1])) if match else None
                 marker=re.fullmatch(r'\[(?:#)?(\d+)\]',text)
                 if marker and style:player=ordered.get(int(marker[1]))
+                elif marker:attr|=curses.A_DIM
                 if player:
                     self.lobby_hits.append((y,x,x+len(text),player))
                     if seat(player)==getattr(self,'focus_location',None) and int(time.monotonic()*2)%2==0:
@@ -1299,6 +1308,9 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                                          curses.COLOR_BLUE,curses.COLOR_RED,curses.COLOR_WHITE),2):
                 curses.init_pair(pair,color,curses.COLOR_BLACK)
             self.colors = True
+        if getattr(self,'role','lobby')=='lobby':
+            self.koel_favorite(startup=True)
+            self.koel_bookmark(startup=True)
         while True:
             if generation() != installed_generation:
                 raise RestartRequested()
@@ -1362,6 +1374,8 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 self.input=history.move(-1 if key==curses.KEY_UP else 1,self.input)
             elif key in (10,13):
                 text,self.input = self.input.strip(),''
+                from .cluster_commands import normalize_cluster_command
+                text=normalize_cluster_command(text)
                 self.scroll = 0
                 if text=='/restart':raise RestartRequested()
                 if self.permission_setup_command(text):continue

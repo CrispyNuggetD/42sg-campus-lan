@@ -151,8 +151,10 @@ it cannot approve receiving/deleting files or replace another active group.
 Offer the default home-to-personal-sgoinfre convenience symlink only with local
 yes/no consent; never replace existing paths. Store/use the approved real target
 so transfer traversal continues to reject symlinks.
-Reuse one marked daily folder (SGT) per trusted host, student and group across
-reconnects/host epochs. Validate its private ownership and scope marker; never
+Use the owner-requested flat student path `<base>/42-singapore/YYYY-MM-DD` (SGT).
+Reuse it across reconnects/host epochs; keep trusted host, student and group scope
+in its hidden marker and refuse mismatches instead of importing another scope.
+Keep legacy nested folders unchanged. Validate its private ownership and scope marker; never
 import unrecognized existing folders, rename them or recursively remove them.
 Host stop/restart keeps local copies and
 host-retained objects; new membership/epoch is required. No expiry cleanup is
@@ -249,3 +251,7 @@ or system package scripts. Keep private library paths scoped to its wrapper.
 Python recovery in setup_python.sh needs explicit yes before uv/runtime downloads.
 Validate Python/curses, preserve no/EOF as decline, and retain direct-terminal
 fallback when tmux is declined. Optional game/API-host dependencies remain separate.
+
+## Owner-requested add-only KoelDrop
+
+The public file API assigns authenticated sender/revision filenames and accepts additions only. Never expose replacement or shared deletion routes. Retain older data; mutable-history helpers are for historical fixtures/internal storage only. Enforce persisted per-student rolling limits across groups: shared 6 additions/24 MiB per minute, own folder 30/96 MiB. Return canonical receipts via pinned transport; never silently remove source files or auto-approve incoming files. F7 opens both clusters through existing API authorization.

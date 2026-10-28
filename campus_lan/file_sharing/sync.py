@@ -92,6 +92,7 @@ class Mirror:
     def offers(self,manifest):
         files=manifest.get('files',[])
         if not isinstance(files,list) or len(files)>MAX_FILES:raise Limit('Manifest is too large.')
+        self.append_only=manifest.get('append_only') is True
         members=manifest.get('members',[])
         if not isinstance(members,list) or len(members)>64 or any(not isinstance(n,str) or not re.fullmatch(r'[a-z0-9_.-]{1,24}',n) for n in members):raise Denied('Invalid member manifest.')
         self.members=set(members);offers=[]
@@ -103,6 +104,7 @@ class Mirror:
                     or not re.fullmatch(r'[a-z0-9_.-]{1,24}',record['author'])
                     or deleted not in (0,1,False,True)
                     or (not deleted and not re.fullmatch(r'[a-f0-9]{64}',record['digest']))):raise Denied('Invalid file metadata.')
+            if self.append_only and deleted:continue
             if self.known.get(path,{}).get('version')!=version:
                 offers.append(Offer(path,version,record['digest'],record['size'],record['author_uid'],record['author'],bool(deleted)))
         return offers
@@ -176,6 +178,25 @@ class Mirror:
         expected=self.known.get(path,{}).get('version')
         result=publish(path,data,expected)
         if result.get('digest')!=hashlib.sha256(data).hexdigest():raise Denied('Server upload acknowledgement did not match.')
+        assigned=logical_path(result.get('path',path))
+        if 'path' in result:
+            if (result.get('author')!=self.login or type(result.get('number')) is not int or result['number']<1
+                    or Path(assigned).parent!=Path(path).parent
+                    or assigned.split('/')[0] in {'logs','welcome.md'}
+                    or assigned.split('/')[0] in self.members-{self.login}):
+                raise Denied('Invalid host-assigned upload receipt.')
+        if assigned!=path:
+            # Install the host-assigned name from our own verified bytes. Never
+            # rename/remove the source or overwrite a pre-existing local entry.
+            parent,name=self._parent(assigned,True)
+            try:
+                try:fd=os.open(name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=parent)
+                except FileExistsError:fd=None
+                if fd is not None:
+                    with os.fdopen(fd,'wb') as output:output.write(data);output.flush();os.fsync(output.fileno())
+            finally:os.close(parent)
+            if self._read(assigned)==data:
+                self.known[assigned]=dict(version=result['version'],digest=result['digest'])
         self.known[path]=dict(version=result['version'],digest=result['digest'])
         return result
 
