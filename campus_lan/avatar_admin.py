@@ -1,5 +1,6 @@
 """Loopback-only, owner-operated photo import. No access to Chrome profiles."""
 import asyncio
+from concurrent.futures import TimeoutError as FutureTimeout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import secrets
@@ -50,7 +51,8 @@ batch.onclick=async()=>{
  try{
   const names=(await call('/expand',JSON.stringify({names:requested}))).logins;
   const result=await runAvatarBatch(names,{call,progress:(i,total,name)=>{$('status').textContent='Processing '+i+' of '+total+' · '+name;},log:r=>append(r.number+'. '+r.login+' — '+r.outcome+': '+r.reason)});
-  const summary='Requested '+result.requested+', skipped '+result.skipped+', failed '+result.failed+', success '+result.success+'. See batch log below or Download batch log.';
+  let summary='Requested '+result.requested+', skipped '+result.skipped+', failed '+result.failed+', success '+result.success+'. See batch log below or Download batch log.';
+  if(result.remaining){$('login').value=result.remaining.join(' ');summary='Paused: '+result.remaining.length+' logins remain. The input now contains only those names; retry when the API responds again. '+summary;}
   $('status').textContent=summary;append(summary);
   if(result.opened){try{await rememberPhotos();}catch(e){append('Photo preference could not be saved.');}}
  }catch(error){$('status').textContent=error.message||'Photo batch could not start.';}
@@ -143,7 +145,12 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                         self.reply(200,dict(status='failed' if isinstance(error,WhitelistUnavailable) else 'skipped',reason=str(error)));return
                     raise
                 future=asyncio.run_coroutine_threadsafe(lookup.lookup_many([login]),loop)
-                profiles,errors=future.result(timeout=25)
+                try:profiles,errors=future.result(timeout=25)
+                except FutureTimeout:
+                    future.cancel()
+                    if url.path=='/batch_one':
+                        self.reply(200,dict(status='paused',reason='42 API lookup exceeded 25 seconds; retry this login and the remaining names later.'));return
+                    raise ValueError('42 API lookup is taking too long; retry later.') from None
                 if not profiles:
                     if url.path=='/batch_one':
                         self.reply(200,dict(status='failed',reason='Profile lookup failed: login unavailable, not a Singapore member, or API limits reached'));return

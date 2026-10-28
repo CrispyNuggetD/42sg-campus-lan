@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import TimeoutError as FutureTimeout
 from pathlib import Path
 from campus_lan.avatar_imports import BrowserImports
 import os
@@ -8,7 +9,7 @@ import unittest
 import urllib.request
 import urllib.error
 from http.server import ThreadingHTTPServer
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, Mock
 from urllib.parse import urlsplit,parse_qs
 from campus_lan import avatar_admin
 
@@ -71,6 +72,15 @@ class Admin(unittest.TestCase):
                     self.assertEqual(batch_one('no-photo')['status'],'skipped')
                     self.assertEqual(batch_one('valid')['status'],'cached')
                     fetch.assert_called_once_with('valid','https://cdn.intra.42.fr/photo.jpg')
+                pending=Mock();pending.result.side_effect=FutureTimeout()
+                def delayed(coroutine,loop):
+                    coroutine.close()
+                    return pending
+                with patch.object(avatar_admin.asyncio,'run_coroutine_threadsafe',side_effect=delayed):
+                    result=batch_one('valid')
+                self.assertEqual(result['status'],'paused')
+                self.assertIn('25 seconds',result['reason'])
+                pending.cancel.assert_called_once()
                 with urllib.request.urlopen(base) as response:self.assertIn(b'cannot read your Chrome profile',response.read())
             finally:
                 servers[0].shutdown();thread.join(3)

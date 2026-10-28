@@ -1,4 +1,4 @@
-// Batch UI logic: each requested login gets one result, even after a failure.
+// Batch UI logic: retain unattempted logins when a shared service fails.
 function unsupportedAvatarSelector(name){return /^(all|sg|42sg|cohort\d*)$/i.test(name);}
 async function runAvatarBatch(names,{call,log,progress=()=>{},wait=ms=>new Promise(r=>setTimeout(r,ms)),polls=240}){
  const counts={requested:names.length,skipped:0,failed:0,success:0};
@@ -12,7 +12,16 @@ async function runAvatarBatch(names,{call,log,progress=()=>{},wait=ms=>new Promi
    else if(seen.has(name)){outcome='skipped';reason='Duplicate login';}
    else{
     seen.add(name);
-    const result=await call('/batch_one',JSON.stringify({login:name,photo_consent:true}));
+    let result;
+    try{result=await call('/batch_one',JSON.stringify({login:name,photo_consent:true}));}
+    catch(error){
+     log({number:i+1,login:names[i],outcome:'deferred',reason:error.message||'Batch request failed'});
+     return {...counts,opened,remaining:names.slice(i)};
+    }
+    if(result.status==='paused'){
+     log({number:i+1,login:names[i],outcome:'deferred',reason:result.reason||'API lookup is still busy'});
+     return {...counts,opened,remaining:names.slice(i)};
+    }
     if(result.status==='skipped'){outcome='skipped';reason=result.reason||'No available photo';}
     else if(result.status==='cached'){outcome='success';reason='Photo cached';}
     else if(result.job){

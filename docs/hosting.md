@@ -195,8 +195,10 @@ saves remain open. Keep the local admin terminal open for cache import.
 Batch failures affect only that login: invalid input and missing photos are
 skipped; logins absent from the local Singapore whitelist are also skipped
 before any API lookup. A missing/invalid whitelist is reported as a failure.
-Lookup, network and import errors are reported as failures, and the
-next login is tried. The panel prints one result per input and a final requested,
+Per-login lookup and import errors are reported as failures, and the
+next login is tried. A shared request error or slow upstream lookup pauses the batch;
+the input then contains only the current and unattempted names for a later retry.
+The panel prints one result per processed input and a final requested,
 skipped, failed and successful count. Use **Download batch log** to save the
 report locally. LAN42 permits 600 uncached profile lookups and 600 direct photo
 download attempts per rolling hour per process/cache; upstream API limits still apply.
