@@ -178,20 +178,37 @@ class Tracker:
             try:rules=set(self.resolve(self.data['clusters']['include']))-set(self.resolve(self.data['clusters']['exclude']))
             except ValueError as error:self.rules_error=str(error)
         scope=self.data['clusters'].get('scope','all')
+        from .lobby_view import seat
+        def snapshot(player):
+            location=seat(player)
+            value='c{}r{}s{}'.format(*location) if location else player.get('seat','unknown')
+            return dict(seat=value,verified=bool(player.get('verified')))
         if scope!='all':
-            from .lobby_view import seat
-            rules={n for n in rules if n in current and seat(current[n]) and seat(current[n])[0]==int(scope)}
+            # Keep a previously matching seat for one departure/move notice.
+            # Missing API data is handled by the caller, never as an empty poll.
+            rules={n for n in rules if (n in current and seat(current[n]) and seat(current[n])[0]==int(scope))
+                   or (previous.get(n) and seat(previous[n]) and seat(previous[n])[0]==int(scope))}
         self.targets[source]=personal|rules
         notices=[]
         for name in sorted(personal|rules):
             player=current.get(name)
-            if player and not previous.get(name):
+            old=previous.get(name)
+            new=snapshot(player) if player else None
+            changes=[]
+            if new and not old:changes=['online']
+            elif old and not new:changes=['offline']
+            elif new and old:
+                if old['seat']!=new['seat']:changes.append('seat')
+                if source=='lobby' and old['verified']!=new['verified']:changes.append('verification')
+            if changes:
                 record=self.data['people'].get(name,{})
                 status=record.get('relationship','tracked')
-                notices.append(dict(login=name,source=source,seat=player.get('seat','unknown'),verified=bool(player.get('verified')),
+                details=new or old
+                notices.append(dict(login=name,source=source,seat=details['seat'],verified=details['verified'],
+                                    changes=changes,previous_seat=old['seat'] if old else None,
                                     relationship=status,reason='personal' if name in personal else 'clusters',
                                     warm=name in personal and status in FRIENDLY))
-            previous[name]=player is not None
+            previous[name]=new
         # Drop obsolete selectors and bound state to current configured targets.
         for name in list(previous):
             if name not in personal|rules:previous.pop(name,None)
@@ -204,10 +221,23 @@ def describe(notice):
         label={'friends':'friend','mutuals':'mutual','oomf':'oomf'}[notice['relationship']]
         prefix='Your '+label+' '+name
     else:prefix=(('Campus update: ' if notice['source']=='campus' else 'LAN42 update: ') if notice.get('reason')=='clusters' else '')+name
-    if notice['source']=='campus':
+    changes=notice.get('changes',['online'])
+    def location(value):
+        match=re.fullmatch(r'c([12])r(\d+)s(\d+)',value or '')
+        return f'cluster {match[1]}, row {match[2]}, seat {match[3]} ({value})' if match else value or 'unknown'
+    campus=notice['source']=='campus'
+    if 'offline' in changes:
+        title=prefix+(' is offline on campus' if campus else ' has left the LAN42 lobby')
+        body='Last seen at '+location(notice.get('seat'))+'.'
+    elif 'seat' in changes or 'verification' in changes:
+        title=prefix+(' moved on campus' if campus else ' changed status in the LAN42 lobby')
+        parts=[]
+        if 'seat' in changes:parts.append(name+' moved from '+location(notice.get('previous_seat'))+' to '+location(notice.get('seat'))+'.')
+        if 'verification' in changes:parts.append('Identity is now '+('42 Verified.' if notice.get('verified') else 'Guest (unverified).'))
+        body=' '.join(parts)
+    elif campus:
         title=prefix+' is online on campus'+(' — go say hi!' if notice.get('warm') else '')
-        seat=notice.get('seat','unknown');match=re.fullmatch(r'c([12])r(\d+)s(\d+)',seat)
-        body=name+' is at '+(f'cluster {match[1]}, row {match[2]}, seat {match[3]} ({seat}).' if match else seat+'.')
+        body=name+' is at '+location(notice.get('seat'))+'.'
     else:
         title=prefix+' has joined the LAN42 lobby'+(' — say hi!' if notice.get('warm') else '.')
         body=('42 Verified' if notice.get('verified') else 'Guest identity (unverified)')+' · '+notice.get('seat','unknown')

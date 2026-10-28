@@ -38,6 +38,57 @@ class Tracking(unittest.TestCase):
         self.assertEqual(c.track_next,400)
         self.assertNotIn('dthoo',json.dumps(c.send.call_args.args))
 
+    def test_offline_seat_and_verification_changes_are_reported_once(self):
+        with tempfile.TemporaryDirectory() as tmp,patch('campus_lan.tracking.config_dir',return_value=Path(tmp)):
+            tracker=Tracker('owner');tracker.change(['student'])
+            self.assertEqual(tracker.transitions([],'campus'),[])
+            player=dict(name='student',seat='c1r2s3',verified=False)
+            self.assertEqual(tracker.transitions([player],'campus')[0]['changes'],['online'])
+            moved=dict(player,seat='c2r3s4')
+            notice=tracker.transitions([moved],'campus')[0]
+            self.assertEqual(notice['changes'],['seat'])
+            self.assertIn('moved',describe(notice)[0])
+            self.assertIn('c1r2s3',describe(notice)[1]);self.assertIn('c2r3s4',describe(notice)[1])
+            self.assertFalse(tracker.transitions([dict(moved,seat='Cluster 2, row 3, seat 4')],'campus'))
+            notice=tracker.transitions([],'campus')[0]
+            self.assertEqual(notice['changes'],['offline'])
+            self.assertIn('offline',describe(notice)[0]);self.assertIn('Last seen',describe(notice)[1])
+            self.assertFalse(tracker.transitions([],'campus'))
+            tracker.transitions([player],'lobby')
+            notice=tracker.transitions([dict(player,verified=True)],'lobby')[0]
+            self.assertEqual(notice['changes'],['verification'])
+            self.assertIn('42 Verified',describe(notice)[1])
+            self.assertIn('left the LAN42 lobby',describe(tracker.transitions([],'lobby')[0])[0])
+            self.assertFalse(tracker.transitions([],'lobby'))
+
+    def test_scoped_rules_report_departure_and_moving_out_of_cluster(self):
+        with tempfile.TemporaryDirectory() as tmp,patch('campus_lan.tracking.config_dir',return_value=Path(tmp)):
+            t=Tracker('owner');t.configure_rules('include',['student']);t.configure_rules('scope',['c1']);t.configure_rules('on')
+            player=dict(name='student',seat='c1r2s3')
+            t.transitions([player],'campus')
+            self.assertEqual(t.transitions([],'campus')[0]['changes'],['offline'])
+            self.assertFalse(t.transitions([],'campus'))
+            t.transitions([player],'campus')
+            self.assertEqual(t.transitions([dict(player,seat='c2r2s3')],'campus')[0]['changes'],['seat'])
+            self.assertFalse(t.transitions([dict(player,seat='c2r2s3')],'campus'))
+
+    def test_api_failure_preserves_state_and_disabled_popups_keep_terminal_text(self):
+        with tempfile.TemporaryDirectory() as tmp,patch('campus_lan.tracking.config_dir',return_value=Path(tmp)):
+            c=Client.__new__(Client);c.lines=collections.deque();c.inbox=queue.Queue()
+            c.search_result=Mock(return_value=False);c.announcement_event=Mock(return_value=False)
+            c.tracker=Tracker('owner');c.tracker.change(['student'])
+            c.notification_allowed=Mock(return_value=False);c.desktop_notice=Mock();c.state={}
+            c.tracking_update([dict(name='student',seat='c1r2s3')],'campus')
+            c.inbox.put(dict(type='campus_presence',error='API unavailable'))
+            c.consume()
+            c.inbox.put(dict(type='campus_presence'))
+            c.consume()
+            self.assertTrue(c.tracker.campus['student'])
+            self.assertNotIn('offline',' '.join(c.lines))
+            c.tracking_update([],'campus')
+            self.assertIn('student is offline on campus',c.lines)
+            c.desktop_notice.assert_not_called()
+
     def test_notification_only_prepares_draft_and_preserves_existing_input(self):
         c=Client.__new__(Client);c.input='';c.lines=collections.deque();c.send=Mock()
         c.notification_action(dict(action='message',login='dthoo'))

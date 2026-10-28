@@ -208,8 +208,11 @@ intact and reports a retry; it does not mark everybody offline.
 Campus notifications say “dthoo is online on campus” with cluster, row and seat
 on a separate line. LAN42 arrivals produce a separate “has joined the LAN42
 lobby — say hi!” notification immediately from normal lobby state updates.
-Each source notifies on an offline-to-online transition, including the first
-online observation after starting HQ. Repeated polling does not repeat a notice.
+Each source reports online/offline and seat changes once, including the first
+online observation after starting HQ. Lobby notices also report changes between
+Guest and 42 Verified. Departures include the last observed seat. An initially
+offline person produces no departure notice; repeated polling does not repeat
+a notice. API errors keep the previous state rather than reporting departures.
 Campus presence means an active reported computer login, rather than physical
 attendance. Tracking resumes from the saved list when HQ starts again.
 

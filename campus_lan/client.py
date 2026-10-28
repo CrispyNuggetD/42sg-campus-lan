@@ -429,6 +429,9 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
     def tracking_update(self,players,source):
         tracker=getattr(self,'tracker',None)
         if not tracker:return
+        if not isinstance(players,list) or any(not isinstance(p,dict) or not isinstance(p.get('name'),str) for p in players):
+            self.lines.append('Tracking snapshot unavailable; keeping the last known state.')
+            return
         from .tracking import describe
         for notice in tracker.transitions(players,source):
             title,body=describe(notice)
@@ -440,7 +443,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 cache=AvatarCache();cache.read(notice['login'])
                 icon=str(cache.root/(key(notice['login'])+'.img'))
             except (OSError,ValueError):pass
-            online=source=='lobby' or any(p.get('name','').lower()==notice['login'] for p in self.state.get('players',[]))
+            online=(source=='lobby' and 'offline' not in notice.get('changes',[])) or any(p.get('name','').lower()==notice['login'] for p in self.state.get('players',[]))
             self.desktop_notice(title,body,notice['login'],icon,online)
 
         error=getattr(tracker,'rules_error',None)
@@ -596,7 +599,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             elif kind == 'campus_presence':
                 self.track_pending=0
                 if msg.get('error'):self.lines.append(safe(msg['error']))
-                else:self.tracking_update(msg.get('players',[]),'campus')
+                else:self.tracking_update(msg.get('players'),'campus')
             elif kind == 'dm_delivery':
                 self.lines.append('DM '+('delivered to ' if msg.get('delivered') else 'not delivered to ')+safe(msg.get('target',''))+(': '+safe(msg['error']) if msg.get('error') else ''))
             elif kind == 'dm_summary':

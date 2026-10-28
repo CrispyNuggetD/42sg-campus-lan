@@ -21,7 +21,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <!-- shell-installer-features:start -->
 - **Campus HQ:** no-sudo setup checks Python/curses and offers missing Python/tmux installation with explanations and per-run Allow all; `lan42` opens a separate workspace.
-- **Find your people:** `/who`, `/join`, private DMs and `/track` lists; `/clusters` shows current SG seats while the approved campus host is online.
+- **Find your people:** `/who`, `/join`, private DMs and `/track` online/offline, seat and lobby identity updates; `/clusters` shows SG seats while the approved campus host is online.
 - **KoelDrop:** `/koel flock` joins the host’s 42 Singapore flock: once, always or never. Daily folders survive reconnects; optional sgoinfre link saves home quota. Upload/receive consent stays separate. `/uwu` introduces your courier.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
 - **Easy controls:** clickable footer or F2 sign in/out; F3 mute, F4 output 0/30%, F5 uwu once, F6 automatic uwu; Up/Down history and !COMMAND for your local shell.
