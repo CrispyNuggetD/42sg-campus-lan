@@ -360,7 +360,11 @@ class Lobby:
                 await self.event('SABO this room: '+', '.join(room.get('sabo_history',[])),{pid})
                 return
             bits=arg.split()
+            if any(bit.lower()=='cohort' for bit in bits):
+                raise ValueError('Use cohort1 as one word; "cohort 1" is not a game selector.')
             cohorts=[];counts=[];filters=[];random_selection=False
+            from .login_whitelist import SG_SELECTORS
+            all_selection=any(bit.lower() in SG_SELECTORS for bit in bits)
             for bit in bits:
                 if bit.lower().startswith('cohort') and bit[6:].isdecimal():cohorts.append(int(bit[6:]))
                 elif bit.lower()=='random':random_selection=True
@@ -400,10 +404,11 @@ class Lobby:
                 for offset in range(0,len(names),10):
                     batch,failed=await self.profile_lookup.lookup_many(names[offset:offset+10])
                     profiles.extend(batch);errors.extend(failed)
-            elif cohorts or random_selection or filters:
-                if len(counts)>1 or any(not (x.lower() in ('random','where','and') or x in filters or x.isdecimal() or (x.lower().startswith('cohort') and x[6:].isdecimal())) for x in bits):
+            elif cohorts or random_selection or filters or all_selection:
+                if all_selection and cohorts:raise ValueError('Choose all/sg/42sg or cohortN, not both.')
+                if len(counts)>1 or any(not (x.lower() in SG_SELECTORS or x.lower() in ('random','where','and') or x in filters or x.isdecimal() or (x.lower().startswith('cohort') and x[6:].isdecimal())) for x in bits):
                     raise ValueError('Use /sabo [COUNT] random [cohort4 cohort5] or /sabo cohort4 cohort5.')
-                if cohorts or filters:
+                if cohorts or filters or all_selection:
                     from .access import Policy
                     if self.api_identity(c)["uid"] not in Policy().data["api_operators"]:raise AuthError("Academic game filters are restricted to API operators.")
                 from .campus_info import random_profiles,load

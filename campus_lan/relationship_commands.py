@@ -9,7 +9,7 @@ HELP=[
  '/track list lunch add dthoo thtay | /track list lunch remove thtay | /track list lunch delete',
  '/track alerts SELECTOR campus|lobby on|off — per-person event preferences',
  '/settings clusters c1|c2|all | on|off | include SELECTOR... | exclude SELECTOR... | clear [include|exclude]',
- 'Selectors: friends (includes mutuals/oomf), tracked (acquaintances), alltracked, mutuals/moots, oomf, @lunch, cohort4.',
+ 'Selectors: friends (includes mutuals/oomf), tracked (acquaintances), alltracked, mutuals/moots, oomf, @lunch, cohort4, all/sg/42sg.',
  'Host /sabo selectors: online = last campus API crawl; verified = active SG sign-ins connected to this host.',
  '/track config — private configuration path. Relationships are local labels, not reciprocal requests.',
 ]

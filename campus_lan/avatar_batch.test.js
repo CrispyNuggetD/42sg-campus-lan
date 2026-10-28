@@ -24,7 +24,7 @@ const assert=require('assert'),run=require('./avatar_batch');
  assert.deepStrictEqual(await run([],{call:()=>{throw Error('No request expected');},log:()=>{}}),{requested:0,skipped:0,failed:0,success:0,opened:false});
  const selectors=[];
  assert.deepStrictEqual(await run(['all','cohort1'],{call:()=>{throw Error('Selectors must not reach the API');},log:row=>selectors.push(row)}),{requested:2,skipped:2,failed:0,success:0,opened:false});
- assert(selectors.every(row=>row.reason.includes('explicit Intra logins')));
+ assert(selectors.every(row=>row.reason.includes('Expand this selector')));
  console.log('PASS: batch continues after invalid logins, lookup/network errors, expired jobs and timeouts; exact totals and one log per input');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 // Exercise the actual inline panel: query logins survive URL cleanup and errors
@@ -39,6 +39,7 @@ vm.runInNewContext(script,{URLSearchParams,URL,Blob:class {},console:{log(){}},l
  let body;
  if(path==='/photo_permission')body={mode:'allow'};
  else if(path==='/downloads_directory')body={directory:'/tmp'};
+ else if(path==='/expand')body={logins:data.names};
  else body=data.login==='missing-user'?{status:'failed',reason:'Profile lookup failed'}:{status:'cached'};
  return {ok:true,json:async()=>body};
 }});

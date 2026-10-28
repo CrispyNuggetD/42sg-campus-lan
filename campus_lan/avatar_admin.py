@@ -9,7 +9,7 @@ import webbrowser
 from .auth import config_dir, private_read
 from .avatar_cache import AvatarCache, MAX_IMAGE
 from .profile_lookup import ProfileLookup
-from .login_whitelist import validate_logins, WhitelistUnavailable, PHOTO_SELECTOR_MESSAGE, unsupported_photo_selector
+from .login_whitelist import validate_logins, WhitelistUnavailable, PHOTO_SELECTOR_MESSAGE, unsupported_photo_selector, expand_photo_targets
 from .avatar_imports import BrowserImports, downloads_directory
 from pathlib import Path
 
@@ -45,18 +45,20 @@ const batch=document.createElement('button');batch.textContent='Cache all logins
 batch.onclick=async()=>{
  if(!await consentPhotos()){$('status').textContent='Photo batch skipped. /settings permissions photos allow enables future batches.';return;}
  batch.disabled=true;batchLog=[];$('batch-log').textContent='';$('download-log').hidden=false;
- const names=$('login').value.trim().split(/\s+/).filter(Boolean);
+ const requested=$('login').value.trim().split(/\s+/).filter(Boolean);
  const append=line=>{batchLog.push(line);$('batch-log').textContent=batchLog.join('\n');console.log(line);};
  try{
+  const names=(await call('/expand',JSON.stringify({names:requested}))).logins;
   const result=await runAvatarBatch(names,{call,progress:(i,total,name)=>{$('status').textContent='Processing '+i+' of '+total+' · '+name;},log:r=>append(r.number+'. '+r.login+' — '+r.outcome+': '+r.reason)});
   const summary='Requested '+result.requested+', skipped '+result.skipped+', failed '+result.failed+', success '+result.success+'. See batch log below or Download batch log.';
   $('status').textContent=summary;append(summary);
   if(result.opened){try{await rememberPhotos();}catch(e){append('Photo preference could not be saved.');}}
- }finally{batch.disabled=false;}
+ }catch(error){$('status').textContent=error.message||'Photo batch could not start.';}
+ finally{batch.disabled=false;}
 };
 if($('login').value)setTimeout(()=>batch.click(),500);
 async function call(path,body,type='application/json'){const r=await fetch(path,{method:'POST',headers:{'X-LAN42-Admin':token||'','Content-Type':type},body});const data=await r.json();if(!r.ok)throw Error(data.error||'Request failed');return data;}
-async function lookup(){const login=$('login').value.trim();if(unsupportedAvatarSelector(login))throw Error('Photo batches need explicit Intra logins; all and cohort selectors are unsupported.');const data=await call('/lookup',JSON.stringify({login}));photoUrl=data.avatar;$('photo').hidden=!photoUrl;$('photo').href=photoUrl||'#';$('status').textContent=JSON.stringify(data,null,2);return data;}
+async function lookup(){const login=$('login').value.trim();if(unsupportedAvatarSelector(login))throw Error('Choose Cache all logins for all/sg/42sg/cohort selectors; single-photo lookup needs one Intra login.');const data=await call('/lookup',JSON.stringify({login}));photoUrl=data.avatar;$('photo').hidden=!photoUrl;$('photo').href=photoUrl||'#';$('status').textContent=JSON.stringify(data,null,2);return data;}
 let pendingJob=null;
 async function showDownloads(){try{const d=await call('/downloads_directory',JSON.stringify({}));$('downloads').value=d.directory;}catch(e){$('status').textContent=e.message;}}showDownloads();
 $('save-downloads').onclick=async()=>{try{const d=await call('/downloads_directory',JSON.stringify({directory:$('downloads').value}));$('status').textContent='Importer watches '+d.expected_directory;}catch(e){$('status').textContent=e.message;}};
@@ -74,8 +76,9 @@ $('file').onchange=e=>upload(e.target.files[0]);$('drop').ondragover=e=>e.preven
 def launch(logins=(),approved=False,photos_approved=False,owner=None):
     import pwd,os
     from .popup_permissions import console_permission,console_remember,Permissions
-    if unsupported_photo_selector(logins):
-        print(PHOTO_SELECTOR_MESSAGE);return
+    try:logins=expand_photo_targets(logins)
+    except ValueError as error:
+        print(str(error));return
     owner=owner or pwd.getpwuid(os.getuid()).pw_name
     if Permissions(owner).mode('tools')=='deny':
         print('Browser panel blocked by local popup settings.');return
@@ -115,6 +118,13 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                     login=validate_photo_login(urllib.parse.parse_qs(url.query).get('login',[''])[0])
                     self.reply(200,cache.store(login,raw));return
                 data=json.loads(raw)
+                if url.path=='/expand':
+                    names=data.get('names')
+                    if not isinstance(names,list) or len(names)>1000 or any(not isinstance(name,str) or len(name)>32 for name in names):
+                        self.reply(400,dict(error='Enter up to 1000 Intra logins or one-word cohort selectors.'));return
+                    try:expanded=expand_photo_targets(names)
+                    except ValueError as error:self.reply(400,dict(error=str(error)));return
+                    self.reply(200,dict(logins=expanded));return
                 if url.path=='/photo_permission':
                     from .popup_permissions import Permissions
                     preferences=Permissions(owner)

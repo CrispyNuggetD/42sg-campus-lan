@@ -42,6 +42,13 @@ class Admin(unittest.TestCase):
                     with self.assertRaises(urllib.error.HTTPError) as rejected:post(key,origin)
                     self.assertEqual(rejected.exception.code,403)
                 self.assertEqual(post(token,base)['status'],'cached')
+                def expand(names):
+                    request=urllib.request.Request(base+'/expand',data=json.dumps({'names':names}).encode(),headers={'Origin':base,'X-LAN42-Admin':token,'Content-Type':'application/json'})
+                    with urllib.request.urlopen(request,timeout=3) as response:return json.load(response)
+                with patch('campus_lan.campus_info.load',return_value={'students':[dict(login='fixture-user',cohort=1),dict(login='fixture-owner',cohort=1)]}):
+                    self.assertEqual(expand(['cohort1'])['logins'],['fixture-user','fixture-owner'])
+                with self.assertRaises(urllib.error.HTTPError) as spaced:expand(['cohort','1'])
+                self.assertEqual(spaced.exception.code,400)
                 req=urllib.request.Request(base+'/prepare',data=b'{"login":"fixture-owner"}',headers={'Origin':base,'X-LAN42-Admin':token,'Content-Type':'application/json'})
                 with urllib.request.urlopen(req) as response:job=json.load(response)
                 self.assertEqual(len(job['job']),32)
@@ -51,7 +58,7 @@ class Admin(unittest.TestCase):
                 with patch('campus_lan.login_whitelist.allowed_logins',return_value={'all'}),patch.object(avatar_admin.ProfileLookup,'lookup_many',new_callable=AsyncMock) as untouched:
                     result=batch_one('all')
                     self.assertEqual(result['status'],'skipped')
-                    self.assertIn('explicit Intra logins',result['reason'])
+                    self.assertIn('Cache all logins',result['reason'])
                     untouched.assert_not_called()
                 with patch('campus_lan.avatar_admin.validate_logins',side_effect=ValueError('Not in local whitelist')),patch.object(avatar_admin.ProfileLookup,'lookup_many',new_callable=AsyncMock) as untouched:
                     self.assertEqual(batch_one('typo')['status'],'skipped')

@@ -33,6 +33,16 @@ class Whitelist(unittest.TestCase):
             with self.assertRaises(ValueError):validate_logins([value])
         self.assertEqual(allowed_logins(),{'fixture-one','fixture-two','friends'})
 
+    def test_photo_cohort_selector_is_one_word_and_a_bare_number_is_literal(self):
+        from campus_lan.login_whitelist import expand_photo_targets
+        with patch('campus_lan.campus_info.load',return_value={'students':self.students}):
+            self.assertEqual(expand_photo_targets(['cohort1']),['fixture-one','friends'])
+            for selector in ('all','sg','42sg'):
+                self.assertEqual(expand_photo_targets([selector]),['fixture-one','fixture-two','friends'])
+        self.assertEqual(expand_photo_targets(['1']),['1'])
+        with self.assertRaisesRegex(ValueError,'cohort1'):
+            expand_photo_targets(['cohort','1'])
+
     def test_missing_corrupt_and_explicit_text_sources_fail_closed(self):
         (self.root/'singapore_intra.txt').write_text('FIXTURE-TEXT\nfixture-two fixture-two\n')
         self.assertNotIn('fixture-text',allowed_logins())  # JSON is authoritative.
@@ -64,6 +74,8 @@ class Whitelist(unittest.TestCase):
         with patch('campus_lan.campus_info.load',return_value={'students':self.students}):
             self.assertEqual(set(t.resolve(['cohort1'])),{'fixture-one','friends'})
             self.assertEqual(set(t.resolve(['all'])),{'fixture-one','fixture-two','friends'})
+            self.assertEqual(t.resolve(['sg']),t.resolve(['all']))
+            self.assertEqual(t.resolve(['42sg']),t.resolve(['all']))
         t.data['lists']['legacy']=['typo'];t.data['people']['typo']={'relationship':'tracked','alerts':{}}
         t.save(t.data)
         with self.assertRaises(ValueError):t.resolve(['@legacy'])
@@ -88,6 +100,9 @@ class Whitelist(unittest.TestCase):
     def test_profile_browser_rejects_unknown_names_before_opening(self):
         from campus_lan.profile_browser import resolve
         self.assertEqual(resolve(['FIXTURE-ONE']),['https://profile-v3.intra.42.fr/users/fixture-one'])
+        with patch('campus_lan.profile_browser.load',return_value={'students':self.students}):
+            self.assertEqual(resolve(['sg']),resolve(['all']))
+            self.assertEqual(resolve(['42sg']),resolve(['all']))
         with self.assertRaisesRegex(ValueError,'whitelist'):resolve(['fixture-one','typo'])
 
     def test_numeric_confirmation_handles_whitelist_rejection_without_crashing(self):

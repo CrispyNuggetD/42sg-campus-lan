@@ -200,9 +200,14 @@ next login is tried. The panel prints one result per input and a final requested
 skipped, failed and successful count. Use **Download batch log** to save the
 report locally. Existing API and photo request budgets still apply.
 
-`/tool` accepts explicit logins only: `all`, `cohort1` and `cohort 1` are not
-expanded by this tool. For a long list, open `/tool` without arguments and paste
-whitespace-separated logins into the panel, then choose **Cache all logins**.
+`/tool LOGIN...` accepts explicit logins. `/tool cohort1` selects cohort 1 from
+the local private Singapore student cache; `/tool all`, `/tool sg` and
+`/tool 42sg` select everyone in that cache. The permission prompt shows the
+expanded count before the batch starts. `cohort 1` is not a selector: keep the
+cohort number in the same word. A bare `1` is never treated as a cohort or seat
+selector by this tool. `c1` keeps its existing Cluster 1 meaning; use `cohort1`
+for the cohort. Ordinary chat text is never expanded. For a long list, open `/tool` without arguments and paste
+whitespace-separated logins or these one-word selectors into the panel, then choose **Cache all logins**.
 Do not include the `/tool` prefix in that input. This avoids the terminal's
 400-character input limit. Existing cached photos count as successful results.
 Logs remain in the local panel/browser console unless you choose **Download

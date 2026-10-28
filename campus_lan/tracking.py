@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 from .auth import config_dir,private_read,private_write
-from .login_whitelist import validate_logins
+from .login_whitelist import SG_SELECTORS,validate_logins
 
 INTERVAL=300
 RELATIONSHIPS={'tracked','friends','mutuals','oomf'}
@@ -122,11 +122,11 @@ class Tracker:
                 key=value.lstrip('@')
                 if key not in self.data['lists']:raise ValueError('Unknown local list: '+key)
                 names=self.data['lists'][key]
-            elif value=='all' or re.fullmatch(r'cohort\d+',value):
+            elif value in SG_SELECTORS or re.fullmatch(r'cohort\d+',value):
                 from .campus_info import load
                 data=load()
                 if not data:raise ValueError('Cohort/all selectors need the local private campus cache.')
-                cohort=None if value=='all' else int(value[6:])
+                cohort=None if value in SG_SELECTORS else int(value[6:])
                 names=[login(s['login']) for s in data['students'] if cohort is None or s.get('cohort')==cohort]
             else:names=[login(value)]
             result.extend(names)

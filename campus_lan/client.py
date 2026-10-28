@@ -49,11 +49,11 @@ HELP = [
     'Hex Wars: /bot (menu) | /bot upload PATH.c | /bot demo | /practice | /start',
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
-    '/tool LOGIN...: batch private photos | /info [FILTER] [PAGE]: API-operator campus directory',
+    '/tool LOGIN...|cohort1|all: private photo batch from local SG cache | /info [FILTER] [PAGE]: API-operator campus directory',
     '/clusters: open a separate map window | /c1 /c2: one cluster | in that window r/Enter refreshes and shows snapshot age',
     '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
-    '/sabo online [COUNT] [cluster 1|2]: last host campus snapshot | /sabo verified [COUNT]: active SG sign-ins on this host',
+    '/sabo online [COUNT] [cluster 1|2]: campus snapshot | /sabo verified [COUNT]: SG sign-ins | /sabo all: local SG cache, 50 seats max',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit (miniapps close their tmux window)',
@@ -570,14 +570,15 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 parts=[command,selector,message] if separator else [command,selector]
             if len(parts)<2:return False
             if command=='/sabo' and any(p.lower() in ('online','verified') for p in parts[1:]):return False
+            if command=='/sabo':
+                from .login_whitelist import SG_SELECTORS
+                if len(parts)==2 and parts[1].lower()=='history':return False
+                if any(p.lower() in SG_SELECTORS or p.lower()=='random' or re.fullmatch(r'cohort\d+',p,re.I) or any(op in p for op in ('=','>','<')) for p in parts[1:]):return False
             # Re-read local settings so the game window sees HQ relationship edits.
             from .tracking import Tracker
             tracker=Tracker(self.name)
             if tracker.load_error:raise ValueError(tracker.load_error)
             if command=='/sabo':
-                # These structured game selectors retain the server's parser.
-                if len(parts)==2 and parts[1].lower()=='history':return False
-                if any(p.lower()=='random' or re.fullmatch(r'cohort\d+',p,re.I) or any(op in p for op in ('=','>','<')) for p in parts[1:]):return False
                 names=tracker.resolve(parts[1:])
                 if not names:raise ValueError('That local selector is empty. /track status friends LOGIN')
                 if len(names)>50:raise ValueError('SABO selectors may expand to at most 50 people.')
@@ -1102,9 +1103,10 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         screen.refresh()
 
     def open_admin(self, logins=(), approved=False, photos_approved=False):
-        from .login_whitelist import PHOTO_SELECTOR_MESSAGE,unsupported_photo_selector
-        if unsupported_photo_selector(logins):
-            self.lines.append(PHOTO_SELECTOR_MESSAGE)
+        from .login_whitelist import expand_photo_targets
+        try:logins=expand_photo_targets(logins)
+        except ValueError as error:
+            self.lines.append(str(error))
             return False
         if not approved:
             self.request_popup('tools','Open the local photo-tool terminal and browser panel?',lambda:self.open_admin(logins,True,photos_approved))

@@ -166,6 +166,11 @@ contacted. See [campus selectors](campus-guide.md#select-campus-online-people-fo
 seats. Add a separate count, for example `/sabo online 5 c1`. Cluster filters
 apply to `online`, not `verified` sign-ins.
 
+`/sabo all` (also `sg` or `42sg`) randomly selects unseated people from the
+private Singapore student cache, up to the 50-seat table limit. `/sabo cohort1`
+selects a single cohort; `cohort 1` is invalid. These academic selectors require
+an approved API operator. They do not expand an ordinary chat message.
+
 The terminal and FORKNITE browser headers show campus totals and C1/C2 counts
 with snapshot age, independent of game/replay time. Data older than two minutes
 is marked stale; unavailable data is not displayed as zero. Existing SG sign-in

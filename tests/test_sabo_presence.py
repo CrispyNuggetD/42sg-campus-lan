@@ -98,6 +98,27 @@ class PresenceSelection(unittest.IsolatedAsyncioTestCase):
             snapshot.assert_not_called()
         self.lobby.profile_lookup.lookup_many.assert_not_called()
 
+    async def test_all_singapore_selector_is_operator_only_and_stays_within_table_capacity(self):
+        profiles=[dict(login='fixture-01',avatar=None),dict(login='fixture-02',avatar=None)]
+        with patch.object(self.lobby,'api_identity',return_value={'uid':1}),patch('campus_lan.access.Policy') as policy,patch('campus_lan.campus_info.load',return_value={'students':profiles}),patch('campus_lan.campus_info.random_profiles',return_value=profiles) as random_profiles:
+            policy.return_value.data={'api_operators':[1]}
+            await self.lobby.command('host','/sabo all')
+            random_profiles.assert_called_once_with(None,['fixture-host'],[],[])
+            self.lobby.profile_lookup.lookup_many.assert_awaited_once_with(['fixture-01','fixture-02'])
+            self.lobby.profile_lookup.lookup_many.reset_mock()
+            with self.assertRaisesRegex(ValueError,'cohort1'):
+                await self.lobby.command('host','/sabo cohort 1')
+            self.lobby.profile_lookup.lookup_many.assert_not_called()
+            policy.return_value.data={'api_operators':[]}
+            with self.assertRaises(AuthError):await self.lobby.command('host','/sabo sg')
+            self.lobby.profile_lookup.lookup_many.assert_not_called()
+
+    async def test_client_passes_sg_game_selector_to_host_for_bounded_selection(self):
+        c=Client.__new__(Client);c.name='fixture-host';c.lines=collections.deque();c.send=Mock()
+        with patch('campus_lan.tracking.Tracker',side_effect=AssertionError('Host resolves SG selector')):
+            self.assertFalse(c.group_command('/sabo 42sg'))
+        c.send.assert_not_called()
+
     async def test_literal_reserved_login_can_be_requested_explicitly(self):
         await self.lobby.command('host','/sabo login:online')
         self.lobby.profile_lookup.lookup_many.assert_awaited_once_with(['online'])

@@ -1,5 +1,5 @@
 // Batch UI logic: each requested login gets one result, even after a failure.
-function unsupportedAvatarSelector(name){return /^(all|cohort\d*)$/i.test(name);}
+function unsupportedAvatarSelector(name){return /^(all|sg|42sg|cohort\d*)$/i.test(name);}
 async function runAvatarBatch(names,{call,log,progress=()=>{},wait=ms=>new Promise(r=>setTimeout(r,ms)),polls=240}){
  const counts={requested:names.length,skipped:0,failed:0,success:0};
  const seen=new Set();let opened=false;
@@ -7,7 +7,7 @@ async function runAvatarBatch(names,{call,log,progress=()=>{},wait=ms=>new Promi
   const name=names[i].toLowerCase();progress(i+1,names.length,name);
   let outcome,reason;
   try{
-   if(unsupportedAvatarSelector(name)){outcome='skipped';reason='Photo batches need explicit Intra logins; selectors are unsupported';}
+   if(unsupportedAvatarSelector(name)){outcome='skipped';reason='Expand this selector before saving photos';}
    else if(!/^[a-z0-9_.-]{1,32}$/.test(name)){outcome='skipped';reason='Invalid login format';}
    else if(seen.has(name)){outcome='skipped';reason='Duplicate login';}
    else{

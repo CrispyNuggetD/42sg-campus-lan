@@ -25,13 +25,26 @@ class Terminal:
     def flush(self): self.flushed = True
 
 class ClientChecks(unittest.TestCase):
-    def test_photo_tool_rejects_selectors_before_opening_or_asking_permission(self):
+    def test_photo_tool_rejects_spaced_cohort_before_opening(self):
         c=Client.__new__(Client)
         c.lines=[];c.request_popup=Mock()
-        for names in (['all'],['cohort1'],['cohort','1']):
-            self.assertFalse(c.open_admin(names))
-            self.assertIn('explicit Intra logins',c.lines[-1])
+        self.assertFalse(c.open_admin(['cohort','1']))
+        self.assertIn('cohort1',c.lines[-1])
         c.request_popup.assert_not_called()
+
+    def test_photo_tool_expands_cohort_before_photo_permission(self):
+        c=Client.__new__(Client);c.lines=[]
+        c.request_popup=Mock(side_effect=lambda category,description,action:action() if category=='tools' else None)
+        students=[dict(login='fixture-one',cohort=1),dict(login='fixture-two',cohort=1),dict(login='other',cohort=2)]
+        with patch('campus_lan.campus_info.load',return_value={'students':students}),patch('campus_lan.login_whitelist.allowed_logins',return_value={'fixture-one','fixture-two','other'}):
+            self.assertFalse(c.open_admin(['cohort1']))
+        self.assertEqual(c.request_popup.call_count,2)
+        self.assertEqual(c.request_popup.call_args.args[0],'photos')
+        self.assertIn('2 logins',c.request_popup.call_args.args[1])
+        c.request_popup.reset_mock()
+        with patch('campus_lan.campus_info.load',return_value={'students':students}),patch('campus_lan.login_whitelist.allowed_logins',return_value={'fixture-one','fixture-two','other'}):
+            self.assertFalse(c.open_admin(['42sg']))
+        self.assertIn('3 logins',c.request_popup.call_args.args[1])
 
     def test_cluster_command_opens_miniapp_without_changing_hq_view(self):
         c=Client.__new__(Client)

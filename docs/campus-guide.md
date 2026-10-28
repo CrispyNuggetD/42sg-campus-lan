@@ -177,7 +177,7 @@ https://api.intra.42.fr/apidoc/2.0/locations/index.html
 
 ## Profile browsing
 
-`/profile thtay hnah` requests permission to open both Intra profiles in local browser tabs. `all` and
+`/profile thtay hnah` requests permission to open both Intra profiles in local browser tabs. `all`, `sg`, `42sg` and
 `cohort4` expand from the local private campus cache. Selections above ten tabs
 show the count first; `/profile --open-many cohort4` explicitly opens a large
 selection. Parsing validates every login and deduplicates names before opening
@@ -399,6 +399,10 @@ mean a whitelisted literal login that collides with a selector.
 `online` by the API seat location; the cluster number is not a requested count.
 `/sabo online 5 cluster 1` selects up to five unseated people in Cluster 1.
 `verified` does not accept a cluster filter because it describes sign-ins.
+`/sabo all`, `/sabo sg`, and `/sabo 42sg` use the local private Singapore cache
+and the table's 50-seat limit. `/sabo cohort1` selects a cohort; `cohort 1`
+is two arguments and is rejected. These selectors apply to commands that accept
+people, never to ordinary chat text. `c1` continues to mean physical Cluster 1.
 
 ## Campus occupancy in window headers
 

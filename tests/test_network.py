@@ -264,5 +264,18 @@ class Network(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(asyncio.TimeoutError):
             await asyncio.wait_for(self.receive(target,lambda m:m['type']=='direct_message'),.1)
 
+    async def test_plain_chat_never_expands_photo_selectors_and_stays_bounded(self):
+        sender,_=await self.connect('sender');target,_=await self.connect('target')
+        await self.cmd(sender,'42sg cohort1')
+        event=await self.receive(target,lambda m:m['type']=='event' and '42sg' in m.get('text',''))
+        self.assertEqual(event['text'],'sender [Guest]: 42sg cohort1')
+        await self.cmd(sender,'./tool cohort 1')
+        event=await self.receive(target,lambda m:m['type']=='event' and './tool' in m.get('text',''))
+        self.assertEqual(event['text'],'sender [Guest]: ./tool cohort 1')
+        await self.cmd(sender,'42sg '+'x'*500)
+        event=await self.receive(target,lambda m:m['type']=='event' and m.get('text','').startswith('sender [Guest]: 42sg x'))
+        self.assertLessEqual(len(event['text']),400)
+        self.assertNotIn('fixture-',event['text'])
+
 if __name__=='__main__':
     unittest.main()

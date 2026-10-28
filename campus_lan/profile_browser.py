@@ -1,7 +1,7 @@
 """Resolve explicit profile arguments locally; browser login stays in the browser."""
 import re
 from .campus_info import load
-from .login_whitelist import validate_logins
+from .login_whitelist import SG_SELECTORS,validate_logins
 
 
 def resolve(arguments):
@@ -10,10 +10,10 @@ def resolve(arguments):
     if not arguments:raise ValueError('Use /profile LOGIN...')
     names=[]
     for argument in arguments:
-        if argument.lower()=='all' or re.fullmatch(r'cohort\d+',argument,re.I):
+        if argument.lower() in SG_SELECTORS or re.fullmatch(r'cohort\d+',argument,re.I):
             data=load()
             if not data:raise ValueError('Campus cache unavailable on this computer.')
-            cohort=None if argument.lower()=='all' else int(argument[6:])
+            cohort=None if argument.lower() in SG_SELECTORS else int(argument[6:])
             names.extend(s['login'] for s in data['students'] if cohort is None or s.get('cohort')==cohort)
         elif re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',argument):names.append(argument.lower())
         else:raise ValueError('Use Intra logins, all, or cohort4; no shell expressions.')

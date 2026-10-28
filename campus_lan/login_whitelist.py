@@ -7,12 +7,33 @@ import re
 from .campus_info import directory
 
 PATTERN=re.compile(r'[A-Za-z0-9_.-]{1,32}')
-PHOTO_SELECTOR_MESSAGE='Photo batches need explicit Intra logins. /tool all and cohort selectors are unsupported.'
+SG_SELECTORS=frozenset(('all','sg','42sg'))
+PHOTO_SELECTOR_MESSAGE='Choose Cache all logins for all/sg/42sg/cohort selectors; a single photo lookup needs one Intra login.'
 
 
 def unsupported_photo_selector(names):
     parts=[name.lower() for name in names if isinstance(name,str)]
-    return any(name=='all' or re.fullmatch(r'cohort\d*',name) for name in parts)
+    return any(name in SG_SELECTORS or re.fullmatch(r'cohort\d*',name) for name in parts)
+
+
+def expand_photo_targets(names):
+    """Expand local cohort selectors, never interpreting a bare number as one."""
+    result=[]
+    for raw in names:
+        value=raw.lower() if isinstance(raw,str) else ''
+        if value=='cohort':raise ValueError('Use cohort1 as one word; "cohort 1" is not a photo selector.')
+        match=re.fullmatch(r'cohort([1-9]\d*)',value)
+        if value in SG_SELECTORS or match:
+            from .campus_info import load
+            data=load()
+            if not isinstance(data,dict) or not isinstance(data.get('students'),list):
+                raise ValueError('Photo selectors need the local private Singapore student cache.')
+            cohort=int(match.group(1)) if match else None
+            selected=[row.get('login') for row in data['students'] if isinstance(row,dict) and (cohort is None or row.get('cohort')==cohort)]
+            if not selected:raise ValueError('No students found for '+value+'.')
+            result.extend(validate_logins(selected))
+        else:result.append(raw)
+    return list(dict((name.lower() if isinstance(name,str) else name,name) for name in result).values())
 
 
 class WhitelistUnavailable(ValueError):
