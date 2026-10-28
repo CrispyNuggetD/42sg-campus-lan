@@ -30,3 +30,22 @@ class Restart(unittest.TestCase):
                 self.assertTrue(local_node_busy('127.0.0.1',31415))
                 fcntl.flock(lock,fcntl.LOCK_UN)
                 self.assertFalse(local_node_busy('127.0.0.1',31415))
+
+    def test_restart_lock_probe_supports_nfs_exclusive_lock_requirements(self):
+        import errno
+        import fcntl
+        import os
+        import tempfile
+        from pathlib import Path
+        from campus_lan.__main__ import local_node_busy
+        real_flock=fcntl.flock
+        def nfs_flock(handle,operation):
+            mode=fcntl.fcntl(handle,fcntl.F_GETFL)&os.O_ACCMODE
+            if operation&fcntl.LOCK_EX and mode==os.O_RDONLY:
+                raise OSError(errno.EBADF,'NFS exclusive lock needs write access')
+            return real_flock(handle,operation)
+        with tempfile.TemporaryDirectory() as tmp,patch('campus_lan.__main__.runtime_dir',return_value=Path(tmp)),patch('campus_lan.__main__.probe',return_value=None):
+            path=Path(tmp)/'server-31415.pid';path.write_text('12345')
+            with patch('campus_lan.__main__.fcntl.flock',side_effect=nfs_flock):
+                self.assertFalse(local_node_busy('127.0.0.1',31415))
+            self.assertEqual(path.read_text(),'12345')
