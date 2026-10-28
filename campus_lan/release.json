@@ -1,8 +1,16 @@
 {
-  "version": "2.8.6-beta.1",
-  "date": "2026-10-28T16:41:54+08:00",
-  "source": "4df20f7c3a7e1f684754e9845878e90b1a4753e0",
+  "version": "2.8.7-beta.1",
+  "date": "2026-10-28T16:46:41+08:00",
+  "source": "b416a52ee4c00861678ee92ad7ddf1459f138136",
   "history": [
+    {
+      "version": "2.8.7-beta.1",
+      "date": "2026-10-28T16:46:41+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: offer consent-gated Python and tmux setup"
+      ]
+    },
     {
       "version": "2.8.6-beta.1",
       "date": "2026-10-28T16:41:54+08:00",
@@ -234,5 +242,5 @@
       ]
     }
   ],
-  "runtime_sha256": "9647e9d13083e838d9e74970ec859f747bfbb9be235a2a799dd133f274326c6d"
+  "runtime_sha256": "3060a8e1b5283c24121de8b77c1fda0013747990c940293c9ea0238037131cf2"
 }

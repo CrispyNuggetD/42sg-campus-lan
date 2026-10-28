@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.8.7-beta.1 · 2026-10-28T16:46:41+08:00
+
+- fix: offer consent-gated Python and tmux setup
+
 ## 2.8.6-beta.1 · 2026-10-28T16:41:54+08:00
 
 - fix: support no-sudo tmux setup and archive attributed WAV
