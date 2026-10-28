@@ -1,8 +1,16 @@
 {
-  "version": "2.12.3-beta.1",
-  "date": "2026-10-28T21:26:05+08:00",
-  "source": "4ba9ff2968872e47a4004e765655d2c9b98ad45e",
+  "version": "2.12.4-beta.1",
+  "date": "2026-10-28T22:06:52+08:00",
+  "source": "b0244dc1229f9c4a2528d4afc34bba69b21ebd9f",
   "history": [
+    {
+      "version": "2.12.4-beta.1",
+      "date": "2026-10-28T22:06:52+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: validate login targets against private Singapore whitelist"
+      ]
+    },
     {
       "version": "2.12.3-beta.1",
       "date": "2026-10-28T21:26:05+08:00",
@@ -330,5 +338,5 @@
       ]
     }
   ],
-  "runtime_sha256": "afb821325e456bb463c5607ade403554027c701bffd7b26f8ecd0b831ac71226"
+  "runtime_sha256": "359ab7225d553379933a7b763df3ee5b4a9bab8b2325a15387eb548047206fc4"
 }

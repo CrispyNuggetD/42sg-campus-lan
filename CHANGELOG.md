@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.12.4-beta.1 · 2026-10-28T22:06:52+08:00
+
+- fix: validate login targets against private Singapore whitelist
+
 ## 2.12.3-beta.1 · 2026-10-28T21:26:05+08:00
 
 - fix: continue avatar batches after individual failures
