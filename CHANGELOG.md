@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.9.1-beta.1 · 2026-10-28T19:01:22+08:00
+
+- fix: allow LAN42 restart lock probes on NFS
+
 ## 2.9.0-beta.1 · 2026-10-28T18:58:09+08:00
 
 - feat: report tracked offline, seat and lobby identity changes

@@ -1,8 +1,16 @@
 {
-  "version": "2.9.0-beta.1",
-  "date": "2026-10-28T18:58:09+08:00",
-  "source": "bcc72ac93f4ced09d9dfe30109e3ad679fa8b38a",
+  "version": "2.9.1-beta.1",
+  "date": "2026-10-28T19:01:22+08:00",
+  "source": "fab0440c1f21e0dc7fd92fdb3dc2d2f865286e10",
   "history": [
+    {
+      "version": "2.9.1-beta.1",
+      "date": "2026-10-28T19:01:22+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: allow LAN42 restart lock probes on NFS"
+      ]
+    },
     {
       "version": "2.9.0-beta.1",
       "date": "2026-10-28T18:58:09+08:00",
@@ -266,5 +274,5 @@
       ]
     }
   ],
-  "runtime_sha256": "d83adef2d7039175efa2237990a98ceea363406a29904f4eca5983cb94ba8f96"
+  "runtime_sha256": "24115f9e7c4cf1b7a83cd0bd6e86f7c4c68ce5bb14d430a6db3d48c57215d771"
 }
