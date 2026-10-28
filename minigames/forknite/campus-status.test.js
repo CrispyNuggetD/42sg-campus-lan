@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('assert'),{normalizeCampusStatus,campusStatusLabel}=require('./public/campus-status');
+const status={total:17,c1:8,c2:9,updated_at:100};
+assert(campusStatusLabel(status,110).includes('17 online (C1:8 | C2:9)'));
+assert(campusStatusLabel(status,230).includes('stale'));
+assert.equal(campusStatusLabel(null),'Campus: unavailable');
+assert.equal(normalizeCampusStatus({...status,total:99}),null);
+assert.equal(normalizeCampusStatus({...status,c1:true}),null);
+assert.equal(normalizeCampusStatus({...status,updated_at:Infinity}),null);
+assert.equal(normalizeCampusStatus({...status,url:'https://example.com'}),null);
+const create=require('./auth');
+const auth=create(),user={id:'fixture',login:'fixture-user',verified:true,campusAccess:true};
+const ticket=auth.issue(user);
+auth.setCampusAccess(new Map([['fixture',false]]));assert.equal(user.campusAccess,false);
+auth.setCampusAccess(new Map([['fixture',true]]));assert.equal(user.campusAccess,true);
+user.verified=false;auth.setCampusAccess(new Map([['fixture',true]]));assert.equal(user.campusAccess,false);
+console.log('PASS: strict aggregate schema, stale labels, authoritative access revocation and guest rejection');

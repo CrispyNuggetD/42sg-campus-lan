@@ -131,6 +131,11 @@ permissions do not give it access to existing Chrome tabs, profiles or cookies.
 
 ### FORKNITE meal timing colors
 
+Purple highlights the last diner to start each numbered meal wave in an odd
+table, only while that diner is eating. This extra odd-table turn can be normal;
+it is separate from a genuinely overdue wait. The next meal wave can highlight
+a different diner.
+
 Lime/cyan/pink show the first, second and third-or-later meal starts. Orange
 marks an overdue wait or a meal that started late; the next on-time meal clears
 it. The full start-to-start estimate includes eating, sleeping and the table's
@@ -147,11 +152,21 @@ freeze their timing display.
 In a FORKNITE room, the signed-in room host can use `/sabo online [COUNT]` for
 stand-ins from the host's last campus API presence snapshot. These users need
 not run LAN42. The snapshot age is reported; this command does not refresh it.
-If no snapshot exists, load `/clusters` on the API host first. No snapshot or an
-empty result never selects the whole directory or substitutes sign-ins.
+The approved host seeds it at startup and refreshes every minute; if the crawl
+is still pending or has failed, `/clusters` retries it. A missing or
+empty snapshot never selects the whole directory or substitutes sign-ins.
 
 `/sabo verified [COUNT]` instead selects active verified SG users connected to
 this LAN42 host; it makes no campus-presence claim. Both selectors exclude
 already seated people, use alphabetical order up to the free 50-seat capacity,
 and retain whitelist, membership and API-budget checks. Stand-ins are not
 contacted. See [campus selectors](campus-guide.md#select-campus-online-people-for-forknite).
+
+`/sabo online cluster 1` and `/sabo online cluster 2` filter the cached campus
+seats. Add a separate count, for example `/sabo online 5 c1`. Cluster filters
+apply to `online`, not `verified` sign-ins.
+
+The terminal and FORKNITE browser headers show campus totals and C1/C2 counts
+with snapshot age, independent of game/replay time. Data older than two minutes
+is marked stale; unavailable data is not displayed as zero. Existing SG sign-in
+or local-operator permission is required. Guests do not receive the API counts.

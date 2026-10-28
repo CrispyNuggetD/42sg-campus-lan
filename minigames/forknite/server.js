@@ -6,6 +6,8 @@ const crypto = require('crypto');
 const auth = require('./auth')();
 const avatarCache=require('./avatar-cache')(process.env.LAN42_AVATAR_CACHE||path.join(process.env.XDG_CACHE_HOME||path.join(require('os').homedir(),'.cache'),'42sg-campus-lan','avatars'));
 const controlSecret=process.env.LAN42_FORKNITE_CONTROL||null;
+const {normalizeCampusStatus}=require('./public/campus-status');
+let campusStatus=null;
 const saboLookup = require('./sabo')(process.env);
 let saboBusy = false;
 const argv = process.argv.slice(2), split = argv.indexOf('--');
@@ -116,12 +118,26 @@ const index = fs.readFileSync(path.join(__dirname,'public/index.html'));
 function json(res, code, value) { res.writeHead(code, {'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(value)); }
 const server = http.createServer(async (req,res) => {
  const url = new URL(req.url, 'http://localhost');
+ if(req.method==='GET'&&url.pathname==='/campus-status'){
+  const person=auth.user(req);
+  if(!person||person.campusAccess!==true)return json(res,403,{error:'Singapore sign-in required for campus occupancy.'});
+  return json(res,200,{status:campusStatus});
+ }
+ if(req.method==='GET'&&url.pathname==='/campus-status.js'){
+  res.writeHead(200,{'Content-Type':'application/javascript','Cache-Control':'no-store'});
+  return res.end(fs.readFileSync(path.join(__dirname,'public/campus-status.js')));
+ }
  if(req.method==='GET'&&url.pathname==='/audio-state')return json(res,200,require('./campus-audio').state());
  if(req.method==='GET'&&url.pathname==='/health')return json(res,200,{ready:true});
  if(req.method==='POST'&&url.pathname==='/internal/room'){
   if(!controlSecret||!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)||req.headers.authorization!=='Bearer '+controlSecret)return json(res,403,{error:'Local LAN42 control only'});
   let body='';req.on('data',b=>{body+=b;if(body.length>32768)req.destroy();});req.on('end',()=>{try{
    const data=JSON.parse(body);
+   if(data.action==='campus_status'){
+    const value=normalizeCampusStatus(data.status);
+    if(data.status!==null&&!value)throw Error('Invalid campus occupancy status');
+    campusStatus=value;return json(res,200,{ok:true});
+   }
    if(data.action==='roster')return json(res,200,{players:roster()});
    if(data.action==='status')return json(res,200,{phase,round,players:players.size,deadline,settings});
    if(data.action==='configure'){
@@ -161,6 +177,7 @@ const server = http.createServer(async (req,res) => {
    if(data.action==='stop'){stopping=true;clearTimeout(timer);timer=null;phase='stopped';if(child)child.kill();return json(res,200,{ok:true});}
    if(data.action!=='members'||!Array.isArray(data.members)||data.members.length>count)throw Error();
    const members=data.members,ids=new Set(members.map(m=>m.id));auth.revoke(ids);
+   auth.setCampusAccess(new Map(members.map(m=>[m.id,m.campus_access===true&&m.verified===true])));
    const previous=new Set(Array.from(players.values()).filter(p=>p.memberId).map(p=>p.memberId));
    if((active||timer)&&(previous.size!==ids.size||Array.from(previous).some(id=>!ids.has(id)))){stopping=true;clearTimeout(timer);timer=null;phase='stopped';if(child)child.kill();emit('notice',{message:'Room membership changed. Tournament stopped; host can /start again.'});}
 
@@ -171,7 +188,7 @@ const server = http.createServer(async (req,res) => {
     let entry=Array.from(players).find(([slot,p])=>p.memberId===m.id),slot=entry&&entry[0];
     if(!slot){slot=1;while(slot<=count&&players.has(slot)&&!players.get(slot).sabo)slot++;if(slot>count)throw Error();}
     let avatar=m.avatar||null;if(avatar){try{const u=new URL(avatar);if(u.protocol!=='https:'||!(u.hostname==='42.fr'||u.hostname.endsWith('.42.fr')))avatar=null;}catch(e){avatar=null;}}
-    const identity={id:m.id,login:m.name,verified:m.verified===true,avatar,slot};
+    const identity={id:m.id,login:m.name,verified:m.verified===true,campusAccess:m.campus_access===true&&m.verified===true,avatar,slot};
     players.set(slot,{name:m.name,memberId:m.id,userId:m.verified?m.id:null,avatar,token:null});
     entries.push({id:m.id,ticket:auth.issue(identity),slot});
    }

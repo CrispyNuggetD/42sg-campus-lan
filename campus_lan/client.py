@@ -53,7 +53,7 @@ HELP = [
     '/clusters: both clusters | /cluster 1|2, /c1, /c2: one cluster | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
     '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
-    '/sabo online [COUNT]: last host campus snapshot | /sabo verified [COUNT]: active SG sign-ins on this host',
+    '/sabo online [COUNT] [cluster 1|2]: last host campus snapshot | /sabo verified [COUNT]: active SG sign-ins on this host',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
@@ -425,6 +425,19 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         threading.Thread(target=work,daemon=True).start()
         return True
 
+    def occupancy_tick(self):
+        if getattr(self,'secure',False) or time.monotonic()<getattr(self,'occupancy_due',0):return
+        self.occupancy_due=time.monotonic()+5
+        from .auth import config_dir
+        if not (config_dir()/'local-operator.json').exists():return
+        from .campus_status import local_status
+        try:
+            self.campus_occupancy=local_status()
+            self.occupancy_local_allowed=True
+        except (OSError,ValueError):
+            self.campus_occupancy=None
+            self.occupancy_local_allowed=False
+
     def tracking_tick(self):
         if getattr(self,'role','lobby')!='lobby' or not self.connected or not self.id:return
         tracker=self.get_tracker()
@@ -610,6 +623,10 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 except ValueError:self.lines.append('Invalid photo-tool request ignored.')
             elif kind == 'notification_action':
                 self.notification_action(msg)
+            elif kind == 'campus_status':
+                if getattr(self,'secure',False) and not getattr(self,'remote_approved',False):
+                    from .campus_status import validate_status
+                    self.campus_occupancy=validate_status(msg.get('status'))
             elif kind == 'campus_presence':
                 self.track_pending=0
                 if msg.get('error'):self.lines.append(safe(msg['error']))
@@ -658,6 +675,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 self.lobby_view,self.lobby_page='map',0
                 self.show_lobby,self.play=True,False
             elif kind == 'signed_out':
+                self.campus_occupancy=None
                 if getattr(self, 'secure', False):
                     auth_client.clear_session(getattr(self, 'session_token', None))
                     self.lines.append('Signed out or session expired. Use /signin from local HQ.')
@@ -951,7 +969,10 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         self.line(screen,0,label.ljust(w-1),banner)
         hint = ('GAME CONTROLS: /start /leave /quit | /lobby /game | HQ stays in its other window'
                 if game_window else 'HQ: /join IP [PORT] | /game NAME | /games | /who')
-        self.line(screen,1,hint)
+        from .campus_status import format_status
+        occupancy=format_status(getattr(self,'campus_occupancy',None))
+        if not getattr(self,'secure',False) and not getattr(self,'occupancy_local_allowed',False):occupancy='Campus: sign in for occupancy'
+        self.line(screen,1,occupancy+' | '+hint)
         players = self.state.get('players',[])
         if not self.state:
             self.line(screen,2,'Connecting; waiting for presence...')
@@ -963,7 +984,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             self.line(screen,h-1,('[y/N] > ' if getattr(self,'permission_prompt',False) else '> ')+getattr(self,'input','')[-(w-12):])
             screen.refresh()
             return
-        self.line(screen,2,f"{len(players)} online across {self.state.get('nodes',1)} nodes | refresh ~5s | "+
+        self.line(screen,2,f"LAN42: {len(players)} connected across {self.state.get('nodes',1)} nodes | refresh ~5s | "+
                   str(getattr(self,'current', 'Connecting...')),curses.A_BOLD)
         game = self.game
         logs_x,logs_y = 0,6
@@ -1329,6 +1350,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             if generation() != installed_generation:
                 raise RestartRequested()
             self.consume()
+            self.occupancy_tick()
             self.tracking_tick()
             self.announcement_tick()
             self.quiet_tick()

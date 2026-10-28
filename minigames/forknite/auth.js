@@ -23,5 +23,6 @@ module.exports=function createAuth(){
   return false;
  }
  function reassign(slots){for(const map of [tickets,sessions])for(const record of map.values())if(slots.has(record.user.id))record.user.slot=slots.get(record.user.id);}
- return {user,handle,issue,revoke,reassign};
+ function setCampusAccess(access){for(const map of [tickets,sessions])for(const record of map.values())record.user.campusAccess=record.user.verified===true&&access.get(record.user.id)===true;}
+ return {user,handle,issue,revoke,reassign,setCampusAccess};
 };

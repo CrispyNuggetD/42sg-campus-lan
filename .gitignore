@@ -9,8 +9,8 @@ __pycache__/
 auth-server.json
 auth-session.json
 auth-key.pem
-# FORKNITE match history is intentionally eligible for version control.
-!minigames/forknite/.logs/*.log
+# Live game logs can contain private student identities; keep them local.
+/minigames/forknite/.logs/
 # Machine-local link to the owner's native C executable.
 /minigames/forknite/philo
 
@@ -25,3 +25,5 @@ local-operator.json
 singapore.json
 singapore_intra.txt
 lan42-avatar-batch*.txt
+
+campus-status.json

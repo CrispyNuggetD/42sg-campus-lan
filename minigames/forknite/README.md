@@ -33,7 +33,7 @@ The room host can request `/sabo thtay dthoo guoliu`. These offline stand-ins sh
 
 Browser playback can be slower than C time. Pause and replay never control C. Events preserve original timestamps and order. Hunger bars are inferred from meal starts, and counters count observed starts rather than completed meals. Pipes, terminal output, logging and system load can still affect scheduling.
 
-`.logs/*.jsonl` contains event history, `*-round-N.log` contains native stdout, and `room-PORT.log` contains room-server output, including echoed moves. Logs are eligible for Git; they are not automatically pruned. The latest roughly 100,000 events are retained in browser history; complete history remains on disk. Control secrets, ownership cookies and browser-entry tickets are never logged.
+`.logs/*.jsonl` contains event history, `*-round-N.log` contains native stdout, and `room-PORT.log` contains room-server output, including echoed moves. New logs stay local and are ignored by Git because they may contain student identities; they are not automatically pruned. The latest roughly 100,000 events are retained in browser history; complete history remains on disk. Control secrets, ownership cookies and browser-entry tickets are never logged.
 
 ## Standalone development / piping
 
@@ -160,6 +160,11 @@ is a replay-time estimate from the last observed eating start. Meal-start colors
 are lime (first), cyan (second), and pink (third or later); they do not prove a
 completed meal. Every round resets counters.
 
+The last diner to start each numbered meal wave in an odd table is highlighted
+in purple while eating: both its card and hunger bar change. This identifies
+the odd-table extra turn even when it is on schedule. It is separate from
+the orange overdue-window estimate below.
+
 Orange bars/borders mark a wait beyond the estimated meal window, or a meal
 that started late; the next on-time meal clears the mark. The estimated
 start-to-start interval is `max(eat + sleep, 2 * eat)` for an even table and
@@ -175,8 +180,10 @@ pause affect display time only.
 
 - `/sabo online [COUNT]`: stand-ins from the approved host's last completed
   campus API crawl, including people who do not use LAN42. Reports snapshot age;
-  never refreshes or substitutes sign-ins. Load `/clusters` first if no snapshot
-  exists on the API host.
+  never triggers its own refresh or substitutes sign-ins. The API host seeds the
+  cache at startup and refreshes every minute; `/clusters` retries if unavailable.
+  `/sabo online cluster 1` / `cluster 2` filters by cached seat, with optional
+  count (`/sabo online 5 c1`).
 - `/sabo verified [COUNT]`: active authenticated SG users connected to this
   LAN42 host, independent of campus presence. Guests, expired sessions and
   remote-approval-only clients are excluded. Both selectors require the signed-in
@@ -239,3 +246,19 @@ All Python 42 API clients share an owner-local, cross-process file lock and spac
 request starts by at least 0.51 seconds, including token requests. Queue delays
 are reported to the executing terminal/log. This limit spans this machine's
 LAN42 processes; it cannot coordinate other machines or unrelated applications.
+
+## Campus occupancy header
+
+Terminal HQ/game windows and the FORKNITE browser header display campus API
+occupancy, for example `17 online (C1:8 | C2:9)`, not the game-player count.
+The approved API host refreshes every minute and pushes aggregate status about
+every five seconds. Counts are unique logins; duplicate location records choose
+the cluster from the highest record ID. Status shows snapshot age; after two
+minutes it is marked stale, and missing data is unavailable rather than zero.
+
+The room's internal control channel supplies a fixed-schema numeric aggregate.
+The browser status read requires host-authorized active SG room identity;
+verified-looking nicknames or remote guest approval do not grant access.
+Counts are kept out of the public event stream and game log. The private current
+aggregate file used by local operator terminal windows contains no names and is
+outside Git. No per-student presence history is added.

@@ -242,3 +242,24 @@ To run the tests:
 ```sh
 python3 -m unittest discover -s tests -v
 ```
+
+## Automatic campus presence and header counts
+
+After approval checks and TLS listeners are ready, the host starts one background
+presence refresh immediately, then once per minute. Requests use the existing
+campus-64 location allowlist and global API pacing. Failures do not block sign-in
+or replace the last successful snapshot with an empty roster. The status line
+reports unavailable/stale data until a successful retry; `/clusters` can retry
+manually. Host shutdown cancels the refresher with its other background tasks.
+
+`/sabo online [COUNT] [cluster 1|2]` reads that cached snapshot without initiating
+a crawl. Counts and seat filtering use campus API records, not LAN42 sign-ins.
+`/sabo verified` remains a separate active verified SG-session selector.
+
+A header in HQ, every terminal game and FORKNITE shows aggregate total/C1/C2
+occupancy and age. It follows existing API-view access checks. SG-authenticated
+clients receive numeric status only; the local operator can read the private
+mode-600 current `campus-status.json` outside Git. Guest and remote-approval-only
+clients receive no counts. Browser reads require the room's authoritative campus
+access flag, which is revoked with identity/membership updates. No campus counts
+are put in public game events or appended as a presence history.

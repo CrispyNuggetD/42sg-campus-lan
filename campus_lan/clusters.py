@@ -35,5 +35,5 @@ def cached_snapshot():
     """Last completed host crawl only: never refresh or substitute LAN42 peers."""
     with _lock:
         if _snapshot is None:
-            raise ValueError('No campus presence snapshot yet. Load /clusters on this API host first, then retry /sabo online.')
+            raise ValueError('No campus presence snapshot yet. Startup may still be loading or have failed. Load /clusters on this API host to retry, then /sabo online.')
         return [dict(player) for player in _snapshot],_stamp

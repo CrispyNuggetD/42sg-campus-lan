@@ -23,6 +23,7 @@ class PresenceSelection(unittest.IsolatedAsyncioTestCase):
         self.web=Mock();self.seated=[{'name':'fixture-host'}]
         async def control(data):
             if data['action']=='roster':return {'players':self.seated}
+            if data['action']=='campus_status':return {'ok':True}
             return {'added':[p['login'] for p in data['profiles']]}
         self.web.control=AsyncMock(side_effect=control)
         self.lobby.rooms['room']=dict(game='forknite',host='host',members={'host'},web=self.web)
@@ -119,3 +120,32 @@ class PresenceSelection(unittest.IsolatedAsyncioTestCase):
             with patch('campus_lan.login_whitelist.allowed_logins',return_value=set()):
                 with self.assertRaisesRegex(ValueError,'whitelist'):await self.lobby.command('host','/sabo online')
             self.lobby.profile_lookup.lookup_many.assert_not_called()
+
+    async def test_cluster_filter_is_seat_based_and_not_a_requested_count(self):
+        records=[dict(name='fixture-01',seat='c1r1s1'),dict(name='fixture-02',seat='c1r1s2'),dict(name='fixture-03',seat='c2r1s1')]
+        with patch.object(clusters,'cached_snapshot',return_value=(records,1)):
+            await self.lobby.command('host','/sabo online cluster 1')
+            self.lobby.profile_lookup.lookup_many.assert_awaited_once_with(['fixture-01','fixture-02'])
+            self.lobby.profile_lookup.lookup_many.reset_mock()
+            await self.lobby.command('host','/sabo online c2')
+            self.lobby.profile_lookup.lookup_many.assert_awaited_once_with(['fixture-03'])
+            self.lobby.profile_lookup.lookup_many.reset_mock()
+            await self.lobby.command('host','/sabo online 1 cluster 1')
+            self.lobby.profile_lookup.lookup_many.assert_awaited_once_with(['fixture-01'])
+        self.assertEqual(complete('/sabo online cluster ')[1],['1','2'])
+
+    async def test_bad_cluster_syntax_never_reads_the_snapshot(self):
+        with patch.object(clusters,'cached_snapshot') as snapshot:
+            for args in ('online cluster 3','online cluster','online c1 c2','verified cluster 1','online cluster 1 typo'):
+                with self.assertRaises(ValueError):await self.lobby.command('host','/sabo '+args)
+            snapshot.assert_not_called()
+
+    async def test_status_is_sent_only_to_current_api_authorized_members(self):
+        self.lobby.send=AsyncMock()
+        self.add_member('remote','fixture-02',2);self.lobby.clients['remote']['remote_approved']=True
+        self.lobby.clients['guest']=dict(name='fixture-01',uid=123,verified=True)
+        with patch('campus_lan.access.Policy.require_host'),patch('campus_lan.campus_status.cached_status',return_value=dict(total=17,c1=8,c2=9,updated_at=100)):
+            await self.lobby.send_campus_status()
+        self.lobby.send.assert_awaited_once()
+        self.assertIs(self.lobby.send.call_args.args[0],self.lobby.clients['host'])
+        self.assertEqual(self.lobby.send.call_args.args[1]['status']['total'],17)

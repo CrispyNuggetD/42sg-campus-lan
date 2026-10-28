@@ -96,6 +96,25 @@ class Lobby:
             await self.send(client,dict(type='dm_delivery',target=target,delivered=delivered,error=error))
         await self.send(client,dict(type='dm_summary',delivered=delivered_count,failed=len(unavailable),unavailable=unavailable))
 
+    def campus_allowed(self,client):
+        try:self.api_identity(client);return True
+        except AuthError:return False
+
+    async def send_campus_status(self):
+        if not self.auth_broker:return
+        from .access import Policy
+        from .campus_status import cached_status
+        try:
+            Policy().require_host()
+            status=cached_status()
+        except (OSError,ValueError):status=None
+        for client in list(self.clients.values()):
+            if self.campus_allowed(client):await self.send(client,dict(type='campus_status',status=status))
+        for room in list(self.rooms.values()):
+            if room.get('game')=='forknite':
+                try:await room['web'].control(dict(action='campus_status',status=status))
+                except (OSError,ValueError):pass
+
     async def state(self):
         if self.auth_broker:
             people = {}
@@ -113,6 +132,7 @@ class Lobby:
         await self.broadcast(dict(type='state',version=VERSION,api=self.api_status,
             secure=bool(self.auth_broker), nodes=1 if self.auth_broker else len(self.mesh.peers)+1,
             players=players, rooms=self.mesh.local_rooms() if self.auth_broker else self.mesh.rooms()))
+        await self.send_campus_status()
 
     async def room_state(self, rid, reopen=None):
         if rid not in self.rooms:
@@ -137,7 +157,7 @@ class Lobby:
                 c=self.clients.get(pid)
                 if not c:continue
                 identity=self.auth_broker.sessions.get(c.get('session_key'),{}) if self.auth_broker else {}
-                members.append(dict(id=pid,name=c['name'],verified=bool(c.get('uid')),avatar=None if self.remote_gate else identity.get('avatar')))
+                members.append(dict(id=pid,name=c['name'],verified=bool(c.get('uid')),campus_access=self.campus_allowed(c),avatar=None if self.remote_gate else identity.get('avatar')))
             try:
                 result=await room['web'].control(dict(action='members',members=members))
                 for entry in result['entries']:
@@ -342,17 +362,19 @@ class Lobby:
                 elif bit.lower()=='random':random_selection=True
                 elif bit.isdecimal():counts.append(int(bit))
                 elif any(op in bit for op in ('=','>','<')):filters.append(bit)
-            presence=[b.lower() for b in bits if b.lower() in ('online','verified')]
+            from .presence_selection import parse_presence
+            presence=parse_presence(bits)
             if presence:
-                if len(presence)!=1 or len(bits)>2 or any(b.lower() not in ('online','verified') and not b.isdecimal() for b in bits):
-                    raise ValueError('Use /sabo online [COUNT] or /sabo verified [COUNT].')
-                requested=counts[0] if counts else None
-                if requested is not None and not 1<=requested<=50:raise ValueError('Choose a count from 1 to 50.')
-                if presence[0]=='online':
+                kind,requested,cluster=presence
+                if kind=='online':
                     from .clusters import cached_snapshot
                     present,stamp=await asyncio.to_thread(cached_snapshot)
-                    candidates={p['name'].lower() for p in present}
-                    source='Host campus API snapshot ('+str(max(0,int(time.time()-stamp)))+'s old)'
+                    from .lobby_view import seat
+                    candidates=set()
+                    for player in present:
+                        location=seat(player)
+                        if cluster is None or (location and location[0]==cluster):candidates.add(player['name'].lower())
+                    source='Host campus API snapshot ('+str(max(0,int(time.time()-stamp)))+'s old)'+(' · cluster '+str(cluster) if cluster else '')
                 else:
                     candidates=set()
                     for peer in list(self.clients.values()):
@@ -787,6 +809,9 @@ class Lobby:
                     if c.get('uid') and not self.auth_broker.active(c.get('session_key')):
                         await self.send(c, dict(type='signed_out'))
                         c['writer'].close()
+            if self.auth_broker and time.monotonic()>=getattr(self,'campus_status_due',0):
+                self.campus_status_due=time.monotonic()+5
+                await self.send_campus_status()
             for rid,room in list(self.rooms.items()):
                 engine = room['engine']
                 if room['game']=='forknite' and time.monotonic()-room.get('status_at',0)>.5:

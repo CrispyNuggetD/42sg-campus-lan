@@ -210,3 +210,16 @@ with canonical broker logins and live identity checks, never nickname/role flags
 Both exclude existing seats and retain the 50-seat cap, 10-profile lookup batches,
 SG membership checks, local whitelist and API budgets. No new durable presence
 history or student roster export is introduced.
+
+### Current occupancy status
+
+The approved host refreshes campus-64 active locations at startup and once a
+minute, through existing pacing and host checks. Unapproved or failed startup
+cannot start a crawl. Failures preserve the last successful snapshot. Aggregate
+status contains only total/C1/C2 counts and source time; every login is counted
+once. It is sent only to API-authorized SG clients, never via public mesh state.
+Local operator windows read a mode-600 current-count file after independent
+operator checks. FORKNITE's private status read requires an authoritative campus
+access flag from the host, not a nickname, cosmetic verified flag or remote guest
+approval. The fixed-schema control payload is numeric data only and is excluded
+from public events/logs. There is no new student collection endpoint or history.

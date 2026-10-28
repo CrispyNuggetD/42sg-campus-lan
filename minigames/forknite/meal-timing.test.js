@@ -37,7 +37,7 @@ new vm.Script(html.split('<script>')[1].split('</script>')[0]);
 const nodes={};let orange=false;
 const element={style:{setProperty(key,value){nodes[key]=value;}},classList:{toggle(key,value){if(key==='meal-late')orange=value;}},querySelector(key){return nodes[key]||(nodes[key]={textContent:'Fixture diner',style:{}});}};
 const rendered={el:element,meals:1,lastMeal:0,lastDelay:0,dead:false};
-Object.assign(context,{cards:[null,rendered],timingWindow:odd,document:{hidden:true},foxAudio:{eat(){},death(){}},note(){},refreshIdentity(){},round:1,roundActive:true,deadline:600,sim:350,last:0,paused:false,queue:[],cursor:0,requestAnimationFrame(){},$:key=>nodes[key]||(nodes[key]={value:'1',textContent:''})});
+Object.assign(context,{count:2,cards:[null,rendered],timingWindow:odd,document:{hidden:true},foxAudio:{eat(){},death(){}},note(){},refreshIdentity(){},round:1,roundActive:true,deadline:600,sim:350,last:0,paused:false,queue:[],cursor:0,requestAnimationFrame(){},$:key=>nodes[key]||(nodes[key]={value:'1',textContent:''})});
 vm.runInContext(html.slice(html.indexOf('function apply(e){'),html.indexOf('const stream=new EventSource')),context);
 context.apply({type:'move',id:1,action:'is eating',ms:350});
 assert.equal(rendered.lastDelay,50);
@@ -48,3 +48,24 @@ assert(nodes['.meal-timing'].textContent.includes('+50ms late'));
 context.apply({type:'move',id:1,action:'is eating',ms:650});context.sim=650;context.tick(1100);
 assert.equal(orange,false);assert.equal(nodes['--meal-color'],'#f38bd5');
 console.log('PASS: actual browser meal events paint orange, recover next meal and freeze timing when native round ends');
+
+// Five diners: the fifth eating start in a meal wave is purple even though a
+// normal third eating slot is not overdue. Highlight the actual eater card.
+function cardFixture(){
+ const nodes={},flags={};return {nodes,flags,meals:0,lastMeal:0,lastDelay:0,dead:false,el:{style:{setProperty(k,v){nodes[k]=v;}},classList:{toggle(k,v){flags[k]=v;}},querySelector(k){return nodes[k]||(nodes[k]={textContent:'Fixture diner',style:{}});}}};
+}
+const wave=Array.from({length:5},cardFixture);context.cards=[null,...wave];context.count=5;
+for(let i=0;i<5;i++){
+ context.apply({type:'move',id:i+1,action:'is eating',ms:Math.floor(i/2)*100});
+ if(i<4)context.apply({type:'move',id:i+1,action:'is sleeping',ms:Math.floor(i/2)*100+100});
+}
+context.sim=200;context.tick(1200);
+assert.equal(wave.filter(c=>c.flags['odd-turn']).length,1);
+assert.equal(wave[4].nodes['--meal-color'],'#bc8cff');assert.equal(wave[4].flags['meal-late'],false);
+assert(wave[4].nodes['.meal-timing'].textContent.includes('Odd-table last turn'));
+context.apply({type:'move',id:5,action:'is sleeping',ms:300});context.tick(1300);
+assert.equal(wave[4].flags['odd-turn'],false);
+// Even tables have no extra odd-table turn.
+for(const c of wave)c.meals=1;
+assert.equal(context.oddLastEater(wave,wave[4],4),false);
+console.log('PASS: n=5 last eater gets a purple card/bar during its normal extra turn; sleeping and even-table cards do not');

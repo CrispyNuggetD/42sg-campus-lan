@@ -87,6 +87,29 @@ async def wait_for_host_move(settings):
             return
 
 
+async def prime_campus_presence():
+    """One paced approved-host refresh; never block TLS listener availability."""
+    from .access import Policy
+    from .clusters import snapshot
+    try:
+        Policy().require_host()
+        players,stamp=await asyncio.to_thread(snapshot)
+        from .campus_status import summarize,publish_status
+        publish_status(summarize(players,stamp))
+    except (OSError,ValueError,KeyError,TypeError):
+        print('LAN42 campus presence unavailable; keeping the last successful snapshot. Retry /clusters when the API is available.',flush=True)
+        return False
+    print('LAN42 campus presence loaded: '+str(len(players))+' active seat records.',flush=True)
+    return True
+
+
+async def maintain_campus_presence():
+    """Seed immediately and refresh once a minute through the shared API pacing."""
+    while True:
+        await prime_campus_presence()
+        await asyncio.sleep(60)
+
+
 async def serve_auth(bind='127.0.0.1', current_seat=False, remote_guests=False):
     from .server import Lobby
     if remote_guests:
@@ -192,6 +215,7 @@ async def serve_auth(bind='127.0.0.1', current_seat=False, remote_guests=False):
     else:
         private_write(root/'announcement-admin.json',json.dumps(dict(
             fingerprint=fingerprint(load_trust_for_owner(root)),token=http.announcements.admin_token,owner=owner)))
+    presence_task=asyncio.create_task(maintain_campus_presence())
     exam_task=asyncio.create_task(exam_quiet.run())
     flock_task=asyncio.create_task(koeldrop.maintain_public())
     ticker = asyncio.create_task(lobby.tick())
@@ -205,6 +229,8 @@ async def serve_auth(bind='127.0.0.1', current_seat=False, remote_guests=False):
         if http.search_counts:http.search_counts.close()
         announcement_moderator.cancel();announcement_notifier.close()
         await asyncio.gather(announcement_moderator,return_exceptions=True)
+        presence_task.cancel()
+        await asyncio.gather(presence_task,return_exceptions=True)
         exam_task.cancel()
         await asyncio.gather(exam_task,return_exceptions=True)
         flock_task.cancel()

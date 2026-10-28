@@ -21,9 +21,9 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <!-- shell-installer-features:start -->
 - **Campus HQ:** `lan42` uses its own tmux session in an Ubuntu terminal tab; no-sudo setup asks before Python/tmux installation. Mac hosts can opt into one-connection remote guest approval; approval is separate from Intra sign-in.
-- **Find your people:** `/track` groups relationships/lists; targets use a private SG whitelist. `/who` lists peers; F3 maps seats (host required). Owner `/tool` skips invalid logins, logs failures and continues; saved photo tabs close.
+- **Find your people:** `/who` lists peers; `/track` groups relationships/lists with a private SG whitelist. The campus header shows total/C1/C2 occupancy. Owner `/tool` skips invalid logins and continues; the saver closes photo tabs.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
-- **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. FORKNITE marks late meals orange; `/sabo online` uses the last host campus API crawl, while `/sabo verified` selects active SG sign-ins on that host.
+- **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. Purple marks the odd-table last eater; orange marks overdue waits. `/sabo online` supports cluster filters; `/sabo verified` selects active SG sign-ins.
 - **Easy controls:** clickable footer or F2 sign in/out; F4 mute, F5 output 0/30%, F6 uwu once, F7 automatic uwu, F3 clusters; Up/Down history and !COMMAND for your local shell.
 - **Useful alerts:** moderated `/broadcast`, pinned host arrival and exam-time LAN42-only audio quiet. `/notify` separates alerts from DMs/pokes; release popups are coalesced and daily-limited.
 - **Versioned server:** startup shows version/date; `/changelog` explains releases. Enrolled operators can read own SG hours. Mac/Linux ask [y/N] before package-wide reloads after checkout updates.

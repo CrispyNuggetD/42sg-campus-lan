@@ -359,8 +359,8 @@ Cluster map colors: **magenta** friends/mutuals/oomf; **cyan** members of your n
 `/sabo online` means the Intra logins in the API host's **last completed campus
 presence crawl**, including people who have never opened or signed into LAN42.
 It does not mean LAN42 peers or verified sign-ins. The command uses that snapshot
-without starting a fresh crawl; its response reports the snapshot age. If none is
-cached yet, load `/clusters` on the approved API host first. An empty snapshot
+without starting a fresh crawl; its response reports the snapshot age. The approved API host seeds presence after TLS startup and refreshes once a
+minute. If that crawl is still loading or has failed, `/clusters` retries it. An empty snapshot
 selects nobody; it never falls back to the directory or LAN42 sign-ins.
 
 `/sabo verified` is separate: active verified Singapore users currently connected
@@ -371,6 +371,9 @@ Expired, guest and remote-approval-only connections are excluded.
 ```text
 /sabo online
 /sabo online 5
+/sabo online cluster 1
+/sabo online cluster 2
+/sabo online 5 c1
 /sabo verified
 ```
 
@@ -382,3 +385,24 @@ seats in the 50-seat table. The usual private whitelist, SG profile membership
 checks and API budgets still apply. These are stand-ins: nobody is contacted or
 actually joins your game. Use `login:online` or `login:verified` if you explicitly
 mean a whitelisted literal login that collides with a selector.
+
+`cluster 1` / `cluster 2` (also `c1`, `c2`, `cluster1`, `cluster2`) filter only
+`online` by the API seat location; the cluster number is not a requested count.
+`/sabo online 5 cluster 1` selects up to five unseated people in Cluster 1.
+`verified` does not accept a cluster filter because it describes sign-ins.
+
+## Campus occupancy in window headers
+
+HQ and every terminal game show `Campus: 17 online (C1:8 | C2:9)` with snapshot
+age. These are campus API logins, not LAN42 participants. The approved host
+loads presence in the background at startup and refreshes every minute through
+the existing global API pacing; headers receive cached counts about every five
+seconds. Each login counts once; if multiple active records exist, the highest
+location-record ID chooses its cluster. Empty successful crawls show zero;
+missing data shows unavailable, and snapshots older than two minutes show stale.
+
+Counts follow existing API access: active signed-in SG clients and the approved
+local operator can view them. Guest/remote-approval-only windows prompt for
+sign-in instead. FORKNITE has the same private browser header. No names are sent
+in the status payload. One mode-600 current-count file outside Git serves local
+operator windows; it overwrites the previous count and is not a history log.
