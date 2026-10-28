@@ -1,8 +1,16 @@
 {
-  "version": "2.12.4-beta.1",
-  "date": "2026-10-28T22:06:52+08:00",
-  "source": "b0244dc1229f9c4a2528d4afc34bba69b21ebd9f",
+  "version": "2.12.5-beta.1",
+  "date": "2026-10-28T22:36:45+08:00",
+  "source": "e840316a15d3f39a72ff46fea6a08de41a5bb15b",
   "history": [
+    {
+      "version": "2.12.5-beta.1",
+      "date": "2026-10-28T22:36:45+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: distinguish late FORKNITE meals from normal fork waits"
+      ]
+    },
     {
       "version": "2.12.4-beta.1",
       "date": "2026-10-28T22:06:52+08:00",
@@ -338,5 +346,5 @@
       ]
     }
   ],
-  "runtime_sha256": "359ab7225d553379933a7b763df3ee5b4a9bab8b2325a15387eb548047206fc4"
+  "runtime_sha256": "224b1675ca0a8f3f7a9b476ae4d0f1fb90d8202001e462a517201aafd49c62f1"
 }
