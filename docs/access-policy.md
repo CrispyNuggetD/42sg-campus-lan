@@ -7,6 +7,11 @@ client cannot grant itself privileges; compromise of that server/account or the
 credential itself is outside that application boundary. Never distribute the
 app secret to students or game hosts.
 
+Local person-targeted input validation also uses the owner-provided private
+Singapore JSON/text whitelist. This is a typo/input check only, never identity,
+SG membership, host approval or API authorization. It does not distribute that
+private directory or replace the checks below.
+
 ## Roles and hosts
 
 | Role | Admission | Permissions |

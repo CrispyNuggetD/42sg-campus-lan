@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from .auth import config_dir,private_read,private_write
+from .login_whitelist import validate_logins
 
 INTERVAL=300
 RELATIONSHIPS={'tracked','friends','mutuals','oomf'}
@@ -68,7 +69,9 @@ class Tracker:
         private_write(self.path,raw);self.data=candidate
 
     def change(self,names,remove=False):
-        names=list(dict.fromkeys(login(n) for n in names));candidate=deepcopy(self.data)
+        names=list(dict.fromkeys(login(n) for n in names))
+        if not remove:names=validate_logins(names)
+        candidate=deepcopy(self.data)
         for name in names:
             if remove:candidate['people'].pop(name,None)
             else:candidate['people'].setdefault(name,dict(relationship='tracked',alerts={}))
@@ -77,7 +80,7 @@ class Tracker:
             for name in names:self.campus.pop(name,None);self.peers.pop(name,None)
 
     def set_relationship(self,names,status):
-        status=relationship(status);names=[login(n) for n in names];candidate=deepcopy(self.data)
+        status=relationship(status);names=validate_logins([login(n) for n in names]);candidate=deepcopy(self.data)
         for name in names:
             record=candidate['people'].setdefault(name,dict(alerts={}))
             record['relationship']=status
@@ -89,7 +92,9 @@ class Tracker:
         return name
 
     def change_list(self,name,members=(),remove=False,delete=False):
-        name=self.list_name(name);members=[login(n) for n in members];candidate=deepcopy(self.data)
+        name=self.list_name(name);members=[login(n) for n in members]
+        if not remove and not delete:members=validate_logins(members)
+        candidate=deepcopy(self.data)
         if delete:candidate['lists'].pop(name,None)
         else:
             current=candidate['lists'].get(name,[])
@@ -99,7 +104,7 @@ class Tracker:
     def is_variable(self,value):
         return value.lower() in VARIABLES or value.startswith(('@','login:')) or value.lower() in self.data['lists']
 
-    def resolve(self,selectors):
+    def resolve(self,selectors,validate=True):
         result=[]
         for raw in selectors:
             value=raw.lower();status=ALIASES.get(value,value)
@@ -120,7 +125,8 @@ class Tracker:
                 names=[login(s['login']) for s in data['students'] if cohort is None or s.get('cohort')==cohort]
             else:names=[login(value)]
             result.extend(names)
-        return list(dict.fromkeys(result))
+        result=list(dict.fromkeys(result))
+        return validate_logins(result) if validate else result
 
     def set_alerts(self,selectors,event,enabled):
         if event not in EVENTS:raise ValueError('Alert events: campus or lobby.')

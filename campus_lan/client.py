@@ -52,7 +52,7 @@ HELP = [
     '/tool LOGIN...: batch private photos | /info [FILTER] [PAGE]: API-operator campus directory',
     '/clusters: both clusters | /cluster 1|2, /c1, /c2: one cluster | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
     '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
-    '/settings clusters: include/exclude arrival rules',
+    '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
@@ -195,8 +195,11 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             return True
         if text.startswith('/uwu '):
             target=text.split(maxsplit=1)[1].strip()
-            if not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',target):self.lines.append('Use /uwu LOGIN')
-            else:self.send(dict(type='command',text='/uwu '+target))
+            try:
+                from .login_whitelist import validate_logins
+                target=validate_logins([target])[0]
+                self.send(dict(type='command',text='/uwu '+target))
+            except ValueError as error:self.lines.append(str(error))
             return True
         if text!='/uwu':return False
         if not getattr(self,'uwu_courier_introduced',False):
@@ -368,13 +371,15 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                     if any(entry not in current for entry in selected):
                         self.lines.append('Campus seats changed; refresh /clusters and select again. Nobody added.')
                         return
-                    tracker.change([name for name,_ in selected])
+                    try:tracker.change([name for name,_ in selected])
+                    except (OSError,ValueError) as error:
+                        self.lines.append(safe(str(error)));return
                     self.track_next=0
                     self.lines.append('Added to tracking: '+', '.join(name for name,_ in selected))
                 self.popup_prompts().confirm('Track these current occupants? '+description,accept)
                 return True
             if parts[0]=='/untrack':
-                names=tracker.names[:] if parts[1:]==['all'] else tracker.resolve(parts[1:])
+                names=tracker.names[:] if parts[1:]==['all'] else tracker.resolve(parts[1:],validate=False)
                 tracker.change(names,remove=True)
                 self.lines.append('Removed from tracking: '+(', '.join(names) or 'nobody'))
             else:
@@ -483,7 +488,9 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             tracker=Tracker(self.name)
             if tracker.load_error:raise ValueError(tracker.load_error)
             if command=='/sabo':
-                if not any(tracker.is_variable(p) for p in parts[1:]):return False
+                # These structured game selectors retain the server's parser.
+                if len(parts)==2 and parts[1].lower()=='history':return False
+                if any(p.lower()=='random' or re.fullmatch(r'cohort\d+',p,re.I) or any(op in p for op in ('=','>','<')) for p in parts[1:]):return False
                 names=tracker.resolve(parts[1:])
                 if not names:raise ValueError('That local selector is empty. /track status friends LOGIN')
                 if len(names)>50:raise ValueError('SABO selectors may expand to at most 50 people.')
@@ -819,7 +826,11 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 self.cluster = int(text[-1])
             self.show_lobby, self.play = True, False
         elif text.startswith('/locate '):
-            name=text.split(maxsplit=1)[1].lower()
+            try:
+                from .login_whitelist import validate_logins
+                name=validate_logins([text.split(maxsplit=1)[1]])[0]
+            except ValueError as error:
+                self.lines.append(str(error));return True
             players=getattr(self,'cluster_players',[]) if getattr(self,'cluster_source',False) else self.state.get('players',[])
             player=next((p for p in players if p.get('name','').lower()==name),None)
             if player:self.focus_player(player)

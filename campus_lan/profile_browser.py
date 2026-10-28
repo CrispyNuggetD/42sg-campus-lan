@@ -1,6 +1,7 @@
 """Resolve explicit profile arguments locally; browser login stays in the browser."""
 import re
 from .campus_info import load
+from .login_whitelist import validate_logins
 
 
 def resolve(arguments):
@@ -16,7 +17,7 @@ def resolve(arguments):
             names.extend(s['login'] for s in data['students'] if cohort is None or s.get('cohort')==cohort)
         elif re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',argument):names.append(argument.lower())
         else:raise ValueError('Use Intra logins, all, or cohort4; no shell expressions.')
-    names=list(dict.fromkeys(names))
+    names=validate_logins(names)
     if any(not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',n) for n in names):raise ValueError('Invalid cached login.')
     if len(names)>10 and not bulk:raise ValueError(str(len(names))+' tabs selected. To open them explicitly, use /profile --open-many '+' '.join(arguments))
     return ['https://profile-v3.intra.42.fr/users/'+name for name in names]

@@ -10,6 +10,8 @@ from campus_lan.client import Client
 
 class Relationships(unittest.TestCase):
     def setUp(self):
+        whitelist=patch('campus_lan.login_whitelist.allowed_logins',return_value=set('dthoo thtay a b c d e friend friends normal excluded alpha zebra mutual other fixture-three new-person one two unknown someone'.split()))
+        whitelist.start();self.addCleanup(whitelist.stop)
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         patcher=patch('campus_lan.tracking.config_dir',return_value=Path(self.tmp.name))
         patcher.start();self.addCleanup(patcher.stop)
@@ -94,10 +96,10 @@ class Relationships(unittest.TestCase):
         configure(t,['moots','dthoo'])
         self.assertEqual(t.data['people']['dthoo']['relationship'],'mutuals')
         self.assertFalse(t.data['people']['dthoo']['alerts']['campus'])
-        configure(t,['oomf','guolio'])
-        self.assertEqual(t.data['people']['guolio']['relationship'],'oomf')
-        configure(t,['tracked','guolio'])
-        self.assertEqual(t.resolve(['tracked']),['guolio'])
+        configure(t,['oomf','fixture-three'])
+        self.assertEqual(t.data['people']['fixture-three']['relationship'],'oomf')
+        configure(t,['tracked','fixture-three'])
+        self.assertEqual(t.resolve(['tracked']),['fixture-three'])
 
     def client(self):
         c=Client.__new__(Client);c.name='owner';c.lines=collections.deque();c.send=Mock()

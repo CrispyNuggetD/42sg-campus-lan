@@ -14,6 +14,10 @@ from campus_lan import avatar_admin
 
 
 class Admin(unittest.TestCase):
+    def setUp(self):
+        whitelist=patch('campus_lan.login_whitelist.allowed_logins',return_value={'fixture-user','fixture-owner','missing','no-photo','valid'})
+        whitelist.start();self.addCleanup(whitelist.stop)
+
     def test_local_import_requires_owner_token_and_same_origin(self):
         opened=threading.Event();address=[];servers=[]
         def browser(url):address.append(url);opened.set();return True
@@ -44,6 +48,9 @@ class Admin(unittest.TestCase):
                 def batch_one(login):
                     request=urllib.request.Request(base+'/batch_one',data=json.dumps({'login':login,'photo_consent':True}).encode(),headers={'Origin':base,'X-LAN42-Admin':token,'Content-Type':'application/json'})
                     with urllib.request.urlopen(request,timeout=3) as response:return json.load(response)
+                with patch('campus_lan.avatar_admin.validate_logins',side_effect=ValueError('Not in local whitelist')),patch.object(avatar_admin.ProfileLookup,'lookup_many',new_callable=AsyncMock) as untouched:
+                    self.assertEqual(batch_one('typo')['status'],'skipped')
+                    untouched.assert_not_called()
                 # A rejected lookup or missing photo is a per-login result, not a
                 # batch-ending HTTP error; subsequent cached photos still work.
                 with patch.object(avatar_admin.ProfileLookup,'lookup_many',new_callable=AsyncMock) as lookup,patch.object(avatar_admin.AvatarCache,'fetch',return_value={'status':'cached'}) as fetch:

@@ -269,6 +269,22 @@ Relationships, lists and independent arrival rules are configured locally:
 after a relationship label to assign it, for example `/track friends @furs`.
 The existing `/track status friends LOGIN...` syntax also works.
 
+Login targets are checked locally against the private Singapore directory before
+adding people/lists, changing relationships or sending person-targeted commands.
+Unknown logins are rejected (with a possible spelling suggestion); LAN42 never
+automatically substitutes the suggested person. Supported selectors expand first
+and their resulting logins are checked too. A mixed valid/invalid tracking edit
+makes no changes. You can still view and remove old typos even without a whitelist.
+
+The default source is `singapore.json` in the campus-data folder. If absent,
+LAN42 uses `singapore_intra.txt` there (whitespace-separated logins). To choose a
+specific private whitelist file, set `LAN42_INTRA_WHITELIST` to its absolute path
+before launching LAN42. Missing or invalid whitelist files block new targets;
+there is no automatic API lookup or directory download. Cohort selectors still
+need JSON cohort metadata. This validates input only; API membership and operator
+permissions remain independently enforced. Never commit the directory or text
+whitelist to the public repository.
+
 Newly tracked people are acquaintances (`tracked`). A relationship is one local
 label: `tracked`, `friends`, `mutuals` (alias `moots`), or `oomf`. Labels do not
 claim reciprocal friendship or send requests to anyone. `friends` selects the

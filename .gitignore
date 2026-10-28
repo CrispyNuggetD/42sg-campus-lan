@@ -20,3 +20,8 @@ _site/
 # Local authority configuration is never a public repository artifact.
 access-policy.json
 local-operator.json
+
+# Private student directories and locally downloaded avatar batch reports.
+singapore.json
+singapore_intra.txt
+lan42-avatar-batch*.txt

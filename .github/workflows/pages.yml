@@ -30,6 +30,7 @@ jobs:
       - run: python -m unittest discover -s tests -p test_quick_controls.py
       - run: python -m unittest discover -s tests -p test_lobby_view.py
       - run: python -m unittest discover -s tests -p test_cluster_commands.py
+      - run: PYTHONPATH=tests python -m unittest test_login_whitelist test_relationships test_campus_commands test_uwu
       - run: python -m unittest discover -s tests -p test_koel_desktop.py
       - run: python -m unittest discover -s tests -p test_notification_preferences.py
       - run: python -m unittest discover -s tests -p test_koel_flock.py

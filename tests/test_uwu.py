@@ -70,7 +70,7 @@ class Uwu(unittest.TestCase):
 
     def test_targeted_uwu_sends_command_without_local_play_or_setting_change(self):
         c=self.client()
-        with patch('campus_lan.koel_sound.play') as play:
+        with patch('campus_lan.login_whitelist.allowed_logins',return_value={'dthoo'}),patch('campus_lan.koel_sound.play') as play:
             self.assertTrue(c.uwu_command('/uwu dthoo'))
             c.send.assert_called_once_with(dict(type='command',text='/uwu dthoo'))
             play.assert_not_called()

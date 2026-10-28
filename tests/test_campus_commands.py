@@ -11,6 +11,10 @@ from campus_lan.forknite import ensure_binary
 from campus_lan import api_pacing
 
 class Commands(unittest.TestCase):
+    def setUp(self):
+        whitelist=patch('campus_lan.login_whitelist.allowed_logins',return_value={'thtay','hnah'}|{'u'+str(i) for i in range(12)})
+        whitelist.start();self.addCleanup(whitelist.stop)
+
     def test_cohort_union_filters_and_exclusions(self):
         data={'students':[dict(login='a',cohort=4,level=3),dict(login='b',cohort=5,level=1),dict(login='c',cohort=6,level=9)]}
         with patch('campus_lan.campus_info.load',return_value=data):

@@ -9,6 +9,7 @@ import webbrowser
 from .auth import config_dir, private_read
 from .avatar_cache import AvatarCache, MAX_IMAGE
 from .profile_lookup import ProfileLookup
+from .login_whitelist import validate_logins, WhitelistUnavailable
 from .avatar_imports import BrowserImports, downloads_directory
 from pathlib import Path
 
@@ -104,7 +105,7 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                 self.connection.settimeout(15);raw=self.rfile.read(size)
                 url=urllib.parse.urlsplit(self.path)
                 if url.path=='/import':
-                    login=urllib.parse.parse_qs(url.query).get('login',[''])[0]
+                    login=validate_logins(urllib.parse.parse_qs(url.query).get('login',['']))[0]
                     self.reply(200,cache.store(login,raw));return
                 data=json.loads(raw)
                 if url.path=='/photo_permission':
@@ -118,8 +119,12 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                 if url.path=='/extension':
                     self.reply(200,dict(path=str(Path(__file__).resolve().parent.parent/'browser-tools/avatar-saver')));return
                 if url.path=='/job_status':self.reply(200,imports.status(data.get('job')));return
-                if url.path=='/prepare':self.reply(200,imports.prepare(data.get('login')));return
-                login=data.get('login')
+                if url.path=='/prepare':self.reply(200,imports.prepare(validate_logins([data.get('login')])[0]));return
+                try:login=validate_logins([data.get('login')])[0]
+                except ValueError as error:
+                    if url.path=='/batch_one':
+                        self.reply(200,dict(status='failed' if isinstance(error,WhitelistUnavailable) else 'skipped',reason=str(error)));return
+                    raise
                 future=asyncio.run_coroutine_threadsafe(lookup.lookup_many([login]),loop)
                 profiles,errors=future.result(timeout=25)
                 if not profiles:

@@ -9,6 +9,10 @@ from campus_lan.tracking import Tracker,describe
 from campus_lan.client import Client
 
 class Tracking(unittest.TestCase):
+    def setUp(self):
+        whitelist=patch('campus_lan.login_whitelist.allowed_logins',return_value={'dthoo','thtay','student'})
+        whitelist.start();self.addCleanup(whitelist.stop)
+
     def test_private_persistence_validation_and_removal(self):
         with tempfile.TemporaryDirectory() as tmp,patch('campus_lan.tracking.config_dir',return_value=Path(tmp)):
             tracker=Tracker('owner');tracker.change(['DTHOO','thtay','dthoo'])

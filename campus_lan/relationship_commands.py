@@ -15,7 +15,7 @@ HELP=[
 
 
 def relationship_lines(tracker, selectors=None):
-    selected=set(tracker.resolve(selectors)) if selectors else set(tracker.names)
+    selected=set(tracker.resolve(selectors,validate=False)) if selectors else set(tracker.names)
     lines=['Local relationships']
     for status,title in (('friends','Friends'),('mutuals','Mutuals'),('oomf','OOMF'),('tracked','Acquaintances (tracked)')):
         names=sorted(n for n,r in tracker.data['people'].items()
@@ -64,7 +64,7 @@ def configure(tracker,args):
             if name not in tracker.data['lists']:tracker.change_list(name)
         elif args[2]=='delete' and len(args)==3:tracker.change_list(name,delete=True)
         elif args[2] in ('add','remove') and len(args)>3:
-            tracker.change_list(name,tracker.resolve(args[3:]),remove=args[2]=='remove')
+            tracker.change_list(name,tracker.resolve(args[3:],validate=args[2]!='remove'),remove=args[2]=='remove')
         else:raise ValueError('Use /track list NAME [add|remove LOGIN...|delete]')
         return ['@'+name+': '+(', '.join(tracker.data['lists'].get(name,[])) or 'empty/deleted')]
     if command=='alerts':
