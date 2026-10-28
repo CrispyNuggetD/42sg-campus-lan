@@ -31,6 +31,7 @@ const session = new Date().toISOString().replace(/[:.]/g, '-') + '-' + process.p
 const log = fs.createWriteStream(path.join(logdir, session + '.jsonl'), {flags:'wx'});
 log.on('error', e => { console.error('Log failure:', e.message); shutdown(); });
 const clients = new Set(), players = new Map(), events = [];
+const photoSeats = new Set(); // Keep earlier round identities available to authenticated replay viewers.
 let round = 0, active = false, child = null, killed = false, deadline = settings.die, firstDeath = false, sequence = 0, timer;
 function emit(type, data) {
  const event = {seq:++sequence, type, wall:Date.now(), ...data};
@@ -40,7 +41,7 @@ function emit(type, data) {
  clients.forEach(res => { if (res.writableLength > 1048576) { res.destroy(); clients.delete(res); } else res.write(frame); });
  return event;
 }
-function roster() { return Array.from(players, ([id,p]) => ({id,name:p.name,verified:Boolean(p.userId),avatar:(p.avatar||avatarCache.has(p.name))?'/avatars/'+id+'?login='+encodeURIComponent(p.name.toLowerCase())+'&v='+avatarCache.version(p.name):null,sabo:Boolean(p.sabo)})); }
+function roster() { return Array.from(players, ([id,p]) => {const name=p.name.toLowerCase(),hasPhoto=Boolean(p.avatar||avatarCache.has(p.name));if(hasPhoto)photoSeats.add(id+':'+name);return {id,name:p.name,verified:Boolean(p.userId),avatar:hasPhoto?'/avatars/'+id+'?login='+encodeURIComponent(name)+'&v='+avatarCache.version(p.name):null,sabo:Boolean(p.sabo)};}); }
 function line(raw) {
  const m = raw.replace(/\x1b\[[0-9;]*m/g, '').match(/^\s*(\d+)\s+(\d+)\s+(has taken a fork|is eating|is sleeping|is thinking|died)\s*$/);
  if (!m || Number(m[2]) < 1 || Number(m[2]) > count) { emit('raw',{round,line:raw}); return; }
@@ -201,10 +202,9 @@ const server = http.createServer(async (req,res) => {
  if(req.method==='GET'&&url.pathname==='/avatar.js'){res.writeHead(200,{'Content-Type':'application/javascript','Cache-Control':'no-store'});return res.end(fs.readFileSync(path.join(__dirname,'public/avatar.js')));}
  if(req.method==='GET'&&/^\/avatars\/\d+$/.test(url.pathname)){
   if(!auth.user(req))return json(res,403,{error:'Join the LAN42 room to view cached photos.'});
-  const player=players.get(Number(url.pathname.split('/')[2]));
-  if(!player)return json(res,404,{error:'No such room member'});
-  if(url.searchParams.get('login')!==player.name.toLowerCase())return json(res,404,{error:'This photo belongs to a previous diner in this slot.'});
-  try{const photo=avatarCache.read(player.name);res.writeHead(200,{'Content-Type':photo.type,'Content-Length':photo.bytes.length,'X-Content-Type-Options':'nosniff','Cache-Control':'private, no-store','Cross-Origin-Resource-Policy':'same-origin'});return res.end(photo.bytes);}
+  const id=Number(url.pathname.split('/')[2]),login=url.searchParams.get('login');
+  if(!login||!photoSeats.has(id+':'+login))return json(res,404,{error:'No photo was shown for this diner in this room.'});
+  try{const photo=avatarCache.read(login);res.writeHead(200,{'Content-Type':photo.type,'Content-Length':photo.bytes.length,'X-Content-Type-Options':'nosniff','Cache-Control':'private, no-store','Cross-Origin-Resource-Policy':'same-origin'});return res.end(photo.bytes);}
   catch(e){return json(res,404,{error:'Photo is not cached. The host can import it with /admin.'});}
  }
  if (req.method === 'GET' && url.pathname === '/events') {

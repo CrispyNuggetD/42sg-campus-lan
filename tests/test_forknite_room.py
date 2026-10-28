@@ -63,8 +63,9 @@ class RoomIdentity(unittest.IsolatedAsyncioTestCase):
                 self.assertTrue(by_name['thtay']['sabo']);self.assertFalse(by_name['thtay']['verified'])
                 for name,expected in [('hnah',image),('sillyguest',b'\x89PNG\r\n\x1a\nguest'),('thtay',b'\x89PNG\r\n\x1a\nsabo')]:
                     self.assertEqual((await asyncio.to_thread(photo,cookie,by_name[name]['avatar']))[0],expected)
-                with self.assertRaises(urllib.error.HTTPError) as stale:await asyncio.to_thread(photo,cookie,initial_photo_url)
-                self.assertEqual(stale.exception.code,404)
+                self.assertEqual((await asyncio.to_thread(photo,cookie,initial_photo_url))[0],image)
+                with self.assertRaises(urllib.error.HTTPError) as wrong:await asyncio.to_thread(photo,cookie,initial_photo_url.replace('login=hnah','login=unrelated'))
+                self.assertEqual(wrong.exception.code,404)
                 with urllib.request.urlopen(urllib.request.Request(base+'/auth/me',headers={'Cookie':cookie})) as r:updated=json.load(r)
                 self.assertEqual(updated['user']['slot'],by_name['hnah']['id'])
                 self.assertTrue(any(e.get('action')=='died' for e in state['events']))

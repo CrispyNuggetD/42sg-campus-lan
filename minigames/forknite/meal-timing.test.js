@@ -30,14 +30,14 @@ assert.equal(mealTiming({...card,meals:0},0,600,odd).remaining,600);
 // The running browser must use the timing helpers, not the previous meal-count-only paint.
 assert(html.includes('observeMeal(c,e.ms,timingWindow)'));
 assert(html.includes("classList.toggle('meal-late',timing.late)"));
-assert(html.includes('if(roundActive)sim+='));
+assert(html.includes('if(roundActive&&!catchUp)sim+='));
 console.log('PASS: five-seat clock allowance, full-cycle timing, persistent late-meal color, recovery, death and missing timings');
 // Compile the complete browser script, and exercise its real event/render paths.
 new vm.Script(html.split('<script>')[1].split('</script>')[0]);
 const nodes={};let orange=false;
 const element={style:{setProperty(key,value){nodes[key]=value;}},classList:{toggle(key,value){if(key==='meal-late')orange=value;}},querySelector(key){return nodes[key]||(nodes[key]={textContent:'Fixture diner',style:{}});}};
 const rendered={el:element,meals:1,lastMeal:0,lastDelay:0,dead:false};
-Object.assign(context,{count:2,cards:[null,rendered],timingWindow:odd,document:{hidden:true},foxAudio:{eat(){},death(){}},note(){},refreshIdentity(){},round:1,roundActive:true,deadline:600,sim:350,last:0,paused:false,queue:[],cursor:0,requestAnimationFrame(){},$:key=>nodes[key]||(nodes[key]={value:'1',textContent:''})});
+Object.assign(context,{count:2,cards:[null,rendered],timingWindow:odd,document:{hidden:true},foxAudio:{eat(){},death(){}},note(){},refreshIdentity(){},round:1,roundActive:true,catchUp:false,deadline:600,sim:350,last:0,paused:false,queue:[],cursor:0,requestAnimationFrame(){},$:key=>nodes[key]||(nodes[key]={value:'1',textContent:''})});
 vm.runInContext(html.slice(html.indexOf('function apply(e){'),html.indexOf('const stream=new EventSource')),context);
 context.apply({type:'move',id:1,action:'is eating',ms:350});
 assert.equal(rendered.lastDelay,50);

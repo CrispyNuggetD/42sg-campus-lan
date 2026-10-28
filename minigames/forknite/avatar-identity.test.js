@@ -13,4 +13,18 @@ context.players=[{id:1,name:'second',avatar:'/avatars/1?v=0'}];
 context.names();
 assert.deepStrictEqual(renders.map(render=>render.name),['first','second']);
 assert.equal(nodes['.name'].textContent,'#1 second');
-console.log('PASS: avatar redraw follows diner identity even when the slot URL is unchanged');
+const replay={history:[],queue:[],seq:0,players:[],count:0,cursor:0,catchUp:false,
+ build:()=>{},names:()=>{},$:()=>({textContent:''})};
+let stream;
+replay.EventSource=function(){stream={};return stream;};
+vm.createContext(replay);
+vm.runInContext(html.slice(html.indexOf('const stream=new EventSource'),html.indexOf('function tick(now){')),replay);
+const events=[{seq:1,type:'round',round:1,count:4},{seq:2,type:'end',round:1},
+ {seq:3,type:'round',round:30,count:6},{seq:4,type:'end',round:30}];
+stream.onmessage({data:JSON.stringify({type:'snapshot',count:50,players:Array(6).fill({name:'current'}),events})});
+assert.equal(replay.players.length,6);
+assert.equal(replay.queue.length,2);
+assert.equal(replay.queue[0].round,30);
+assert.equal(replay.catchUp,true);
+assert.equal(replay.history.length,4);
+console.log('PASS: photos redraw by identity and reload catches up to the latest round');
