@@ -1,8 +1,13 @@
+import contextlib
+import io
 import queue
+import threading
 import unittest
+from types import SimpleNamespace
 from unittest.mock import Mock,patch
 
-from campus_lan.cluster_viewer import ClusterViewer,age_label,source_for
+from campus_lan import api_pacing
+from campus_lan.cluster_viewer import ClusterViewer,age_label,launch,source_for
 
 
 class ClusterViewerTests(unittest.TestCase):
@@ -59,3 +64,17 @@ class ClusterViewerTests(unittest.TestCase):
             self.assertIs(source_for(events,'fixture'),local.return_value)
         with patch('campus_lan.cluster_viewer.HostSource',side_effect=ValueError('host unavailable')),patch('campus_lan.cluster_viewer.LocalSource',side_effect=ValueError('operator denied')):
             with self.assertRaisesRegex(ValueError,'host unavailable'):source_for(events,'fixture')
+
+    def test_local_api_notice_stays_inside_cluster_curses_screen(self):
+        source=Mock();source.label='Local approved API'
+        output=io.StringIO()
+        def render(run):
+            worker=threading.Thread(target=api_pacing.report,args=('[LAN42] API queued: waiting 0.24s',))
+            worker.start();worker.join()
+            viewer=run.__self__
+            viewer.consume()
+            self.assertIn('API queued',viewer.status)
+        with patch('campus_lan.cluster_viewer.source_for',return_value=source),patch('campus_lan.cluster_viewer.pwd.getpwuid',return_value=SimpleNamespace(pw_name=None)),patch('campus_lan.cluster_viewer.signal.signal'),patch('campus_lan.cluster_viewer.curses.wrapper',side_effect=render),contextlib.redirect_stdout(output):
+            launch()
+        self.assertEqual(output.getvalue(),'')
+        source.close.assert_called_once()

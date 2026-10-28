@@ -12,6 +12,7 @@ import time
 
 from . import PROTOCOL,auth_client
 from .access import Policy
+from .api_pacing import ui_notices
 from .cluster_commands import normalize_cluster_command
 from .lobby_view import lobby_lines,overlay_campus,relationship_overlay,roster,seat
 from .updater import RestartRequested,generation
@@ -150,6 +151,7 @@ class ClusterViewer:
             elif kind=='error':self.status='Campus seats unavailable: '+str(message.get('text','Unknown error'))[:180]
             elif kind=='event' and not str(message.get('text','')).startswith('Loading campus API seats'):
                 self.status=str(message.get('text',''))[:180]
+            elif kind=='local_api_notice':self.status=str(message.get('text',''))[:180]
             elif kind=='signed_out':self.status='Sign-in expired. Renew it in HQ, then reopen clusters.'
             elif kind=='closed':
                 self.connected=False
@@ -286,5 +288,7 @@ def launch(cluster=0):
     viewer=ClusterViewer(source,events,cluster,owner)
     viewer.refresh_requested=threading.Event()
     signal.signal(signal.SIGUSR1,lambda *_:viewer.refresh_requested.set())
-    try:curses.wrapper(viewer.run)
+    try:
+        with ui_notices(lambda text:events.put_nowait(dict(type='local_api_notice',text=text))):
+            curses.wrapper(viewer.run)
     finally:source.close()
