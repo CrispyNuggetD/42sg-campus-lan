@@ -155,8 +155,10 @@ not a guarantee for every managed workstation or permission to override school p
 
 ### Permission prompts
 
-Enter, `n`, or end-of-input declines downloads. Python and tmux are separate
-choices; accepting one does not authorize the other. Missing Python stops setup
+Enter, `n`, or end-of-input declines downloads. Each missing dependency explains its purpose, install location, and the effect
+of declining. Choose `y` for this dependency, Enter/`n` for No, or `A` to allow
+all remaining dependency installations in this setup run. This choice is not
+saved and grants no account/API permissions. Missing Python stops setup
 if declined, while declining tmux leaves direct-terminal launch available.
 Python recovery first checks a compatible existing system runtime. If none works,
 it offers to download uv from `https://astral.sh/uv/install.sh` (only when uv is

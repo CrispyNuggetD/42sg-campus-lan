@@ -88,6 +88,7 @@ def confirm_install(root=None):
         return True
     plan=('Install tmux using your existing Homebrew.' if sys.platform=='darwin' else
           'Download/extract tmux and direct libraries into your account; no sudo or system packages.')
+    print('Optional: tmux provides managed windows and detach/reconnect. Without it, use LAN42 directly with lan42_here or ./lan42.sh.', file=sys.stderr)
     print('tmux is missing. '+plan, file=sys.stderr)
     print('Help install tmux? [y/N]: ',end='',flush=True,file=sys.stderr)
     return sys.stdin.readline().strip().lower() in ('y','yes')
@@ -96,9 +97,10 @@ def confirm_install(root=None):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path)
+    parser.add_argument('--approved',action='store_true',help='Installation already approved by the parent setup prompt')
     args=parser.parse_args()
     try:
-        if not confirm_install(args.root):
+        if not args.approved and not confirm_install(args.root):
             sys.exit('tmux installation skipped. Use lan42_here or rerun setup to enable workspace support.')
         print(ensure(args.root))
     except (OSError,RuntimeError,subprocess.SubprocessError) as error:

@@ -38,3 +38,18 @@ setup_python
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertEqual(calls.splitlines(),['python install 3.11','python find --managed-python 3.11'])
         self.assertTrue(bound)
+
+    def test_allow_all_covers_remaining_choices_and_resets_when_setup_restarts(self):
+        script='\n. "$1"\nsetup_install_choice || exit 1\nsetup_install_choice || exit 2\n[ "$setup_allow_all" = 1 ] || exit 3\n. "$1"\nif setup_install_choice; then exit 4; fi\n'
+        result=subprocess.run(['sh','-c',script,'test',str(ROOT/'useful-scripts/setup_python.sh')],input='A\n',text=True,capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(result.stderr.count('Help install this?'),2)
+        self.assertIn('this run',result.stderr)
+
+    def test_required_python_explanation_and_allow_all_install(self):
+        result,calls,bound=self.attempt('A\n')
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertTrue(bound)
+        self.assertIn('Required: Python',result.stderr)
+        self.assertIn('cannot launch',result.stderr)
+        self.assertIn('uv is the',result.stderr)

@@ -20,7 +20,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 ## Highlights
 
 <!-- shell-installer-features:start -->
-- **Campus HQ:** no-sudo setup checks Python/curses and offers missing Python/tmux installation with separate yes/no prompts; `lan42` opens a separate workspace.
+- **Campus HQ:** no-sudo setup checks Python/curses and offers missing Python/tmux installation with explanations and per-run Allow all; `lan42` opens a separate workspace.
 - **Find your people:** `/who`, `/join`, private DMs and `/track` lists; `/clusters` shows current SG seats while the approved campus host is online.
 - **KoelDrop:** `/koel flock` joins the host’s 42 Singapore flock: once, always or never. Daily folders survive reconnects; optional sgoinfre link saves home quota. Upload/receive consent stays separate. `/uwu` introduces your courier.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
@@ -42,10 +42,13 @@ host is offline; stable, always-on hosting is future work.
 
 On school Ubuntu, clone and run setup in your normal account: **no sudo**.
 Setup checks your existing Python **3.9+ with curses**. If missing, it asks
-**“Allow this Python installation? [y/N]”** before preparing a private runtime.
+**“Help install this? [y/N]”** before preparing a private runtime.
 Core guest chat/games need no pip packages or API credentials. Setup reuses tmux
-or asks **“Help install tmux? [y/N]”** before a user-level package download/extraction; no system
-packages are installed. Use a terminal at least **76 × 28**.
+or asks **“Help install this? [y/N]”** before a user-level package download/extraction; no system
+packages are installed. Enter means No; **A** allows remaining dependency installations for this setup
+run only. Python/curses is required; tmux is optional: declining it keeps direct
+launch available without managed windows or detach/reconnect. Use a terminal at
+least **76 × 28**.
 [What setup configures and what must already exist →](docs/getting-started.md#dependencies-without-sudo)
 
 ```sh
@@ -54,7 +57,9 @@ cd 42sg-campus-lan
 sh setup.sh
 ```
 
-Open a new zsh terminal and run `lan42`, or use `./lan42.sh` directly.
+Open a new zsh terminal and run `lan42` if tmux is ready. If you skipped tmux,
+use `./lan42.sh` directly or `lan42_here` after loading the helpers; keep that
+terminal open while playing.
 Setup backs up and appends to your `.zshrc`; it needs no sudo.
 [Installation, dailylogin and shell helpers →](docs/getting-started.md)
 

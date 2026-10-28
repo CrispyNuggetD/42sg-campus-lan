@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 import os
+import sys
 import shlex
 import subprocess
 import tempfile
@@ -80,3 +81,17 @@ dailylogin
 ''', 'test', str(ROOT/'useful-scripts/campus.zsh'), env['PATH']], env=env, check=True, text=True, capture_output=True)
             self.assertIn('MOCK_PULL', result.stdout)
             self.assertIn('WINDOW:'+str(ROOT/'useful-scripts/open_terminal.py'), result.stdout)
+
+    def test_declining_optional_tmux_keeps_direct_launcher_ready(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);bin=root/'bin';bin.mkdir()
+            (bin/'python3').symlink_to(sys.executable)
+            # Use system utilities only; exclude Homebrew's installed tmux.
+            env=dict(os.environ,PATH=str(bin)+':/usr/bin:/bin',FORTYTWO_TOOLS_ROOT=str(root/'tools'),ZDOTDIR=tmp)
+            if subprocess.run(['sh','-c','command -v tmux'],env=env,capture_output=True).returncode==0:
+                self.skipTest('system PATH already provides tmux')
+            result=subprocess.run(['sh',str(ROOT/'setup.sh'),'--no-zsh'],env=env,input='n\n',text=True,capture_output=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            self.assertIn('Optional: tmux',result.stderr)
+            self.assertIn('still ready',result.stdout)
+            self.assertFalse((root/'tools').exists())

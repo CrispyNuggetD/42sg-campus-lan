@@ -1,3 +1,22 @@
+# Consent is scoped to this setup process; nothing is saved in shell profiles.
+setup_allow_all=0
+setup_install_choice() {
+    if [ "$setup_allow_all" = 1 ]; then
+        echo 'Allowed by your Allow all choice for this setup run.' >&2
+        return 0
+    fi
+    printf 'Help install this? [y/N] (A = allow all remaining setup installations): ' >&2
+    answer=''; IFS= read -r answer || :
+    case "$answer" in
+        y|Y|yes|YES) return 0 ;;
+        a|A|all|ALL)
+            setup_allow_all=1
+            echo 'Allow all applies only to dependency installations in this run; no account/API permissions are granted.' >&2
+            return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # Sourced by setup.sh; downloading requires an explicit yes.
 python_works() {
     "$1" -c 'import sys, curses; sys.exit(0 if sys.version_info >= (3,9) else 1)' >/dev/null 2>&1
@@ -12,11 +31,14 @@ setup_python() {
         echo 'A compatible system Python is available; LAN42 can bind it in your account.' >&2
         selected_python=/usr/bin/python3
     else
-        echo 'Python 3.9+ with curses is missing. Help install it in your account?' >&2
+        echo 'Required: Python runs LAN42; curses draws its terminal interface. No compatible runtime is available.' >&2
         echo 'This downloads uv from astral.sh (if needed) and a managed Python 3.11 runtime. No sudo or system packages.' >&2
-        printf 'Allow this Python installation? [y/N]: ' >&2
-        answer=''; IFS= read -r answer || :
-        case "$answer" in y|Y|yes|YES) ;; *) echo 'Python installation skipped. Load a compatible school Python and rerun sh setup.sh.' >&2; return 1 ;; esac
+        echo "Installation files stay under $tools_root." >&2
+        echo 'uv is the download/installation tool. Declining means LAN42 cannot launch until you supply compatible Python.' >&2
+        if ! setup_install_choice; then
+            echo 'Python installation skipped. Load a compatible school Python and rerun sh setup.sh.' >&2
+            return 1
+        fi
         uv_bin=$(command -v uv || :)
         if [ -z "$uv_bin" ] && [ -x "$tools_root/uv/uv" ]; then uv_bin="$tools_root/uv/uv"; fi
         if [ -z "$uv_bin" ]; then

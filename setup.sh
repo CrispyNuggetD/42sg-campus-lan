@@ -29,10 +29,24 @@ print('Inside your lobby, /join links a friend and exchanges peers.')
 print('Core guest mode uses the Python standard library; no pip packages or staff/API credentials are needed.')
 
 PYSETUP
-if tmux_bin=$(python3 "$repo_dir/useful-scripts/ensure_tmux.py"); then
-    echo "Workspace tmux ready: $tmux_bin"
+tmux_allowed=1
+if ! command -v tmux >/dev/null 2>&1 && [ ! -x "${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/tmux/bin/tmux" ]; then
+    echo 'Optional: tmux keeps LAN42 windows/jobs running when you detach and provides the lobby/game workspace.' >&2
+    echo 'Without it, LAN42 still launches with ./lan42.sh (or lan42_here), but has no managed tmux workspace or detach/reconnect support; keep its terminal open.' >&2
+    case "$(uname -s)" in
+        Darwin) echo 'Installation uses your existing Homebrew. Homebrew itself will not be installed.' >&2 ;;
+        *) echo 'Installation downloads/extracts tmux and direct libraries into your account; no sudo or system package changes.' >&2 ;;
+    esac
+    setup_install_choice || tmux_allowed=0
+fi
+if [ "$tmux_allowed" = 1 ]; then
+    if tmux_bin=$(python3 "$repo_dir/useful-scripts/ensure_tmux.py" --approved); then
+        echo "Workspace tmux ready: $tmux_bin"
+    else
+        echo 'Workspace setup unavailable; use ./lan42.sh in this terminal. Rerun sh setup.sh after resolving the message above.'
+    fi
 else
-    echo 'Workspace setup unavailable; use ./lan42.sh in this terminal. Rerun sh setup.sh after resolving the message above.'
+    echo 'tmux skipped. LAN42 is still ready in this terminal: ./lan42.sh (or lan42_here after loading helpers).'
 fi
 if [ "$install_zsh" = 1 ]; then
     if command -v zsh >/dev/null; then
