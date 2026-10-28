@@ -276,7 +276,9 @@ automatically substitutes the suggested person. Supported selectors expand first
 and their resulting logins are checked too. A mixed valid/invalid tracking edit
 makes no changes. You can still view and remove old typos even without a whitelist.
 
-The default source is `singapore.json` in the campus-data folder. If absent,
+The default source is `singapore.json` in the campus-data folder. LAN42 first
+looks for a sibling `42_Singapore_SUTD_hnah_private/42/data/campus` folder beside
+its checkout, then uses the legacy `~/Documents` location. If absent,
 LAN42 uses `singapore_intra.txt` there (whitespace-separated logins). To choose a
 specific private whitelist file, set `LAN42_INTRA_WHITELIST` to its absolute path
 before launching LAN42. Missing or invalid whitelist files block new targets;

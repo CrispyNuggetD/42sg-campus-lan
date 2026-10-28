@@ -1,11 +1,27 @@
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from campus_lan.campus_info import normalize,summarize,random_profiles,info_lines,render
+from campus_lan.campus_info import directory,normalize,summarize,random_profiles,info_lines,render
 
 class CampusInfo(unittest.TestCase):
+    def test_directory_follows_sibling_private_repo_with_explicit_override(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            module=root/'lan42/campus_lan/campus_info.py'
+            sibling=root/'42_Singapore_SUTD_hnah_private/42/data/campus'
+            sibling.mkdir(parents=True)
+            (sibling/'singapore.json').write_text('{}')
+            with patch('campus_lan.campus_info.__file__',str(module)),patch.dict(os.environ,{'LAN42_CAMPUS_DATA':''}):
+                self.assertEqual(directory(),sibling.resolve())
+                with patch.dict(os.environ,{'LAN42_CAMPUS_DATA':str(root/'chosen')}):
+                    self.assertEqual(directory(),root/'chosen')
+                (sibling/'singapore.json').unlink()
+                with patch('campus_lan.campus_info.Path.home',return_value=root):
+                    self.assertEqual(directory(),root/'Documents/42_Singapore_SUTD_hnah_private/42/data/campus')
+
     def test_deadline_does_not_invent_blackhole_or_freeze_status(self):
         user=dict(id=1,login='fixture',**{'active?':False},cursus_users=[dict(cursus_id=21,begin_at='2025-11-17T00:00:00Z',blackholed_at='2020-01-01T00:00:00Z',end_at=None)])
         student=normalize(user)

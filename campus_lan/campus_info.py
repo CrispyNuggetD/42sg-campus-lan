@@ -19,7 +19,13 @@ from .auth import config_dir, private_read, provider_tls_context, NoRedirect, Au
 
 
 def directory():
-    return Path(os.environ.get('LAN42_CAMPUS_DATA', str(Path.home()/'Documents/42_Singapore_SUTD_hnah_private/42/data/campus')))
+    configured = os.environ.get('LAN42_CAMPUS_DATA')
+    if configured:
+        return Path(configured).expanduser()
+    sibling = Path(__file__).resolve().parent.parent.parent/'42_Singapore_SUTD_hnah_private/42/data/campus'
+    if (sibling/'singapore.json').is_file() or (sibling/'singapore_intra.txt').is_file():
+        return sibling
+    return Path.home()/'Documents/42_Singapore_SUTD_hnah_private/42/data/campus'
 
 
 def load():
