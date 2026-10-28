@@ -1,8 +1,16 @@
 {
-  "version": "2.17.0-beta.1",
-  "date": "2026-10-29T05:26:41+08:00",
-  "source": "7df0bcd8c78e0b3bd7d90aa55eb6f64efd0835f0",
+  "version": "2.17.1-beta.1",
+  "date": "2026-10-29T06:01:11+08:00",
+  "source": "8dd0abcb49005ae1d60960e9ea75adfe0276af6b",
   "history": [
+    {
+      "version": "2.17.1-beta.1",
+      "date": "2026-10-29T06:01:11+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: pause avatar batch on shared request failures"
+      ]
+    },
     {
       "version": "2.17.0-beta.1",
       "date": "2026-10-29T05:26:41+08:00",
@@ -460,5 +468,5 @@
       ]
     }
   ],
-  "runtime_sha256": "82d65946bead9bdc3cfd7cbe11ee7178ca79af283f4a9659b940834912d261bb"
+  "runtime_sha256": "20b058716282665f1200771c1dd574b2ec12ed7236c56b8c6457956ab7071aca"
 }

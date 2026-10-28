@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.17.1-beta.1 · 2026-10-29T06:01:11+08:00
+
+- fix: pause avatar batch on shared request failures
+
 ## 2.17.0-beta.1 · 2026-10-29T05:26:41+08:00
 
 - feat: raise SG profile and photo budgets to 600 per hour
