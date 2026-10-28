@@ -1,8 +1,16 @@
 {
-  "version": "2.14.0-beta.1",
-  "date": "2026-10-28T23:13:17+08:00",
-  "source": "bdeb4dc4c7c7f5c0a1475f368806c6df216d1167",
+  "version": "2.14.1-beta.1",
+  "date": "2026-10-29T02:59:12+08:00",
+  "source": "a2211fd54bdaa81e4eec156706aea84f3c2d1eb6",
   "history": [
+    {
+      "version": "2.14.1-beta.1",
+      "date": "2026-10-29T02:59:12+08:00",
+      "kind": "patch",
+      "notes": [
+        "Keep local LAN42 sign-in while exposing approved VPN guests"
+      ]
+    },
     {
       "version": "2.14.0-beta.1",
       "date": "2026-10-28T23:13:17+08:00",
@@ -362,5 +370,5 @@
       ]
     }
   ],
-  "runtime_sha256": "d8ecbda9110b023b93dd76f0e69a638a9fe6a96dd8cb90eda538a9184b04ec05"
+  "runtime_sha256": "cdf4054134e6d751bb0cc15263d841ac331e7a6972fb6144f55bd6504e8f00ff"
 }
