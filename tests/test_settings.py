@@ -11,7 +11,9 @@ from campus_lan.notification_preferences import Preferences
 class Settings(unittest.TestCase):
     def setUp(self):
         temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)
-        environment=patch.dict(os.environ,{'XDG_CONFIG_HOME':temporary.name})
+        whitelist=os.path.join(temporary.name,'singapore_intra.txt')
+        with open(whitelist,'w') as output:output.write('fixture-one\n')
+        environment=patch.dict(os.environ,{'XDG_CONFIG_HOME':temporary.name,'LAN42_INTRA_WHITELIST':whitelist})
         environment.start();self.addCleanup(environment.stop)
 
     def client(self,signed=False):
@@ -42,5 +44,5 @@ class Settings(unittest.TestCase):
         c=self.client();c.open_urls=Mock()
         self.assertTrue(c.settings_command('/profile'))
         self.assertEqual(c.open_urls.call_args.args[1],['https://profile-v3.intra.42.fr/'])
-        c.settings_command('/profile hnah')
-        self.assertEqual(c.open_urls.call_args.args[1],['https://profile-v3.intra.42.fr/users/hnah'])
+        c.settings_command('/profile fixture-one')
+        self.assertEqual(c.open_urls.call_args.args[1],['https://profile-v3.intra.42.fr/users/fixture-one'])
