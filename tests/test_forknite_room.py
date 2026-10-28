@@ -27,14 +27,17 @@ class RoomIdentity(unittest.IsolatedAsyncioTestCase):
                 base='http://127.0.0.1:'+str(room.port)
                 image=b'\x89PNG\r\n\x1a\nfixture'
                 room.avatar_cache.store('hnah',image)
+                room.avatar_cache.store('sillyguest',b'\x89PNG\r\n\x1a\nguest')
+                initial_roster=(await room.control(dict(action='roster')))['players']
+                initial_photo_url=initial_roster[0]['avatar']
                 def redeem(ticket):
                     req=urllib.request.Request(base+'/auth/lan42',data=json.dumps(dict(ticket=ticket)).encode(),headers={'Content-Type':'application/json','Origin':base})
                     with urllib.request.urlopen(req) as response:cookie=response.headers['Set-Cookie'].split(';')[0]
                     with urllib.request.urlopen(urllib.request.Request(base+'/auth/me',headers={'Cookie':cookie})) as response:return cookie,json.load(response)
                 cookie,profile=await asyncio.to_thread(redeem,result['entries'][0]['ticket'])
                 self.assertEqual(profile['user']['login'],'hnah');self.assertTrue(profile['user']['verified'])
-                def photo(cookie=None):
-                    request=urllib.request.Request(base+'/avatars/1',headers={'Cookie':cookie} if cookie else {})
+                def photo(cookie=None,avatar=initial_photo_url):
+                    request=urllib.request.Request(base+avatar,headers={'Cookie':cookie} if cookie else {})
                     with urllib.request.urlopen(request) as response:return response.read(),response.headers['Content-Type']
                 self.assertEqual(await asyncio.to_thread(photo,cookie),(image,'image/png'))
                 with self.assertRaises(urllib.error.HTTPError) as rejected:await asyncio.to_thread(photo)
@@ -43,6 +46,7 @@ class RoomIdentity(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(guest['user']['verified'])
                 added=await room.control(dict(action='sabo_profiles',profiles=[dict(login='thtay',avatar=None)]))
                 self.assertEqual(added['added'],['thtay'])
+                room.avatar_cache.store('thtay',b'\x89PNG\r\n\x1a\nsabo')
                 again=await room.control(dict(action='sabo_profiles',profiles=[dict(login='thtay',avatar=None)]))
                 self.assertEqual(again['added'],[])
                 await room.control(dict(action='start'))
@@ -57,6 +61,10 @@ class RoomIdentity(unittest.IsolatedAsyncioTestCase):
                 self.assertNotEqual(state['players'][0]['name'],'hnah')
                 self.assertTrue(by_name['hnah']['verified']);self.assertFalse(by_name['sillyguest']['verified'])
                 self.assertTrue(by_name['thtay']['sabo']);self.assertFalse(by_name['thtay']['verified'])
+                for name,expected in [('hnah',image),('sillyguest',b'\x89PNG\r\n\x1a\nguest'),('thtay',b'\x89PNG\r\n\x1a\nsabo')]:
+                    self.assertEqual((await asyncio.to_thread(photo,cookie,by_name[name]['avatar']))[0],expected)
+                with self.assertRaises(urllib.error.HTTPError) as stale:await asyncio.to_thread(photo,cookie,initial_photo_url)
+                self.assertEqual(stale.exception.code,404)
                 with urllib.request.urlopen(urllib.request.Request(base+'/auth/me',headers={'Cookie':cookie})) as r:updated=json.load(r)
                 self.assertEqual(updated['user']['slot'],by_name['hnah']['id'])
                 self.assertTrue(any(e.get('action')=='died' for e in state['events']))

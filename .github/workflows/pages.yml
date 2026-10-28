@@ -48,6 +48,7 @@ jobs:
       - run: node browser-tools/avatar-saver/capture.test.js
       - run: node browser-tools/avatar-saver/signin-close.test.js
       - run: node minigames/forknite/meal-timing.test.js
+      - run: node minigames/forknite/avatar-identity.test.js
       - run: node minigames/forknite/campus-status.test.js
       - run: node minigames/forknite/campus-audio.test.js
       - run: node minigames/forknite/fox-audio.test.js
