@@ -101,10 +101,10 @@ proxy searches or open another port. Existing campus API admission stays separat
 
 ## The little 4
 
-F4 still toggles output volume. Its first use reveals a security-history joke
+F5 still toggles output volume. Its first use reveals a security-history joke
 and a separate clickable **[4?]** footer button. That button (or `/key4`) searches
 for the eMudhra “private key is 4” incident using your chosen engine and normal
-browser permission. F4 itself never launches a search.
+browser permission. F5 itself never launches a search.
 
 It references the compromised intermediate certificate's tiny private scalar,
 not a LAN42 credential. [Incident explainer and reproduction](https://d4.key64.com/).

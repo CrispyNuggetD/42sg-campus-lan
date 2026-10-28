@@ -37,7 +37,7 @@ HELP = [
     "/quiet status: LAN42-only exam audio mute | /exams: cached SG schedule | admin /quiet MINUTES | release popups: max once/24h",
     "/search TERMS: chosen engine in your browser | /settings search: engine + aggregate counting opt-out | /search stats",
     "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",
-    "Click footer buttons or use F2 sign in/out | F3 system mute | F4 output 0/30% | F5 uwu | F6 auto uwu | F7 clusters",
+    "Click footer buttons or use F2 sign in/out | F3 clusters | F4 system mute | F5 output 0/30% | F6 uwu | F7 auto uwu",
     '/changelog: server release history and alpha testing credits',
     'API views: verified Singapore sign-in; enrolled API operators may use local /clusters and /info offsite.',
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',

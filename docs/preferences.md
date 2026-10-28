@@ -67,10 +67,10 @@ repeat arrival popups; meaningful outages still get an availability notification
 ## Keyboard and clickable controls
 
 The persistent footer buttons are clickable. **F2** signs in or out (use HQ for
-account changes), **F3** mutes system output, **F4** toggles system output
-between 0% and 30%, **F5** tries `/uwu` once, and **F6** toggles automatic uwu
+account changes), **F4** mutes system output, **F5** toggles system output
+between 0% and 30%, **F6** tries `/uwu` once, and **F7** toggles automatic uwu
 for this window. The guest prompt also supports “click here”. Some terminals
-require Fn with function keys; the clickable buttons work without them. F3 also pauses uwu output in this window until F4, so automatic uwu cannot
+require Fn with function keys; the clickable buttons work without them. F4 also pauses uwu output in this window until F5, so automatic uwu cannot
 raise the volume behind your back. These controls preserve your typed draft and wait while a consent/setup question is
 active. Sound permission remains separate; output mute does not disable desktop
 popups (`/notify off` controls ordinary notifications). Tab still switches the
@@ -203,4 +203,4 @@ separate from permission to play the koel sound. Manage it with
 `/settings audio-auto-on on|off`. `/volume` itself applies your explicit request
 without a permission prompt.
 
-Press **F7** in HQ to open both campus clusters, using the same sign-in and local-operator checks as `/clusters`. `/c1` and `/c2` select one cluster.
+Press **F3** in HQ to open both campus clusters, using the same sign-in and local-operator checks as `/clusters`. `/c1` and `/c2` select one cluster.

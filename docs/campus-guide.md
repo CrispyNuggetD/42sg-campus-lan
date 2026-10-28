@@ -118,7 +118,7 @@ last 500 event lines. Text input currently supports ASCII.
 | `/invite-room` | Share your room invitation across the connected nodes. |
 | `/notify` | View channels; `/notify dms on`, `/notify host off`, or `/notify all off`. |
 | `/signin` | When the approved on-campus host is online, SG students can sign in and use `/clusters`. |
-| `F7` | Open both clusters through the same authorization as `/clusters`. |
+| `F3` | Open both clusters through the same authorization as `/clusters`. |
 | `/clusters [1|2]` | Needs sign-in and the running campus host; shows both clusters by default, or one with `1`/`2`, plus API-reported occupied seats/logins and a snapshot timestamp. Aliases: `/cluster 1`, `/cluster1`, `/c1` (and `2` equivalents); `./clusters` shows both. |
 | `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
 | `/settings signout` | Revoke this device's session and return to guest HQ. |

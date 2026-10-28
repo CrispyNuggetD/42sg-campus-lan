@@ -21,10 +21,10 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <!-- shell-installer-features:start -->
 - **Campus HQ:** `lan42` uses its own tmux session in an Ubuntu terminal tab; no-sudo setup asks before Python/tmux installation. Mac hosts can opt into one-connection remote guest approval; approval is separate from Intra sign-in.
-- **Find your people:** `/who`, `/join`, DMs and `/track`; F7 or `/clusters` shows both clusters, `/c1` or `/c2` selects one. Maps color friends, list members, signed-in users, guests and API-only seats; campus host required.
+- **Find your people:** `/who`, `/join`, DMs and `/track`; F3 or `/clusters` shows both clusters, `/c1` or `/c2` selects one. Maps color friends, list members, signed-in users, guests and API-only seats; campus host required.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
-- **Easy controls:** clickable footer or F2 sign in/out; F3 mute, F4 output 0/30%, F5 uwu once, F6 automatic uwu, F7 clusters; Up/Down history and !COMMAND for your local shell.
+- **Easy controls:** clickable footer or F2 sign in/out; F4 mute, F5 output 0/30%, F6 uwu once, F7 automatic uwu, F3 clusters; Up/Down history and !COMMAND for your local shell.
 - **Useful alerts:** moderated `/broadcast`, pinned host arrival and exam-time LAN42-only audio quiet. `/notify` separates alerts from DMs/pokes; release popups are coalesced and daily-limited.
 - **Versioned server:** startup shows version/date; `/changelog` explains releases. Enrolled operators can read own SG hours. Mac/Linux ask [y/N] before package-wide reloads after checkout updates.
 - **Web search:** `/search` defaults to Ecosia; Google/custom engines are optional. Permanent aggregate impact totals and estimated unique searches have a counting opt-out.

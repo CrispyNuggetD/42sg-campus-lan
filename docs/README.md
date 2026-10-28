@@ -13,13 +13,13 @@ the [command reference](quick-guide.html).
 | --- | --- |
 | [Remote guest approval](remote-access.md) | Mac-only, per-connection host approval; green status, genuine sign-in and campus presence stay separate. |
 | [Getting started](getting-started.md) | Install, launch, tmux, shell helpers, dailylogin and guest/sign-in basics. |
-| [Campus and social features](campus-guide.md) | Peer discovery, rosters, F7 clusters and aliases, chat, profiles, tracking and arrival rules. |
+| [Campus and social features](campus-guide.md) | Peer discovery, rosters, F3 clusters and aliases, chat, profiles, tracking and arrival rules. |
 | [Minigames](minigames.md) | Tetris, Bluff, Hex Wars and FORKNITE, together with controls and requirements. |
 | [KoelDrop and the uwu bird](file-sharing.md) | Add-only 42SG flock, sender/version names, upload limits, daily folders, dock/Files shortcuts and the uwu bird. |
 | [Personal preferences](preferences.md) | Clickable controls, keyboard shortcuts, notification channels, popup consent, auto-login, local history and output volume. |
 
 [Web search and the impact counter](web-search.md) covers engine choices, the
-F4 Easter egg, permanent aggregates and privacy.
+F5 Easter egg, permanent aggregates and privacy.
 
 [Exam quiet and release digests](exam-quiet.md) explains automatic app-only audio
 quiet, calendar updates and the release notification budget.

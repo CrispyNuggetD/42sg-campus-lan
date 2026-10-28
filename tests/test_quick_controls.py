@@ -16,15 +16,15 @@ class Controls(QuickControls):
 
 
 class QuickControlTests(unittest.TestCase):
-    def test_f7_clusters_uses_local_access_or_existing_authenticated_command(self):
+    def test_f3_clusters_uses_local_access_or_existing_authenticated_command(self):
         c=Controls();c.local_api_command=Mock(return_value=False);c.send=Mock()
-        self.assertTrue(c.quick_key(curses.KEY_F0+7))
+        self.assertTrue(c.quick_key(curses.KEY_F0+3))
         c.local_api_command.assert_called_once_with('/clusters')
         c.send.assert_called_once_with(dict(type='command',text='/clusters'))
         c.send.reset_mock();c.local_api_command.return_value=True
-        c.quick_key(curses.KEY_F0+7);c.send.assert_not_called()
+        c.quick_key(curses.KEY_F0+3);c.send.assert_not_called()
         c.role='game';c.local_api_command.reset_mock()
-        c.quick_key(curses.KEY_F0+7);c.local_api_command.assert_not_called()
+        c.quick_key(curses.KEY_F0+3);c.local_api_command.assert_not_called()
 
     def test_clickable_guest_prompt_and_signed_out_button(self):
         c=Controls();c.draw_quick_controls(Canvas())
@@ -35,11 +35,11 @@ class QuickControlTests(unittest.TestCase):
 
     def test_volume_and_uwu_reuse_local_consent_handlers(self):
         c=Controls()
-        for key in (curses.KEY_F3,curses.KEY_F4,curses.KEY_F5,curses.KEY_F6):
+        for key in (curses.KEY_F4,curses.KEY_F5,curses.KEY_F6,curses.KEY_F7):
             self.assertTrue(c.quick_key(key))
         self.assertEqual([x.args[0] for x in c.volume_command.call_args_list],['/volume 0','/volume'])
         self.assertEqual([x.args[0] for x in c.uwu_command.call_args_list],['/uwu','/uwu auto'])
-        c.uwu_auto_due=10;c.quick_key(curses.KEY_F6)
+        c.uwu_auto_due=10;c.quick_key(curses.KEY_F7)
         c.uwu_command.assert_called_with('/uwu off')
         self.assertFalse(c.quick_key(ord('a')))
 
@@ -47,7 +47,7 @@ class QuickControlTests(unittest.TestCase):
         for field in ('permission_prompt','wizard'):
             c=Controls();c.draw_quick_controls(Canvas());setattr(c,field,True)
             c.draw_quick_controls(Canvas());self.assertEqual(c.control_hits,[])
-            c.quick_key(curses.KEY_F2);c.quick_key(curses.KEY_F4)
+            c.quick_key(curses.KEY_F2);c.quick_key(curses.KEY_F5)
             c.start_signin.assert_not_called();c.volume_command.assert_not_called()
 
     def test_game_account_control_does_not_change_identity(self):
@@ -62,9 +62,9 @@ class QuickControlTests(unittest.TestCase):
 
     def test_shortcut_mute_blocks_automatic_volume_raise(self):
         from campus_lan.local_console import LocalConsole
-        c=Controls();c.quick_key(curses.KEY_F3)
+        c=Controls();c.quick_key(curses.KEY_F4)
         action=Mock()
         LocalConsole.with_audio_volume(c,action)
         action.assert_not_called()
         self.assertTrue(c.shortcut_audio_muted)
-        c.quick_key(curses.KEY_F4);self.assertFalse(c.shortcut_audio_muted)
+        c.quick_key(curses.KEY_F5);self.assertFalse(c.shortcut_audio_muted)

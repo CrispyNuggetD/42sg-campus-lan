@@ -164,7 +164,7 @@ checks, and mock all native notifications, campus evidence and transfers.
 ## Web search and permanent impact aggregates
 
 All internet-search features use SearchControls.launch_search, including /key4.
-Keep F4's volume action; its optional discovered [4?] link invokes the chosen
+Keep F5's volume action; its optional discovered [4?] link invokes the chosen
 search engine and existing browser/search consent. No browser profile reads or
 result-click tracking. Ecosia is the default; Google selection has one fair
 confirmation, and custom templates must be fixed-host HTTPS query URLs.
@@ -254,4 +254,4 @@ fallback when tmux is declined. Optional game/API-host dependencies remain separ
 
 ## Owner-requested add-only KoelDrop
 
-The public file API assigns authenticated sender/revision filenames and accepts additions only. Never expose replacement or shared deletion routes. Retain older data; mutable-history helpers are for historical fixtures/internal storage only. Enforce persisted per-student rolling limits across groups: shared 6 additions/24 MiB per minute, own folder 30/96 MiB. Return canonical receipts via pinned transport; never silently remove source files or auto-approve incoming files. F7 opens both clusters through existing API authorization.
+The public file API assigns authenticated sender/revision filenames and accepts additions only. Never expose replacement or shared deletion routes. Retain older data; mutable-history helpers are for historical fixtures/internal storage only. Enforce persisted per-student rolling limits across groups: shared 6 additions/24 MiB per minute, own folder 30/96 MiB. Return canonical receipts via pinned transport; never silently remove source files or auto-approve incoming files. F3 opens both clusters through existing API authorization.
