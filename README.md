@@ -21,7 +21,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <!-- shell-installer-features:start -->
 - **Campus HQ:** `lan42` uses its own tmux session in an Ubuntu terminal tab; no-sudo setup asks before Python/tmux installation. Mac hosts can opt into one-connection remote guest approval; approval is separate from Intra sign-in.
-- **Find your people:** `/track` groups relationships/lists; `/track friends` views them, `/track friends LOGIN` labels them. `/who` lists peers; F3 maps seats (host required). Owner `/tool` caches avatars; the saver closes completed photo tabs.
+- **Find your people:** `/track` groups labels/lists; `/track friends` views friends, `/track friends LOGIN` labels them. `/who` lists peers; F3 maps seats (host required). Owner `/tool` caches avatars; saved photo tabs close automatically.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
 - **Easy controls:** clickable footer or F2 sign in/out; F4 mute, F5 output 0/30%, F6 uwu once, F7 automatic uwu, F3 clusters; Up/Down history and !COMMAND for your local shell.
