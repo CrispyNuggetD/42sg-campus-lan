@@ -31,7 +31,7 @@ class QuickControls:
         elif action == 'uwu':
             self.uwu_command('/uwu')
         elif action == 'auto':
-            self.uwu_command('/uwu off' if getattr(self, 'uwu_auto_due', None) is not None else '/uwu auto')
+            self.uwu_command('/uwu off' if getattr(self, 'uwu_auto_enabled', False) else '/uwu auto')
 
     def quick_key(self, key):
         for number, action in enumerate(('account', 'clusters', 'mute', 'volume', 'uwu', 'auto'), 2):
@@ -53,7 +53,7 @@ class QuickControls:
             self.control_hits.append((h-3, 0, min(len(text), w-1), 'account'))
         controls = [('account', 'F2 '+('Sign out' if signed else 'Sign in')), ('clusters','F3 Clusters'),
                     ('mute', 'F4 Mute'), ('volume', 'F5 0/30%'), ('uwu', 'F6 Uwu'),
-                    ('auto', 'F7 Auto:'+('on' if getattr(self, 'uwu_auto_due', None) is not None else 'off'))]
+                    ('auto', 'F7 Auto:'+('on' if getattr(self, 'uwu_auto_enabled', False) else 'off'))]
         if getattr(self,'key4_discovered',False):controls.append(('key4','4?'))
         x = 0
         for action, label in controls:

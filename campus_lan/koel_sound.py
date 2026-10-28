@@ -40,6 +40,20 @@ class SoundChoice:
         self.local=data
 
 
+class AutoChoice:
+    """Persistent local automatic-call choice, separate from sound consent."""
+    def __init__(self,owner):
+        import hashlib
+        self.path=config_dir()/('koel-auto-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json')
+
+    def read(self):
+        try:return json.loads(private_read(self.path)).get('enabled') is True
+        except (OSError,ValueError,AttributeError):return False
+
+    def set(self,enabled):
+        private_write(self.path,json.dumps({'enabled':enabled is True}))
+
+
 def sound_hints(enabled):
     """None leaves normal notification policy unchanged; False explicitly silences."""
     from .audio_quiet import active

@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock,patch
 from campus_lan.client import Client
-from campus_lan.local_console import History,shell_command
+from campus_lan.local_console import History,audio_volume_settings,shell_command
 from campus_lan.volume import Volume
 
 class Console(unittest.TestCase):
@@ -52,6 +52,20 @@ class Console(unittest.TestCase):
             c.with_audio_volume(play);self.assertEqual(play.call_count,2)
             c.volume_command('/settings audio-auto-on off')
             c.with_audio_volume(play);self.assertEqual(play.call_count,2)
+
+    def test_startup_volume_requires_opt_in_and_sets_only_if_needed(self):
+        c=self.client()
+        with patch('campus_lan.volume.Volume') as factory:
+            volume=factory.return_value;volume.get.return_value=50
+            c.startup_audio_volume();factory.assert_not_called()
+            c.volume_command('/settings audio-auto-on on')
+            c.volume_command('/settings audio-startup-volume on')
+            self.assertTrue(audio_volume_settings()['auto_on'])
+            c.startup_audio_volume();volume.set.assert_called_once_with(30)
+            volume.set.reset_mock();volume.get.return_value=30
+            c.startup_audio_volume();volume.set.assert_not_called()
+            c.volume_command('/settings audio-startup-volume off')
+            volume.get.return_value=50;c.startup_audio_volume();volume.set.assert_not_called()
 
     def test_decline_never_changes_volume_or_plays(self):
         c=self.client();play=Mock()

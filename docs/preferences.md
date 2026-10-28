@@ -203,4 +203,8 @@ separate from permission to play the koel sound. Manage it with
 `/settings audio-auto-on on|off`. `/volume` itself applies your explicit request
 without a permission prompt.
 
+`/settings audio-startup-volume on` separately opts this device into setting
+system output to 30 percent when a LAN42 HQ window starts, if it is at another
+level. Game windows do not change it. Use `off` to stop this startup adjustment.
+
 Press **F3** in HQ to open both campus clusters, using the same sign-in and local-operator checks as `/clusters`. `/c1` and `/c2` select one cluster.

@@ -13,6 +13,19 @@ def local_path(name):
     return config_dir()/(name+'-'+machine+'.json')
 
 
+def audio_volume_settings():
+    try:
+        data=json.loads(private_read(local_path('audio-volume')))
+        return data if isinstance(data,dict) else {}
+    except (OSError,ValueError):return {}
+
+
+def save_audio_volume_settings(**changes):
+    settings=audio_volume_settings()
+    settings.update(changes)
+    private_write(local_path('audio-volume'),json.dumps(settings))
+
+
 def search_input(text):
     parts=text.split()
     return parts[:1] in (['/search'],['/key4']) or parts[:2]==['/settings','search']
@@ -59,6 +72,14 @@ def shell_command(screen,command):
 
 
 class LocalConsole:
+    def startup_audio_volume(self):
+        if audio_volume_settings().get('startup_30') is not True:return
+        try:
+            from .volume import Volume
+            volume=Volume()
+            if volume.get()!=30:volume.set(30)
+        except (OSError,ValueError) as error:self.lines.append('Startup volume: '+str(error))
+
     def with_audio_volume(self,action):
         from . import audio_quiet
         if audio_quiet.active():return
@@ -71,8 +92,7 @@ class LocalConsole:
             # Unknown volume never implies permission to change it.
             action();return
         if level!=0:action();return
-        try:settings=json.loads(private_read(local_path('audio-volume')))
-        except (OSError,ValueError):settings={}
+        settings=audio_volume_settings()
         def enable():
             if audio_quiet.active():return False
             try:volume.set(30);action();return True
@@ -86,19 +106,27 @@ class LocalConsole:
             if not enable():return
             if isinstance(settings,dict) and settings.get('asked') is True:return
             def always():
-                private_write(local_path('audio-volume'),json.dumps({'auto_on':True,'asked':True}))
+                save_audio_volume_settings(auto_on=True,asked=True)
                 self.lines.append('Automatic unmute to 30% enabled. /settings audio-auto-on off disables it.')
             self.popup_prompts().confirm('Always raise muted output to 30% for uwu on this device?',always,
-                lambda:private_write(local_path('audio-volume'),json.dumps({'auto_on':False,'asked':True})))
+                lambda:save_audio_volume_settings(auto_on=False,asked=True))
         self.popup_prompts().confirm('Output is muted or at 0%. Raise it to 30% for uwu?',accept,decline)
 
     def volume_command(self,text):
         parts=text.split()
+        if parts[:2]==['/settings','audio-startup-volume']:
+            if len(parts)!=3 or parts[2] not in ('on','off'):
+                self.lines.append('Use /settings audio-startup-volume on|off');return True
+            try:
+                save_audio_volume_settings(startup_30=parts[2]=='on')
+                self.lines.append('Set output to 30% on LAN42 HQ launch: '+parts[2]+'.')
+            except (OSError,ValueError) as error:self.lines.append(str(error))
+            return True
         if parts[:2]==['/settings','audio-auto-on']:
             if len(parts)!=3 or parts[2] not in ('on','off'):
                 self.lines.append('Use /settings audio-auto-on on|off');return True
             try:
-                private_write(local_path('audio-volume'),json.dumps({'auto_on':parts[2]=='on','asked':True}))
+                save_audio_volume_settings(auto_on=parts[2]=='on',asked=True)
                 self.lines.append('Automatic uwu unmute '+parts[2]+'.')
             except (OSError,ValueError) as error:self.lines.append(str(error))
             return True

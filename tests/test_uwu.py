@@ -1,15 +1,21 @@
 import collections
+import tempfile
 import queue
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock,AsyncMock,patch
 from campus_lan import koel_sound
+from campus_lan.koel_sound import AutoChoice
 from campus_lan.client import Client
 from campus_lan.server import Lobby
 from campus_lan.desktop_notifications import Notifications
 
 class Uwu(unittest.TestCase):
     def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)
+        config=patch('campus_lan.koel_sound.config_dir',return_value=Path(temporary.name))
+        config.start();self.addCleanup(config.stop)
         quiet=patch('campus_lan.audio_quiet.active',return_value=False);quiet.start();self.addCleanup(quiet.stop)
         patcher=patch('campus_lan.volume.Volume');volume=patcher.start();self.addCleanup(patcher.stop)
         volume.return_value.get.return_value=50
@@ -28,6 +34,7 @@ class Uwu(unittest.TestCase):
             c.uwu_auto_tick()
             play.assert_not_called()
             c.uwu_command('/uwu auto')
+            self.assertTrue(AutoChoice(c.name).read())
             self.assertEqual(c.uwu_auto_due,850)
             interval.assert_called_with(600,900)
             c.uwu_command('/uwu on')
@@ -38,6 +45,7 @@ class Uwu(unittest.TestCase):
             self.assertEqual(c.uwu_auto_due,850)
             c.uwu_command('/uwu off')
             self.assertIsNone(c.uwu_auto_due)
+            self.assertFalse(AutoChoice(c.name).read())
             c.send.assert_not_called()
 
     def test_auto_requires_sound_consent_and_honors_revocation(self):
@@ -48,9 +56,23 @@ class Uwu(unittest.TestCase):
             c.popup_prompts.return_value.session_question.assert_called_once()
             self.assertIsNone(getattr(c,'uwu_auto_due',None))
             c.uwu_auto_due=0
+            c.uwu_auto_enabled=True
             c.uwu_auto_tick()
             self.assertIsNone(c.uwu_auto_due)
             play.assert_not_called()
+
+    def test_auto_choice_survives_new_window_and_waits_for_sound_consent(self):
+        c=self.client();c.popup_prompts=Mock()
+        with patch('campus_lan.koel_sound.SoundChoice') as sound,patch('campus_lan.client.time.monotonic',return_value=100),patch('campus_lan.client.random.uniform',return_value=700):
+            sound.return_value.read.return_value={'enabled':True}
+            c.uwu_command('/uwu auto')
+            reopened=self.client();reopened.uwu_auto_enabled=AutoChoice(reopened.name).read()
+            reopened.uwu_auto_tick()
+            self.assertEqual(reopened.uwu_auto_due,800)
+            sound.return_value.read.return_value={'enabled':False}
+            reopened.uwu_auto_due=0;reopened.uwu_auto_tick()
+            self.assertIsNone(reopened.uwu_auto_due)
+            self.assertTrue(AutoChoice(reopened.name).read())
 
     def test_bare_uwu_invites_koeldrop_once_even_when_silent_without_starting_sharing(self):
         for enabled in (False,True):

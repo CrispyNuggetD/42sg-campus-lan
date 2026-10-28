@@ -122,11 +122,13 @@ respect desktop support and sound settings; no separate player is started.
 
 ## Sound tests and private pokes
 
-`/uwu auto` (or `/uwu on`) enables local koel calls at a fresh random interval
-of 10–15 minutes. It asks for sound permission if needed. `/uwu off` stops
-the timer; disabling koel sound also stops it at the next scheduled call.
-The timer applies only to this window and stops when it closes; it never pokes
-other students. Repeating the command does not reset an active timer.
+`/uwu auto` (or `/uwu on`) saves a local choice for calls at a fresh random
+interval of 10–15 minutes. It asks for sound permission if needed. `/uwu off`
+turns off the saved choice. The timer resumes in new HQ windows when koel sound
+is enabled; disabling sound pauses calls until sound is enabled again. For sound
+permission across sessions, use `/settings koel-sound always` and confirm it.
+Automatic calls never poke other students. Repeating the command does not reset
+an active timer.
 
 `/uwu` introduces the **koel**, the familiar “uwu” bird and KoelDrop’s Singapore
 take on a carrier pigeon: this bird delivers your files. Once per window, it

@@ -113,6 +113,9 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         self.auth_destination = None
         self.sock, self.name = sock, name
         self.role, self.initial_command = role, initial_command
+        from .koel_sound import AutoChoice
+        self.uwu_auto_enabled=AutoChoice(name).read() if role=='lobby' else False
+        self.uwu_auto_due=None
         self.requested_game=initial_command.split()[1] if initial_command and initial_command.startswith(('/host ','/game ')) else None
         self.inbox = queue.Queue(maxsize=256)
         from .release import banner
@@ -138,6 +141,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             hello['session'] = auth_session['session']
         self.send(hello)
         threading.Thread(target=self.receive,daemon=True).start()
+        if role=='lobby':self.startup_audio_volume()
 
     def sound_tick(self):
         from .audio_quiet import active
@@ -161,31 +165,49 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         self.popup_prompts().session_question('Always uwu? Are you SURE? ಠ_ಠ [y/N]',accept,lambda:choice.choose(enabled_before))
 
     def uwu_auto_tick(self):
+        if not getattr(self,'uwu_auto_enabled',False) or getattr(self,'uwu_auto_failed',False):return
         due=getattr(self,'uwu_auto_due',None)
-        if due is None or time.monotonic()<due:return
         from .koel_sound import SoundChoice,play
+        if due is None:
+            now=time.monotonic()
+            if now<getattr(self,'uwu_auto_next_check',0):return
+            self.uwu_auto_next_check=now+5
+            if SoundChoice(self.name).read()['enabled']:
+                self.uwu_auto_due=now+random.uniform(600,900)
+            return
+        if time.monotonic()<due:return
         if not SoundChoice(self.name).read()['enabled']:
             self.uwu_auto_due=None
-            self.lines.append('Automatic uwu stopped: koel sound is off.')
+            self.lines.append('Automatic uwu paused: koel sound is off.')
             return
         self.uwu_auto_due=time.monotonic()+random.uniform(600,900)
         try:self.with_audio_volume(lambda:play() if SoundChoice(self.name).read()['enabled'] else None)
         except OSError as error:
             self.uwu_auto_due=None
-            self.lines.append(str(error)+' Automatic uwu stopped.')
+            self.uwu_auto_failed=True
+            self.lines.append(str(error)+' Automatic uwu paused until restart or /uwu auto.')
 
     def uwu_command(self,text):
         if text.strip() in ('/uwu auto','/uwu on','/uwu off'):
+            from .koel_sound import AutoChoice
             if text.strip()=='/uwu off':
+                self.uwu_auto_enabled=False
                 self.uwu_auto_due=None
+                try:AutoChoice(self.name).set(False)
+                except (OSError,ValueError) as error:self.lines.append('Could not save automatic uwu preference: '+str(error))
                 self.lines.append('Automatic uwu off.')
                 return True
             from .koel_sound import SoundChoice
             choice=SoundChoice(self.name)
             def start():
+                try:AutoChoice(self.name).set(True)
+                except (OSError,ValueError) as error:
+                    self.lines.append('Could not save automatic uwu preference: '+str(error));return
+                self.uwu_auto_enabled=True
+                self.uwu_auto_failed=False
                 if getattr(self,'uwu_auto_due',None) is None:
                     self.uwu_auto_due=time.monotonic()+random.uniform(600,900)
-                self.lines.append('Automatic local uwu on: every 10–15 minutes until /uwu off or this window closes.')
+                self.lines.append('Automatic local uwu on: every 10–15 minutes across sessions until /uwu off.')
             if choice.read()['enabled']:start()
             else:
                 def accept():choice.choose(True);start()
@@ -1068,6 +1090,8 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 '/notify — notification channels; /notify all off — silence everything',
                 '/settings search — Ecosia/Google/custom; permanent aggregate impact counter and opt-out',
                 '/volume [0–100] — desktop output; /settings audio-auto-on on|off — uwu unmute',
+                '/settings audio-startup-volume on|off — set output to 30% on HQ launch',
+                '/uwu auto|off — persistent local automatic calls; /settings koel-sound always — persistent sound consent',
                 '/settings host-discovery on|off | auto-host-join on|off | host-poll 60–300',
                 '/settings permissions — browser, popup and notification consent',
                 '/settings autologin off|saved|on — reuse login, optionally request OAuth',

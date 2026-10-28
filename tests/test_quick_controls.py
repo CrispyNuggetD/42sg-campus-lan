@@ -39,7 +39,7 @@ class QuickControlTests(unittest.TestCase):
             self.assertTrue(c.quick_key(key))
         self.assertEqual([x.args[0] for x in c.volume_command.call_args_list],['/volume 0','/volume'])
         self.assertEqual([x.args[0] for x in c.uwu_command.call_args_list],['/uwu','/uwu auto'])
-        c.uwu_auto_due=10;c.quick_key(curses.KEY_F7)
+        c.uwu_auto_enabled=True;c.quick_key(curses.KEY_F7)
         c.uwu_command.assert_called_with('/uwu off')
         self.assertFalse(c.quick_key(ord('a')))
 
@@ -55,7 +55,7 @@ class QuickControlTests(unittest.TestCase):
         c.start_signin.assert_not_called();self.assertIn('HQ',c.lines[-1])
 
     def test_footer_fits_minimum_width_and_auto_status(self):
-        c=Controls();c.uwu_auto_due=0;c.draw_quick_controls(Canvas())
+        c=Controls();c.uwu_auto_enabled=True;c.draw_quick_controls(Canvas())
         self.assertEqual(len(c.control_hits),7)
         for row,left,right,action in c.control_hits:self.assertLessEqual(right,75)
         self.assertTrue(any('Auto:on' in call.args[2] for call in c.line.call_args_list))
