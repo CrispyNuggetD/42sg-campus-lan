@@ -9,9 +9,14 @@ import webbrowser
 from .auth import config_dir, private_read
 from .avatar_cache import AvatarCache, MAX_IMAGE
 from .profile_lookup import ProfileLookup
-from .login_whitelist import validate_logins, WhitelistUnavailable
+from .login_whitelist import validate_logins, WhitelistUnavailable, PHOTO_SELECTOR_MESSAGE, unsupported_photo_selector
 from .avatar_imports import BrowserImports, downloads_directory
 from pathlib import Path
+
+
+def validate_photo_login(value):
+    if unsupported_photo_selector([value]):raise ValueError(PHOTO_SELECTOR_MESSAGE)
+    return validate_logins([value])[0]
 
 PAGE=r'''<!doctype html><meta charset="utf-8"><title>LAN42 · private avatar tools</title>
 <style>body{max-width:720px;margin:50px auto;padding:20px;background:#151723;color:#eee;font:16px system-ui}input,button{padding:10px;margin:6px}a{color:#d8f96b}#drop{border:2px dashed #aaa;padding:25px;margin-top:20px}pre{white-space:pre-wrap}</style>
@@ -51,7 +56,7 @@ batch.onclick=async()=>{
 };
 if($('login').value)setTimeout(()=>batch.click(),500);
 async function call(path,body,type='application/json'){const r=await fetch(path,{method:'POST',headers:{'X-LAN42-Admin':token||'','Content-Type':type},body});const data=await r.json();if(!r.ok)throw Error(data.error||'Request failed');return data;}
-async function lookup(){const login=$('login').value.trim();const data=await call('/lookup',JSON.stringify({login}));photoUrl=data.avatar;$('photo').hidden=!photoUrl;$('photo').href=photoUrl||'#';$('status').textContent=JSON.stringify(data,null,2);return data;}
+async function lookup(){const login=$('login').value.trim();if(unsupportedAvatarSelector(login))throw Error('Photo batches need explicit Intra logins; all and cohort selectors are unsupported.');const data=await call('/lookup',JSON.stringify({login}));photoUrl=data.avatar;$('photo').hidden=!photoUrl;$('photo').href=photoUrl||'#';$('status').textContent=JSON.stringify(data,null,2);return data;}
 let pendingJob=null;
 async function showDownloads(){try{const d=await call('/downloads_directory',JSON.stringify({}));$('downloads').value=d.directory;}catch(e){$('status').textContent=e.message;}}showDownloads();
 $('save-downloads').onclick=async()=>{try{const d=await call('/downloads_directory',JSON.stringify({directory:$('downloads').value}));$('status').textContent='Importer watches '+d.expected_directory;}catch(e){$('status').textContent=e.message;}};
@@ -69,6 +74,8 @@ $('file').onchange=e=>upload(e.target.files[0]);$('drop').ondragover=e=>e.preven
 def launch(logins=(),approved=False,photos_approved=False,owner=None):
     import pwd,os
     from .popup_permissions import console_permission,console_remember,Permissions
+    if unsupported_photo_selector(logins):
+        print(PHOTO_SELECTOR_MESSAGE);return
     owner=owner or pwd.getpwuid(os.getuid()).pw_name
     if Permissions(owner).mode('tools')=='deny':
         print('Browser panel blocked by local popup settings.');return
@@ -105,7 +112,7 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                 self.connection.settimeout(15);raw=self.rfile.read(size)
                 url=urllib.parse.urlsplit(self.path)
                 if url.path=='/import':
-                    login=validate_logins(urllib.parse.parse_qs(url.query).get('login',['']))[0]
+                    login=validate_photo_login(urllib.parse.parse_qs(url.query).get('login',[''])[0])
                     self.reply(200,cache.store(login,raw));return
                 data=json.loads(raw)
                 if url.path=='/photo_permission':
@@ -119,8 +126,8 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                 if url.path=='/extension':
                     self.reply(200,dict(path=str(Path(__file__).resolve().parent.parent/'browser-tools/avatar-saver')));return
                 if url.path=='/job_status':self.reply(200,imports.status(data.get('job')));return
-                if url.path=='/prepare':self.reply(200,imports.prepare(validate_logins([data.get('login')])[0]));return
-                try:login=validate_logins([data.get('login')])[0]
+                if url.path=='/prepare':self.reply(200,imports.prepare(validate_photo_login(data.get('login'))));return
+                try:login=validate_photo_login(data.get('login'))
                 except ValueError as error:
                     if url.path=='/batch_one':
                         self.reply(200,dict(status='failed' if isinstance(error,WhitelistUnavailable) else 'skipped',reason=str(error)));return

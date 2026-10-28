@@ -1102,6 +1102,10 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         screen.refresh()
 
     def open_admin(self, logins=(), approved=False, photos_approved=False):
+        from .login_whitelist import PHOTO_SELECTOR_MESSAGE,unsupported_photo_selector
+        if unsupported_photo_selector(logins):
+            self.lines.append(PHOTO_SELECTOR_MESSAGE)
+            return False
         if not approved:
             self.request_popup('tools','Open the local photo-tool terminal and browser panel?',lambda:self.open_admin(logins,True,photos_approved))
             return False

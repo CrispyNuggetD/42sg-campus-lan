@@ -7,6 +7,12 @@ import re
 from .campus_info import directory
 
 PATTERN=re.compile(r'[A-Za-z0-9_.-]{1,32}')
+PHOTO_SELECTOR_MESSAGE='Photo batches need explicit Intra logins. /tool all and cohort selectors are unsupported.'
+
+
+def unsupported_photo_selector(names):
+    parts=[name.lower() for name in names if isinstance(name,str)]
+    return any(name=='all' or re.fullmatch(r'cohort\d*',name) for name in parts)
 
 
 class WhitelistUnavailable(ValueError):

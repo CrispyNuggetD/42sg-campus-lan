@@ -48,6 +48,11 @@ class Admin(unittest.TestCase):
                 def batch_one(login):
                     request=urllib.request.Request(base+'/batch_one',data=json.dumps({'login':login,'photo_consent':True}).encode(),headers={'Origin':base,'X-LAN42-Admin':token,'Content-Type':'application/json'})
                     with urllib.request.urlopen(request,timeout=3) as response:return json.load(response)
+                with patch('campus_lan.login_whitelist.allowed_logins',return_value={'all'}),patch.object(avatar_admin.ProfileLookup,'lookup_many',new_callable=AsyncMock) as untouched:
+                    result=batch_one('all')
+                    self.assertEqual(result['status'],'skipped')
+                    self.assertIn('explicit Intra logins',result['reason'])
+                    untouched.assert_not_called()
                 with patch('campus_lan.avatar_admin.validate_logins',side_effect=ValueError('Not in local whitelist')),patch.object(avatar_admin.ProfileLookup,'lookup_many',new_callable=AsyncMock) as untouched:
                     self.assertEqual(batch_one('typo')['status'],'skipped')
                     untouched.assert_not_called()

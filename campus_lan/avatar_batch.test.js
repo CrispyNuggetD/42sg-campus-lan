@@ -22,6 +22,9 @@ const assert=require('assert'),run=require('./avatar_batch');
  assert.equal(calls.filter(([,data])=>data.login==='last').length,1);
  assert.equal(result.requested,result.skipped+result.failed+result.success);
  assert.deepStrictEqual(await run([],{call:()=>{throw Error('No request expected');},log:()=>{}}),{requested:0,skipped:0,failed:0,success:0,opened:false});
+ const selectors=[];
+ assert.deepStrictEqual(await run(['all','cohort1'],{call:()=>{throw Error('Selectors must not reach the API');},log:row=>selectors.push(row)}),{requested:2,skipped:2,failed:0,success:0,opened:false});
+ assert(selectors.every(row=>row.reason.includes('explicit Intra logins')));
  console.log('PASS: batch continues after invalid logins, lookup/network errors, expired jobs and timeouts; exact totals and one log per input');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 // Exercise the actual inline panel: query logins survive URL cleanup and errors

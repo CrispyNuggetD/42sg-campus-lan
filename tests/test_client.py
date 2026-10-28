@@ -25,6 +25,14 @@ class Terminal:
     def flush(self): self.flushed = True
 
 class ClientChecks(unittest.TestCase):
+    def test_photo_tool_rejects_selectors_before_opening_or_asking_permission(self):
+        c=Client.__new__(Client)
+        c.lines=[];c.request_popup=Mock()
+        for names in (['all'],['cohort1'],['cohort','1']):
+            self.assertFalse(c.open_admin(names))
+            self.assertIn('explicit Intra logins',c.lines[-1])
+        c.request_popup.assert_not_called()
+
     def test_cluster_command_opens_miniapp_without_changing_hq_view(self):
         c=Client.__new__(Client)
         c.name='fixture';c.role='lobby';c.secure=True;c.lines=[];c.lobby_view='roster'
