@@ -20,13 +20,20 @@ class Admin(unittest.TestCase):
         def server(*args,**kwargs):
             result=ThreadingHTTPServer(*args,**kwargs);servers.append(result);return result
         with patch('campus_lan.access.Policy.local_operator',return_value=234449),tempfile.TemporaryDirectory() as tmp,patch.dict(os.environ,{'XDG_CACHE_HOME':tmp}),patch.object(avatar_admin,'private_read',return_value=b'{}'),patch.object(avatar_admin.webbrowser,'open',side_effect=browser),patch.object(avatar_admin,'ThreadingHTTPServer',side_effect=server),patch.object(avatar_admin,'BrowserImports',side_effect=lambda cache:BrowserImports(cache,Path(tmp)/'Downloads')):
-            thread=threading.Thread(target=avatar_admin.launch,kwargs={'approved':True},daemon=True);thread.start()
+            thread=threading.Thread(target=avatar_admin.launch,kwargs={'approved':True,'photos_approved':True,'logins':['ljohn','hnah']},daemon=True);thread.start()
             self.assertTrue(opened.wait(3))
             url=urlsplit(address[0]);base=url.scheme+'://'+url.netloc;token=parse_qs(url.fragment)['key'][0]
             def post(key,origin):
                 req=urllib.request.Request(base+'/import?login=hnah',data=b'\x89PNG\r\n\x1a\nfixture',headers={'Origin':origin,'X-LAN42-Admin':key,'Content-Type':'application/octet-stream'})
                 with urllib.request.urlopen(req,timeout=3) as response:return json.load(response)
             try:
+                self.assertEqual(parse_qs(url.query)['logins'],['ljohn hnah'])
+                with urllib.request.urlopen(base+'/?'+url.query) as response:
+                    self.assertEqual(response.status,200)
+                    self.assertIn(b'LAN42',response.read())
+                with self.assertRaises(urllib.error.HTTPError) as rejected:
+                    urllib.request.urlopen(base+'/missing?logins=ljohn')
+                self.assertEqual(rejected.exception.code,404)
                 for key,origin in [('',base),(token,'http://attacker.example')]:
                     with self.assertRaises(urllib.error.HTTPError) as rejected:post(key,origin)
                     self.assertEqual(rejected.exception.code,403)

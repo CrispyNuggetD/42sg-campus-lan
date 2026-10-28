@@ -74,7 +74,7 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
         def reply(self,status,data):
             body=json.dumps(data).encode();self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(body)));self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(body)
         def do_GET(self):
-            if self.path!='/':self.reply(404,{'error':'Not found'});return
+            if urllib.parse.urlsplit(self.path).path!='/':self.reply(404,{'error':'Not found'});return
             body=PAGE.replace('PHOTO_CONSENT','true' if photos_approved else 'false').encode();self.send_response(200);self.send_header('Content-Type','text/html; charset=utf-8');self.send_header('Cache-Control','no-store');self.send_header('Referrer-Policy','no-referrer');self.send_header('X-Frame-Options','DENY');self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'");self.end_headers();self.wfile.write(body)
         def do_POST(self):
             authority='127.0.0.1:'+str(self.server.server_port)
