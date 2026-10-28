@@ -128,3 +128,16 @@ photo tool rather than launching a browser from the room server. Tool panels
 and photo-tab/save batches have separate permissions. The extension still needs
 its normal one-time installation. LAN42 only opens requested new pages; these
 permissions do not give it access to existing Chrome tabs, profiles or cookies.
+
+### FORKNITE meal timing colors
+
+Lime/cyan/pink show the first, second and third-or-later meal starts. Orange
+marks an overdue wait or a meal that started late; the next on-time meal clears
+it. The full start-to-start estimate includes eating, sleeping and the table's
+fork-wait allowance: `max(eat + sleep, 2 * eat)` for even tables, or
+`max(eat + sleep, 3 * eat)` for odd tables, plus `max(2ms, 5% of eat)` grace.
+For five diners with 100ms eat and 100ms sleep, orange begins beyond 305ms,
+not after one 100ms eating slot. The card labels distinguish waiting overdue
+from an already late meal. This is a display estimate, not a native scheduler
+verdict; the starvation countdown still uses `time_to_die`. Completed rounds
+freeze their timing display.

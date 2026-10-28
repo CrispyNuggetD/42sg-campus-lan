@@ -160,6 +160,19 @@ is a replay-time estimate from the last observed eating start. Meal-start colors
 are lime (first), cyan (second), and pink (third or later); they do not prove a
 completed meal. Every round resets counters.
 
+Orange bars/borders mark a wait beyond the estimated meal window, or a meal
+that started late; the next on-time meal clears the mark. The estimated
+start-to-start interval is `max(eat + sleep, 2 * eat)` for an even table and
+`max(eat + sleep, 3 * eat)` for an odd table. Add `max(2ms, 5% of eat)` grace
+before marking late. Thus five diners with eat=100ms and sleep=100ms have a
+300ms interval plus 5ms grace, rather than a 100ms threshold. Long sleeps take
+precedence when eat+sleep is larger. This is a display heuristic, not a promise
+about thread scheduling or proof of a C bug. The per-card text distinguishes a
+currently overdue wait from a meal that already arrived late. Starvation remains
+based on the real `time_to_die` argument and last observed eating start.
+The replay clock stops advancing when the native round ends; replay speed and
+pause affect display time only.
+
 - `/diners 7`: fill to seven total diners with fictional random stand-ins.
   Repeating the command replaces its generated stand-ins; joined users and
   explicitly named students remain. Use `/stop` before changing the table.
