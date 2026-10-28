@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LAN42 \u2014 save this avatar",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Save explicitly prepared avatars and close only an approved LAN42 sign-in completion tab.",
   "permissions": [
     "activeTab",

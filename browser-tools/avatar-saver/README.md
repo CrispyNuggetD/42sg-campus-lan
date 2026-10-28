@@ -60,3 +60,8 @@ reads Intra pages, or reads cookies. Turning `signin-close off` prevents that
 message. This allows the helper to close a completed sign-in tab even when
 ordinary page JavaScript is not allowed to close it. No `tabs`, history or
 cookies permission is added.
+
+Version 1.3 closes automatic batch photo tabs after Chrome confirms the exact
+job download completed. Failed/interrupted saves stay open. Only the same CDN
+tab carrying that saved job can request closure; other tabs are untouched.
+Reload the unpacked extension at chrome://extensions to apply this update.

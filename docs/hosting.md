@@ -188,6 +188,11 @@ clients reconnect after the FORKNITE server reloads and reclaim their slots.
 `/admin` opens the master computer's private avatar importer in the normal local
 browser. It supports profile-link lookup, a bounded ordinary download attempt,
 and manual file selection/drop after opening the photo in the user's browser.
+For automatic batches, use `/tool LOGIN...` and install or reload the
+[avatar-saver extension](../browser-tools/avatar-saver/README.md) in Chrome.
+Extension 1.3 closes each batch photo tab after its download completes; failed
+saves remain open. Keep the local admin terminal open for cache import.
+
 Nothing reads or exports Chrome cookies/profiles. Cache files are kept outside
 Git at `~/.cache/42sg-campus-lan/avatars` with private permissions. Joined players
 receive same-origin image responses from the game server; see the game README
