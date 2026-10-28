@@ -82,10 +82,24 @@ def ensure(root=None):
     return wrapper
 
 
+def confirm_install(root=None):
+    """Check existing executables freely; obtain consent before installation."""
+    if shutil.which('tmux') or ((Path(root) if root is not None else root_path())/'bin/tmux').is_file():
+        return True
+    plan=('Install tmux using your existing Homebrew.' if sys.platform=='darwin' else
+          'Download/extract tmux and direct libraries into your account; no sudo or system packages.')
+    print('tmux is missing. '+plan, file=sys.stderr)
+    print('Help install tmux? [y/N]: ',end='',flush=True,file=sys.stderr)
+    return sys.stdin.readline().strip().lower() in ('y','yes')
+
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path)
     args=parser.parse_args()
-    try:print(ensure(args.root))
+    try:
+        if not confirm_install(args.root):
+            sys.exit('tmux installation skipped. Use lan42_here or rerun setup to enable workspace support.')
+        print(ensure(args.root))
     except (OSError,RuntimeError,subprocess.SubprocessError) as error:
         sys.exit('tmux setup: '+str(error)+' No system packages were installed. Rerun setup after fixing the error.')

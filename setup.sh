@@ -9,16 +9,17 @@ esac
 [ "$#" -le 1 ] || { echo 'Usage: sh setup.sh [--no-zsh]' >&2; exit 1; }
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 command -v git >/dev/null || { echo "Git is required."; exit 1; }
-command -v python3 >/dev/null || { echo "Load school-provided Python 3.9+ on PATH and rerun setup. Python itself is not auto-installed; no sudo is used."; exit 1; }
+. "$repo_dir/useful-scripts/setup_python.sh"
+setup_python || exit 1
 python3 - "$repo_dir" <<'PYSETUP'
 import sys
 from pathlib import Path
 if sys.version_info < (3,9):
-    raise SystemExit('Load school-provided Python 3.9+ on PATH and rerun setup. Python itself is not auto-installed.')
+    raise SystemExit('The selected Python is too old. Rerun setup to select or install a compatible runtime.')
 try:
     import curses
 except ImportError:
-    raise SystemExit('This Python lacks curses. Select the school system Python (usually /usr/bin/python3) on PATH and rerun setup; curses is not a pip dependency.')
+    raise SystemExit('The selected Python lacks curses. Rerun setup for Python recovery; curses is not a pip dependency.')
 repo = Path(sys.argv[1])
 launcher = repo / 'lan42.sh'
 launcher.chmod(launcher.stat().st_mode | 0o100)

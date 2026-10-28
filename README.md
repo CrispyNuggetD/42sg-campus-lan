@@ -20,7 +20,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 ## Highlights
 
 <!-- shell-installer-features:start -->
-- **Campus HQ:** no-sudo setup checks Python/curses and prepares missing tmux in your account on Ubuntu; `lan42` opens a separate workspace.
+- **Campus HQ:** no-sudo setup checks Python/curses and offers missing Python/tmux installation with separate yes/no prompts; `lan42` opens a separate workspace.
 - **Find your people:** `/who`, `/join`, private DMs and `/track` lists; `/clusters` shows current SG seats while the approved campus host is online.
 - **KoelDrop:** `/koel flock` joins the host’s 42 Singapore flock: once, always or never. Daily folders survive reconnects; optional sgoinfre link saves home quota. Upload/receive consent stays separate. `/uwu` introduces your courier.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
@@ -41,9 +41,10 @@ host is offline; stable, always-on hosting is future work.
 ## Quick start
 
 On school Ubuntu, clone and run setup in your normal account: **no sudo**.
-Setup checks your existing Python **3.9+ with curses**; it does not install Python.
+Setup checks your existing Python **3.9+ with curses**. If missing, it asks
+**“Allow this Python installation? [y/N]”** before preparing a private runtime.
 Core guest chat/games need no pip packages or API credentials. Setup reuses tmux
-or attempts a user-level package download/extraction if it is missing; no system
+or asks **“Help install tmux? [y/N]”** before a user-level package download/extraction; no system
 packages are installed. Use a terminal at least **76 × 28**.
 [What setup configures and what must already exist →](docs/getting-started.md#dependencies-without-sudo)
 

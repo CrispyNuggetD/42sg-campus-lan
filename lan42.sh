@@ -2,6 +2,9 @@
 set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$repo_dir"
+if [ -x "${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/python/bin/python3" ]; then
+    PATH="${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/python/bin:$PATH"; export PATH
+fi
 if [ "${LAN42_NO_UPDATE:-0}" != 1 ]; then
     echo "[lan42] Updating checkout with git pull --ff-only..."
     if [ -n "$(git status --porcelain)" ]; then

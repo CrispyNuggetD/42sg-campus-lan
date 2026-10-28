@@ -10,6 +10,13 @@ spec=importlib.util.spec_from_file_location('ensure_tmux',Path(__file__).resolve
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class Rootless(unittest.TestCase):
+    def test_consent_defaults_to_no_and_accepts_only_explicit_yes(self):
+        import io
+        for answer, expected in [('',False),('n\n',False),('y\n',True),('yes\n',True),('maybe\n',False)]:
+            with tempfile.TemporaryDirectory() as tmp, patch.object(m.shutil,'which',return_value=None), patch.object(m.sys,'stdin',io.StringIO(answer)), patch.object(m.sys,'stderr',io.StringIO()):
+                self.assertEqual(m.confirm_install(Path(tmp)/'absent'),expected)
+                self.assertFalse((Path(tmp)/'absent').exists())
+
     def test_system_tmux_is_reused_without_download(self):
         with patch.object(m.shutil,'which',return_value='/usr/bin/tmux'),patch.object(m.subprocess,'run',return_value=Mock(returncode=0)) as run:
             self.assertEqual(str(m.ensure()),'/usr/bin/tmux')

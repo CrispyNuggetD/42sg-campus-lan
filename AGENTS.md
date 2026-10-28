@@ -246,5 +246,6 @@ link fallbacks, and never auto-redirect visitors away to an external site.
 `tools/ensure_tmux.py`. Edit the canonical file, run `test_ensure_tmux.py` there,
 then copy the helper here. Ubuntu setup must not invoke sudo, apt install/update
 or system package scripts. Keep private library paths scoped to its wrapper.
-Do not claim Python itself or optional game/API-host dependencies are automatically
-installed. Validate Python/curses and retain direct-terminal fallback.
+Python recovery in setup_python.sh needs explicit yes before uv/runtime downloads.
+Validate Python/curses, preserve no/EOF as decline, and retain direct-terminal
+fallback when tmux is declined. Optional game/API-host dependencies remain separate.

@@ -136,9 +136,9 @@ and [the user endpoint](https://api.intra.42.fr/apidoc/2.0/users/show.html).
 | Dependency | What setup does | If unavailable |
 | --- | --- | --- |
 | Git | Uses the existing executable | Needed to clone/update; load the school-provided Git |
-| Python 3.9+ | Checks the active Python version | Not auto-installed; select an available school/system Python on PATH |
-| curses | Imports it to verify the Python build | Not a pip package; try the school system Python, usually `/usr/bin/python3` |
-| tmux | Reuses it; on Ubuntu/Debian downloads tmux and its direct libraries from configured package repositories, extracts them privately, and checks `tmux -V` | Use `./lan42.sh` / `lan42_here` without a workspace, then retry setup when mirrors/tools are available |
+| Python 3.9+ | Checks the active Python version | Reuses a compatible system Python; otherwise asks before installing a private Python 3.11 runtime via uv |
+| curses | Imports it to verify the Python build | Not a pip package; the prompted replacement runtime must pass the curses import check |
+| tmux | Reuses it; otherwise asks [y/N] before Ubuntu/Debian downloads tmux and its direct libraries from configured package repositories, extracts them privately, and checks `tmux -V` | Use `./lan42.sh` / `lan42_here` without a workspace, then retry setup when mirrors/tools are available |
 | zsh | Appends the helper source block when available | Direct launcher remains usable without shell binding |
 | Core guest Python packages | None; uses the standard library | No pip step |
 | API-host TLS packages, game compilers and other optional tools | Separate feature-specific requirements | Installing the lobby does not provision an approved API host or every optional game tool |
@@ -152,6 +152,19 @@ libraries stay below `~/.local/share/42-tools/tmux` (override base with
 The sourced helper adds that private bin directory to PATH when it exists;
 sourcing itself never downloads anything. This is a package-based attempt,
 not a guarantee for every managed workstation or permission to override school policy.
+
+### Permission prompts
+
+Enter, `n`, or end-of-input declines downloads. Python and tmux are separate
+choices; accepting one does not authorize the other. Missing Python stops setup
+if declined, while declining tmux leaves direct-terminal launch available.
+Python recovery first checks a compatible existing system runtime. If none works,
+it offers to download uv from `https://astral.sh/uv/install.sh` (only when uv is
+missing), then install managed Python 3.11 into your account and validate curses.
+The uv installer is told not to change shell profiles. LAN42 saves a private
+Python binding under `FORTYTWO_TOOLS_ROOT/python/bin`; its launcher and sourced
+helper reuse it. Network restrictions can still prevent installation. This does
+not grant API-host enrollment or install optional game dependencies.
 
 On Mac, missing tmux uses an existing Homebrew installation; Homebrew itself
 is not installed automatically. The current school terminal has not been

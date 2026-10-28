@@ -105,3 +105,11 @@ prove the package mirrors, execution permissions or dependency availability on
 today's school terminal. No sudo, system package install, maintainer scripts or
 new campus snapshot was run. Python itself and optional host/game dependencies
 are not silently installed by the lobby setup.
+
+## Prompted dependency assistance — 28 October 2026 SGT
+
+Missing Python/curses now offers explicit [y/N] user-level Python recovery via
+uv, and missing tmux asks separately before downloads. Blank/no/EOF declines.
+Python recovery and consent tests use fake uv/package tools; terminal setup,
+feature and website checks plus the website build passed on Mac. No runtime
+was downloaded in tests and current campus network/permissions remain unverified.
