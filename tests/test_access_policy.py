@@ -88,6 +88,21 @@ class ScopedAPI(unittest.TestCase):
         with self.assertRaises(AuthError):a.member_profile('hnah')
 
 class ServerBoundaries(unittest.IsolatedAsyncioTestCase):
+    async def test_cluster_viewer_can_only_refresh_and_is_not_a_chat_recipient(self):
+        broker=Broker(Mock());broker.sessions['viewer-session']=dict(member(),expires=time.time()+100)
+        lobby=Lobby(auth_broker=broker)
+        lobby.clients['1']=dict(name='student',uid=2,session_key='viewer-session',role='clusters',writer=Mock())
+        with patch('campus_lan.clusters.snapshot',return_value=([dict(name='fixture',seat='c1r1s1')],100)) as seats,patch.object(lobby,'send',new=unittest.mock.AsyncMock()) as send,patch.object(lobby,'event',new=unittest.mock.AsyncMock()):
+            await lobby.command('1','/clusters')
+            seats.assert_called_once()
+            self.assertEqual(send.call_args.args[1]['type'],'clusters')
+            for text in ('hello','/dm fixture hello','/info','/sabo fixture'):
+                with self.assertRaises(AuthError):await lobby.command('1',text)
+        self.assertFalse(await lobby.deliver_direct('fixture','student','hello'))
+        with patch.object(lobby,'broadcast',new=unittest.mock.AsyncMock()) as broadcast,patch.object(lobby,'send_campus_status',new=unittest.mock.AsyncMock()):
+            await lobby.state()
+            self.assertEqual(broadcast.call_args.args[0]['players'],[])
+
     async def test_guest_admin_nickname_cannot_read_even_cached_data_or_trigger_sabo(self):
         lobby=Lobby();lobby.clients['1']=dict(name='hnah',uid=234449,role='admin')
         with patch('campus_lan.clusters.snapshot') as seats,patch('campus_lan.campus_info.info_lines') as info,patch('campus_lan.campus_info.refresh') as refresh,patch.object(lobby.profile_lookup,'lookup_many') as profiles:

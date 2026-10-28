@@ -59,14 +59,15 @@ to one another directly. When the first quits, the remaining nodes keep the
 shared lobby alive without electing a replacement. When everyone quits, it ends.
 A crashed or unreachable peer drops out after roughly 16 seconds.
 
-**HQ and games have separate terminal windows.** HQ has a cyan banner; game
+**HQ, clusters and games have separate terminal windows in the LAN42 tmux session.** HQ has a cyan banner; game
 windows have a magenta banner naming the game and room. Window/tab titles also
 show `HQ LOBBY` or, for example, `GAME | TETRIS | ROOM 1`. This uses standard
 terminal title sequences; terminal settings may override the displayed title.
  `/host tetris` or `/host bluff
 free` opens a game window on your node; `/join NUMBER` opens a game on the peer
 you last linked. `/home` resets that game target to your own node. Closing a
-game window leaves HQ and your presence running. Closing HQ stops your node.
+game window leaves HQ and your presence running. `/quit` in a game or clusters
+miniapp closes its tmux window; `/quit` in HQ stops your node.
 
 Each game still runs on one node. If that node quits, its games end; other nodes
 and their games continue. Migrating a running game's state is not implemented.
@@ -118,11 +119,11 @@ last 500 event lines. Text input currently supports ASCII.
 | `/invite-room` | Share your room invitation across the connected nodes. |
 | `/notify` | View channels; `/notify dms on`, `/notify host off`, or `/notify all off`. |
 | `/signin` | When the approved on-campus host is online, SG students can sign in and use `/clusters`. |
-| `F3` | Open both clusters through the same authorization as `/clusters`. |
-| `/clusters [1|2]` | Needs sign-in and the running campus host; shows both clusters by default, or one with `1`/`2`, plus API-reported occupied seats/logins and a snapshot timestamp. Aliases: `/cluster 1`, `/cluster1`, `/c1` (and `2` equivalents); `./clusters` shows both. |
+| `F3` | Open or focus the dedicated clusters miniapp without replacing HQ chat. |
+| `/clusters [1|2]` | Open the clusters miniapp for both clusters or one cluster. Needs sign-in and the running campus host, or approved local-operator access. Aliases: `/cluster 1`, `/cluster1`, `/c1` (and `2` equivalents); `./clusters` shows both. |
 | `/authhost SEAT` | Verify the trusted sign-in host at its new seat. |
 | `/settings signout` | Revoke this device's session and return to guest HQ. |
-| `/quit` | Close the app and stop your node. |
+| `/quit` | Close this miniapp's tmux window, or close HQ and stop your node. |
 
 To invite someone, first create or join a room. They receive its server address
 and room number, then use `/connect IP PORT` followed by `/join NUMBER` to join.
@@ -148,10 +149,16 @@ sign-in and fresh cluster views are unavailable; guest chat/games remain availab
 **Stable, always-on hosting is future work**, not an existing service guarantee.
 
 With the campus host online, run
-`/signin`, then `/clusters` (both clusters), `/cluster 1` or `/cluster 2` (one cluster); `/cluster1` and `/c1` are aliases for cluster 1, with matching aliases for cluster 2. `./clusters` also selects both clusters. The ASCII floor plan is
-the layout; occupied seats and student logins are fetched from the 42 API, with
-the snapshot time shown. This is reported workstation login activity, rather
+`/signin`, then `/clusters` (both clusters), `/cluster 1` or `/cluster 2` (one cluster); `/cluster1` and `/c1` are aliases for cluster 1, with matching aliases for cluster 2. `./clusters` also selects both clusters. Each command opens or focuses a separate miniapp in the LAN42 tmux session, leaving HQ chat visible. In that window, press `r`, `F3`, or Enter to request another snapshot from the pinned host; use `/c1`, `/c2`, or `/clusters` to change scope and refresh. The header updates its snapshot age every second and marks data over two minutes old as stale. Tab switches map/roster, `/next` and `/prev` page, and `/quit` closes that tmux window. The ASCII floor plan is
+the layout; occupied seats and student logins are fetched from the 42 API. This is reported workstation login activity, rather
 than a guarantee of physical attendance or instantaneous updates.
+
+`/settings clusters-auto-open on` saves a local choice to open this miniapp when
+HQ connects. It is off by default. This explicit setting permits the clusters
+terminal at startup; manual openings still use the terminal permission prompt.
+If sign-in is needed, the miniapp opens after the new signed-in HQ connects.
+Use `/settings clusters-auto-open off` to stop automatic opening. Mac and 42
+computers keep separate local choices.
 
 Your client asks the configured approved API host (currently hnah’s), not 42
 directly. That server process shares one snapshot across `/clusters` and campus
@@ -163,7 +170,7 @@ There is no continuous fetch just to redraw the map or use `/next` and `/prev`.
 Separate server processes, including the owner’s optional local offsite view,
 have separate caches; the cache is not shared across different machines.
 
-`/map` and `/roster` show LAN42 peers; `/clusters` adds API-reported campus seats.
+`/map` and `/roster` in HQ show LAN42 peers; the separate `/clusters` window shows API-reported campus seats.
 Guest sockets cannot request API-backed views. Verified SG members and enrolled
 local API operators can. API reference:
 https://api.intra.42.fr/apidoc/2.0/locations/index.html
@@ -237,11 +244,11 @@ per two seconds. Notification buttons prepare drafts only; they do not send.
 
 ## Track from the displayed roster
 
-In `/clusters`, `/track 2 4` uses the **displayed online roster numbers** (also
+In the clusters miniapp, `/track 2 4` uses the **displayed online roster numbers** (also
 shown on map markers), not physical desk numbers. LAN42 lists the current Intra
 names and seats for confirmation before adding them to your private tracking.
 It captures those people, never future desk occupants; a changed seat snapshot
-cancels the pending request. `/track LOGIN LOGIN` still works normally.
+cancels the pending request. `/track LOGIN LOGIN` still works in HQ.
 
 ## Relationships and named lists
 

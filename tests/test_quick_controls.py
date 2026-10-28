@@ -12,19 +12,14 @@ class Controls(QuickControls):
     def __init__(self):
         self.lines=[];self.input='draft';self.line=Mock()
         self.start_signin=Mock();self.settings_command=Mock()
-        self.volume_command=Mock();self.uwu_command=Mock()
+        self.volume_command=Mock();self.uwu_command=Mock();self.open_clusters=Mock()
 
 
 class QuickControlTests(unittest.TestCase):
-    def test_f3_clusters_uses_local_access_or_existing_authenticated_command(self):
-        c=Controls();c.local_api_command=Mock(return_value=False);c.send=Mock()
+    def test_f3_opens_dedicated_clusters_window(self):
+        c=Controls()
         self.assertTrue(c.quick_key(curses.KEY_F0+3))
-        c.local_api_command.assert_called_once_with('/clusters')
-        c.send.assert_called_once_with(dict(type='command',text='/clusters'))
-        c.send.reset_mock();c.local_api_command.return_value=True
-        c.quick_key(curses.KEY_F0+3);c.send.assert_not_called()
-        c.role='game';c.local_api_command.reset_mock()
-        c.quick_key(curses.KEY_F0+3);c.local_api_command.assert_not_called()
+        c.open_clusters.assert_called_once_with('/clusters')
 
     def test_clickable_guest_prompt_and_signed_out_button(self):
         c=Controls();c.draw_quick_controls(Canvas())

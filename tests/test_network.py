@@ -7,6 +7,11 @@ from campus_lan.server import Lobby
 from campus_lan import PROTOCOL
 
 class Network(unittest.IsolatedAsyncioTestCase):
+    async def test_guest_cannot_open_cluster_viewer_role(self):
+        _,response=await self.connect('viewer',role='clusters')
+        self.assertEqual(response['type'],'error')
+        self.assertIn('verified',response['text'])
+
     async def asyncSetUp(self):
         self.lobby = Lobby(round_seconds=1)
         self.server = await asyncio.start_server(self.lobby.handle,'127.0.0.1',0,limit=8192)

@@ -3,11 +3,53 @@ import argparse
 import os
 from pathlib import Path
 import shlex
+import signal
 import subprocess
 
 
 def run(*args):
     return subprocess.run(args,capture_output=True,text=True,timeout=5)
+
+
+def close_miniapp_window():
+    """Close only this finished LAN42 miniapp window, never HQ or a shell."""
+    pane=os.environ.get('TMUX_PANE','')
+    if not pane.startswith('%') or not pane[1:].isdecimal():return False
+    try:
+        result=run('tmux','display-message','-p','-t',pane,
+                   '#{window_id}\t#{@daily_role}\t#{pane_pid}\t#{window_panes}')
+        if result.returncode:return False
+        window,role,pid,count=result.stdout.strip().split('\t')
+        if (not window.startswith('@') or count!='1' or pid!=str(os.getpid())
+                or not (role=='lan42-clusters' or role.startswith(('lan42-game-','lan42-admin-')))):
+            return False
+        return run('tmux','kill-window','-t',window).returncode==0
+    except (OSError,ValueError,subprocess.SubprocessError):return False
+
+
+def refresh_cluster_window():
+    """Wake only the verified clusters miniapp when HQ focuses its tmux window."""
+    session=os.environ.get('LAN42_TMUX_SESSION','lan42')
+    try:
+        windows=run('tmux','list-windows','-t','='+session,'-F','#{window_id}\t#{@daily_role}')
+        if windows.returncode:return False
+        for line in windows.stdout.splitlines():
+            window,separator,role=line.partition('\t')
+            if not separator or role!='lan42-clusters' or not window.startswith('@'):continue
+            details=run('tmux','display-message','-p','-t',window,'#{pane_pid}\t#{pane_current_command}\t#{window_panes}')
+            if details.returncode:continue
+            pid,command,count=details.stdout.strip().split('\t')
+            if not pid.isdecimal() or count!='1' or not command.lower().startswith('python'):continue
+            process=run('ps','-p',pid,'-o','command=')
+            if process.returncode:continue
+            try:words=shlex.split(process.stdout)
+            except ValueError:continue
+            if (len(words)<4 or not Path(words[0]).name.lower().startswith('python')
+                    or words[1:4]!=['-m','campus_lan','clusters']):continue
+            os.kill(int(pid),signal.SIGUSR1)
+            return True
+    except (OSError,ValueError,subprocess.SubprocessError):pass
+    return False
 
 
 def client_process(pid):

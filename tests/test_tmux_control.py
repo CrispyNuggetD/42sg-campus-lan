@@ -1,9 +1,39 @@
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
-from campus_lan.tmux_control import restart_panes
+from campus_lan.tmux_control import close_miniapp_window,refresh_cluster_window,restart_panes
 
 class Restart(unittest.TestCase):
+    def test_focus_refresh_signals_only_verified_clusters_python_process(self):
+        import os
+        def fake_run(*args):
+            if args[1]=='list-windows':return SimpleNamespace(returncode=0,stdout='@7\tlan42-clusters\n')
+            if args[1]=='display-message':return SimpleNamespace(returncode=0,stdout='123\tPython\t1\n')
+            if args[0]=='ps':return SimpleNamespace(returncode=0,stdout='python3 -m campus_lan clusters --cluster 0\n')
+            raise AssertionError(args)
+        with patch.dict(os.environ,{'LAN42_TMUX_SESSION':'LAN42'}),patch('campus_lan.tmux_control.run',side_effect=fake_run),patch('campus_lan.tmux_control.os.kill') as kill:
+            self.assertTrue(refresh_cluster_window())
+            kill.assert_called_once()
+        with patch('campus_lan.tmux_control.run',side_effect=lambda *args:SimpleNamespace(returncode=0,stdout='@7\tlan42\n' if args[1]=='list-windows' else '')),patch('campus_lan.tmux_control.os.kill') as kill:
+            self.assertFalse(refresh_cluster_window())
+            kill.assert_not_called()
+
+    def test_finished_miniapp_closes_only_its_own_single_pane_window(self):
+        import os
+        for role,allowed in [('lan42-clusters',True),('lan42-game-123',True),('lan42-admin-123',True),('lan42',False),('current-project',False)]:
+            calls=[]
+            def fake_run(*args):
+                calls.append(args)
+                if args[1]=='display-message':
+                    return SimpleNamespace(returncode=0,stdout='@7\t'+role+'\t'+str(os.getpid())+'\t1\n')
+                return SimpleNamespace(returncode=0,stdout='')
+            with patch.dict(os.environ,{'TMUX_PANE':'%9'}),patch('campus_lan.tmux_control.run',side_effect=fake_run):
+                self.assertEqual(close_miniapp_window(),allowed)
+            self.assertEqual(any(call[1]=='kill-window' for call in calls),allowed)
+        with patch.dict(os.environ,{'TMUX_PANE':'%9'}),patch('campus_lan.tmux_control.run',return_value=SimpleNamespace(returncode=0,stdout='@7\tlan42-game-123\t999999\t1\n')) as run:
+            self.assertFalse(close_miniapp_window())
+            run.assert_called_once()
+
     def test_only_lan42_clients_receive_literal_restart(self):
         sent=[]
         def run(*args):

@@ -11,7 +11,7 @@ LABELS={
     'tools':'Open browser tool panels',
     'photos':'Open photo pages and approved photo-save tools',
     'notifications':'Show desktop notifications',
-    'terminals':'Open game and tool terminals',
+    'terminals':'Open game, cluster and tool terminals',
 }
 
 class PermissionSetup:

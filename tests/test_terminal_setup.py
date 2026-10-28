@@ -44,6 +44,14 @@ class TerminalSetup(unittest.TestCase):
                     self.assertIn('LAN42_NO_UPDATE=1', command)
                     self.assertNotIn('osascript', command)
 
+    def test_clusters_reuse_a_named_window_in_lan42_tmux_on_both_platforms(self):
+        with patch.dict(os.environ,{'DAILY_TMUX_HELPER':''}):
+            for platform in ('darwin','linux'):
+                command=module.terminal_command(ROOT,platform,args=('clusters','--cluster','2'))
+                self.assertIn('lan42-clusters',command)
+                self.assertEqual(command[-3:],['clusters','--cluster','2'])
+                self.assertIn('LAN42_NO_UPDATE=1',command)
+
     def test_missing_tmux_has_platform_install_hint(self):
         for platform, hint in [('linux', 'setup.sh'), ('darwin', 'setup.sh')]:
             with patch.object(module.sys, 'platform', platform), patch.object(module.shutil, 'which', return_value=None):

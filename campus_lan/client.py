@@ -37,7 +37,7 @@ HELP = [
     "/quiet status: LAN42-only exam audio mute | /exams: cached SG schedule | admin /quiet MINUTES | release popups: max once/24h",
     "/search TERMS: chosen engine in your browser | /settings search: engine + aggregate counting opt-out | /search stats",
     "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",
-    "Click footer buttons or use F2 sign in/out | F3 clusters | F4 system mute | F5 output 0/30% | F6 uwu | F7 auto uwu",
+    "Click footer buttons or use F2 sign in/out | F3 clusters window | F4 system mute | F5 output 0/30% | F6 uwu | F7 auto uwu",
     '/changelog: server release history and alpha testing credits',
     'API views: verified Singapore sign-in; enrolled API operators may use local /clusters and /info offsite.',
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
@@ -50,13 +50,13 @@ HELP = [
     '/join (seat questions) | /join ROOM | /invite (friend seat) | /invite-room',
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
     '/tool LOGIN...: batch private photos | /info [FILTER] [PAGE]: API-operator campus directory',
-    '/clusters: both clusters | /cluster 1|2, /c1, /c2: one cluster | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
+    '/clusters: open a separate map window | /c1 /c2: one cluster | in that window r/Enter refreshes and shows snapshot age',
     '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
     '/sabo online [COUNT] [cluster 1|2]: last host campus snapshot | /sabo verified [COUNT]: active SG sign-ins on this host',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
-    '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
+    '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit (miniapps close their tmux window)',
     '/game forknite: browser game room | /browser: reopen current FORKNITE website',
     '/koel flock once|always|never|ask: host-started 42SG flock | /koel flock-dir PATH: service root; local copies are kept',
     '/roadmap koeldrop | /koel help: campus file sharing; /koel create | /koel pending',
@@ -110,6 +110,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         self.session_token = auth_session['session'] if auth_session else None
         self.signing_in = False
         self.auto_login_checked=False
+        self.clusters_auto_open_checked=False
         self.auth_destination = None
         self.sock, self.name = sock, name
         self.role, self.initial_command = role, initial_command
@@ -447,6 +448,43 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         threading.Thread(target=work,daemon=True).start()
         return True
 
+    def open_clusters(self,text,approved=False):
+        """Open the read-only cluster miniapp without changing the HQ view."""
+        from .cluster_commands import normalize_cluster_command
+        normalized=normalize_cluster_command(text)
+        command,_,argument=normalized.partition(' ')
+        if command!='/clusters':return False
+        if argument not in ('','1','2'):
+            self.lines.append('Use /clusters [1|2].');return True
+        if getattr(self,'role','lobby')!='lobby':
+            self.lines.append('Open clusters from your HQ window.');return True
+        if not getattr(self,'secure',False):
+            from .access import Policy
+            try:Policy().local_operator()
+            except (OSError,ValueError):
+                self.lines.append('Sign in to the trusted Singapore host before opening clusters.');return True
+        if not approved:
+            self.request_popup('terminals','Open a LAN42 clusters window?',lambda:self.open_clusters(text,True))
+            return True
+        opener=Path(__file__).resolve().parents[1]/'useful-scripts/open_terminal.py'
+        args=['clusters','--cluster',argument or '0']
+        try:
+            result=subprocess.run([sys.executable,str(opener),*args],capture_output=True,text=True,timeout=10)
+            if result.returncode:raise RuntimeError(result.stderr.strip() or result.stdout.strip())
+            self.lines.append('Clusters window ready. Press r or Enter there to refresh from the host; its header shows snapshot age.')
+        except (OSError,RuntimeError,subprocess.TimeoutExpired) as error:
+            self.lines.append('Could not open clusters window: '+str(error))
+            self.lines.append('Open another terminal and run: '+shlex.join(['sh',str(opener.parents[1]/'lan42.sh'),*args]))
+        return True
+
+    def clusters_auto_open_tick(self):
+        if (getattr(self,'role','lobby')!='lobby' or getattr(self,'clusters_auto_open_checked',False)
+                or not getattr(self,'id',None) or not getattr(self,'connected',False)):
+            return
+        self.clusters_auto_open_checked=True
+        from .cluster_settings import ClusterSettings
+        if ClusterSettings(self.name).read():self.open_clusters('/clusters',approved=True)
+
     def occupancy_tick(self):
         if getattr(self,'secure',False) or time.monotonic()<getattr(self,'occupancy_due',0):return
         self.occupancy_due=time.monotonic()+5
@@ -464,6 +502,18 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         if getattr(self,'role','lobby')!='lobby' or not self.connected or not self.id:return
         tracker=self.get_tracker()
         now=time.monotonic()
+        if now>=getattr(self,'tracker_reload_due',0):
+            self.tracker_reload_due=now+5
+            try:modified=tracker.path.stat().st_mtime_ns
+            except OSError:modified=0
+            if modified!=tracker.file_mtime_ns:
+                from .tracking import Tracker
+                fresh=Tracker(self.name)
+                if not fresh.load_error:
+                    fresh.campus,fresh.peers,fresh.targets=tracker.campus,tracker.peers,tracker.targets
+                    self.tracker=tracker=fresh
+                    self.track_next=0
+                    self.lines.append('Tracking choices updated from another LAN42 window.')
         if (not tracker.names and not tracker.rules_enabled) or now<getattr(self,'track_next',0):return
         if getattr(self,'track_pending',0) and now-self.track_pending<90:return
         from .tracking import INTERVAL
@@ -1091,6 +1141,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 '/settings search — Ecosia/Google/custom; permanent aggregate impact counter and opt-out',
                 '/volume [0–100] — desktop output; /settings audio-auto-on on|off — uwu unmute',
                 '/settings audio-startup-volume on|off — set output to 30% on HQ launch',
+                '/settings clusters-auto-open on|off — open the clusters miniapp with HQ',
                 '/uwu auto|off — persistent local automatic calls; /settings koel-sound always — persistent sound consent',
                 '/settings host-discovery on|off | auto-host-join on|off | host-poll 60–300',
                 '/settings permissions — browser, popup and notification consent',
@@ -1109,6 +1160,15 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                     if parts[2]=='always':self.confirm_always_koel(choice)
                     else:choice.set_always(False);choice.choose(parts[2]=='on')
                 self.lines.append('Koel sound: '+('always on' if choice.always_on() else 'on for this session' if choice.read()['enabled'] else 'off')+'. Sound does not enable file sharing.')
+            except (OSError,ValueError) as error:self.lines.append(str(error))
+        elif parts[0]=='/settings' and parts[1]=='clusters-auto-open':
+            from .cluster_settings import ClusterSettings
+            choice=ClusterSettings(self.name)
+            try:
+                if len(parts)>2:
+                    if len(parts)!=3 or parts[2] not in ('on','off'):raise ValueError('Use /settings clusters-auto-open on|off')
+                    choice.set(parts[2]=='on')
+                self.lines.append('Open clusters with HQ: '+('on' if choice.read() else 'off')+'.')
             except (OSError,ValueError) as error:self.lines.append(str(error))
         elif parts[0]=='/settings' and parts[1] in ('experimental','files','koel','koeldrop'):
             self.lines.append('KoelDrop is a standard feature; no experimental switch is needed. /koel help | /koel leave stops group uploads.')
@@ -1374,6 +1434,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             if generation() != installed_generation:
                 raise RestartRequested()
             self.consume()
+            self.clusters_auto_open_tick()
             self.occupancy_tick()
             self.tracking_tick()
             self.announcement_tick()
@@ -1470,6 +1531,8 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                     self.open_game('/game forknite')
                 elif text.startswith('/game ') or (getattr(self,'role','lobby')=='lobby' and (text.startswith('/host ') or text.startswith('/join '))):
                     self.open_game(text)
+                elif self.open_clusters(text):
+                    pass
                 elif self.announcement_command(text):
                     pass
                 elif self.uwu_command(text):

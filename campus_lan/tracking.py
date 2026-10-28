@@ -53,6 +53,8 @@ class Tracker:
         except FileNotFoundError:pass
         except (OSError,ValueError,KeyError,TypeError,AttributeError):
             self.load_error='Cannot read relationship configuration; repair the file shown by /track config before making changes.'
+        try:self.file_mtime_ns=self.path.stat().st_mtime_ns
+        except OSError:self.file_mtime_ns=0
 
     @property
     def names(self):return list(self.data['people'])
@@ -67,6 +69,8 @@ class Tracker:
         raw=json.dumps(candidate)
         if len(raw.encode())>64000:raise ValueError('Local relationship configuration is too large.')
         private_write(self.path,raw);self.data=candidate
+        try:self.file_mtime_ns=self.path.stat().st_mtime_ns
+        except OSError:self.file_mtime_ns=0
 
     def change(self,names,remove=False):
         names=list(dict.fromkeys(login(n) for n in names))

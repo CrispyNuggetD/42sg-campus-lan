@@ -37,10 +37,23 @@ class Tracking(unittest.TestCase):
     def test_poll_requests_no_watch_list_and_respects_five_minutes(self):
         c=Client.__new__(Client);c.role='lobby';c.connected=True;c.id='id';c.send=Mock();c.local_api_command=Mock(return_value=False)
         c.tracker=Mock(names=['dthoo','private-target']);c.track_next=0;c.track_pending=0
+        c.tracker.path.stat.return_value.st_mtime_ns=0;c.tracker.file_mtime_ns=0
         with patch('campus_lan.client.time.monotonic',return_value=100):c.tracking_tick();c.tracking_tick()
         c.send.assert_called_once_with(dict(type='command',text='/campus-presence'))
         self.assertEqual(c.track_next,400)
         self.assertNotIn('dthoo',json.dumps(c.send.call_args.args))
+
+    def test_hq_reloads_tracking_changes_saved_by_cluster_window(self):
+        with tempfile.TemporaryDirectory() as tmp,patch('campus_lan.tracking.config_dir',return_value=Path(tmp)):
+            c=Client.__new__(Client);c.name='owner';c.role='lobby';c.connected=True;c.id='id'
+            c.lines=collections.deque();c.tracker=Tracker('owner');c.tracker.change(['dthoo'])
+            c.local_api_command=Mock(return_value=True);c.track_next=1000;c.track_pending=0
+            Tracker('owner').change(['student'])
+            c.tracker.file_mtime_ns=0
+            with patch('campus_lan.client.time.monotonic',return_value=100):c.tracking_tick()
+            self.assertEqual(set(c.tracker.names),{'dthoo','student'})
+            self.assertIn('updated from another LAN42 window',c.lines[-1])
+            c.local_api_command.assert_called_with('/campus-presence')
 
     def test_offline_seat_and_verification_changes_are_reported_once(self):
         with tempfile.TemporaryDirectory() as tmp,patch('campus_lan.tracking.config_dir',return_value=Path(tmp)):

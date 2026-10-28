@@ -147,10 +147,20 @@ def main():
         parser.add_argument('logins',nargs='*')
         options=parser.parse_args(sys.argv[2:])
         launch(options.logins,approved=options.approved,photos_approved=options.photos_approved,owner=options.owner)
+        from .tmux_control import close_miniapp_window
+        close_miniapp_window()
         return
     if sys.argv[1:2] == ['forknite']:
         from .forknite import launch
         launch(sys.argv[2:])
+        return
+    if sys.argv[1:2] == ['clusters']:
+        from .cluster_viewer import launch
+        viewer=argparse.ArgumentParser(description='Dedicated LAN42 campus cluster window')
+        viewer.add_argument('--cluster',type=int,choices=(0,1,2),default=0)
+        launch(viewer.parse_args(sys.argv[2:]).cluster)
+        from .tmux_control import close_miniapp_window
+        close_miniapp_window()
         return
     parser = argparse.ArgumentParser(description='42SG LAN lobby — guest mesh and optional verified 42 sign-in')
     parser.add_argument('--version',action='version',version=banner())
@@ -205,6 +215,8 @@ def main():
     if args.mode=='game':
         command = '/join '+args.room if args.room else '/host '+args.create+' '+args.game_mode
         connect(address(args.address),args.port,username,not args.no_notify,role='game',initial_command=command,remote_guest=args.remote_guest)
+        from .tmux_control import close_miniapp_window
+        close_miniapp_window()
         return
     if args.mode in ('lobby','host'):
         local_port = args.port

@@ -14,8 +14,7 @@ class QuickControls:
             else:
                 self.start_signin()
         elif action == 'clusters':
-            if getattr(self,'role','lobby')=='game':self.lines.append('Use F3 in your HQ window for campus clusters.')
-            elif not self.local_api_command('/clusters'):self.send(dict(type='command',text='/clusters'))
+            self.open_clusters('/clusters')
         elif action == 'mute':
             self.shortcut_audio_muted = True
             self.volume_command('/volume 0')

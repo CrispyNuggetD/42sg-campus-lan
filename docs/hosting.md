@@ -221,6 +221,10 @@ for access control, HTTP transport limits, cache lifetime and import commands.
 Terminal display recovery: Ctrl-L forces a full LAN42 redraw. Resizing a tmux
 pane also redraws the screen; API queue notices stay in the chat log.
 
+`/quit` in a game or clusters miniapp closes that LAN42 tmux window after its
+client exits. It does not close HQ. A finished admin miniapp closes its own
+window too; unrelated tmux panes are never targeted.
+
 `lan42_restart` restarts LAN42 tmux client panes by injecting `/restart` into the
 app. It skips shells, servers and unrelated Python programs, and clears unfinished
 app input. `lan42_restart --check` lists matching panes without sending anything.

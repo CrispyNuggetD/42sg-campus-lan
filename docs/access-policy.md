@@ -101,9 +101,15 @@ a recovery copy before revoking the last usable administration host.
 ## Local owner usage offsite
 
 After enrollment, the owner can use `/clusters` and campus tracking in their
-local HQ without making the Mac reachable from campus. These operations execute
+local clusters miniapp without making the Mac reachable from campus. These operations execute
 locally with private operator authority; they are not API commands accepted from
 a guest socket. `/info` reads the owner's private cache locally.
+
+The separate clusters miniapp uses the saved pinned TLS session for an SG member,
+or the enrolled local API operator path. Its server socket has a dedicated
+read-only role that accepts only `/clusters [1|2]`; it does not join chat, games,
+DM delivery or the LAN42 peer roster. Automatic opening is an opt-in local
+setting and does not grant API access or approve a remote guest.
 
 ```sh
 python3 -m campus_lan.campus_info refresh

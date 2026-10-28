@@ -1,7 +1,7 @@
 import queue
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock,patch
 from campus_lan.client import Client, request_terminal_resize
 from campus_lan.presence import API
 
@@ -25,6 +25,16 @@ class Terminal:
     def flush(self): self.flushed = True
 
 class ClientChecks(unittest.TestCase):
+    def test_cluster_command_opens_miniapp_without_changing_hq_view(self):
+        c=Client.__new__(Client)
+        c.name='fixture';c.role='lobby';c.secure=True;c.lines=[];c.lobby_view='roster'
+        c.request_popup=Mock(side_effect=lambda category,description,action:action())
+        with patch('campus_lan.client.subprocess.run',return_value=Mock(returncode=0,stdout='',stderr='')) as run:
+            self.assertTrue(c.open_clusters('/c2'))
+        self.assertEqual(run.call_args.args[0][-3:],['clusters','--cluster','2'])
+        self.assertEqual(c.lobby_view,'roster')
+        self.assertEqual(c.request_popup.call_args.args[0],'terminals')
+
     def test_terminal_resize_only_grows_undersized_dimensions(self):
         terminal = Terminal()
         resized = request_terminal_resize(

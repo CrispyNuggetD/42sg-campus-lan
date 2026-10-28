@@ -207,4 +207,8 @@ without a permission prompt.
 system output to 30 percent when a LAN42 HQ window starts, if it is at another
 level. Game windows do not change it. Use `off` to stop this startup adjustment.
 
-Press **F3** in HQ to open both campus clusters, using the same sign-in and local-operator checks as `/clusters`. `/c1` and `/c2` select one cluster.
+Press **F3** in HQ to open or focus the separate campus-clusters tmux window, using the same sign-in and local-operator checks as `/clusters`. In that window, `r` or Enter refreshes from the host; `/c1` and `/c2` select one cluster. The snapshot age remains visible while you browse.
+`/settings clusters-auto-open on|off` separately controls whether HQ opens that
+window at launch. Enabling it explicitly approves this one startup window; it
+does not grant general game or tool terminal permission. The choice is local to
+each computer and account.

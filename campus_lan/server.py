@@ -52,14 +52,14 @@ class Lobby:
             client['writer'].close()
 
     async def broadcast(self, data, ids=None):
-        clients = [c for p,c in list(self.clients.items()) if ids is None or p in ids]
+        clients = [c for p,c in list(self.clients.items()) if (ids is None and c.get('role')!='clusters') or (ids is not None and p in ids)]
         await asyncio.gather(*(self.send(c,data) for c in clients))
 
     async def event(self, text, ids=None):
         await self.broadcast(dict(type='event',text=text), ids)
 
     async def deliver_direct(self,sender,target,message,verified=False,uwu=False):
-        recipients={pid for pid,c in self.clients.items() if c['name'].lower()==target.lower()}
+        recipients={pid for pid,c in self.clients.items() if c.get('role')!='clusters' and c['name'].lower()==target.lower()}
         if not recipients:return False
         await self.broadcast(dict(type='direct_message',sender=clean(sender,32),verified=verified,
                                   text=clean(message,400),uwu=uwu is True),recipients)
@@ -109,6 +109,7 @@ class Lobby:
             status=cached_status()
         except (OSError,ValueError):status=None
         for client in list(self.clients.values()):
+            if client.get('role')=='clusters':continue
             if self.campus_allowed(client):await self.send(client,dict(type='campus_status',status=status))
         for room in list(self.rooms.values()):
             if room.get('game')=='forknite':
@@ -119,6 +120,7 @@ class Lobby:
         if self.auth_broker:
             people = {}
             for c in self.clients.values():
+                if c.get('role')=='clusters':continue
                 key=str(c.get('uid') or ('guest-'+str(id(c))))
                 people[key] = dict(id=key, name=c['name'], hostname=c['hostname'],
                     verified=bool(c.get('uid')),signed_in=bool(c.get('uid')),
@@ -128,7 +130,7 @@ class Lobby:
             players = list(people.values())
         else:
             players = self.mesh.players() or [dict(id=p,name=c['name'],hostname=c['hostname'],verified=False,
-                          seat=self.seats.get(c['name'],'unknown')) for p,c in self.clients.items()]
+                          seat=self.seats.get(c['name'],'unknown')) for p,c in self.clients.items() if c.get('role')!='clusters']
         await self.broadcast(dict(type='state',version=VERSION,api=self.api_status,
             secure=bool(self.auth_broker), nodes=1 if self.auth_broker else len(self.mesh.peers)+1,
             players=players, rooms=self.mesh.local_rooms() if self.auth_broker else self.mesh.rooms()))
@@ -210,6 +212,8 @@ class Lobby:
         text = normalize_cluster_command(clean(raw))
         if not text:
             return
+        if c.get('role')=='clusters' and text.split(' ',1)[0]!='/clusters':
+            raise AuthError('The clusters window can only refresh campus seats.')
         if c.get('remote_approved') and text.startswith('/'):
             permitted={'/help','/who','/games','/dm','/uwu','/host','/game','/join','/leave','/start','/ready','/answer','/browser','/invite','/invite-room','/signout'}
             if text.split(' ',1)[0] not in permitted:
@@ -716,14 +720,16 @@ class Lobby:
             name = identity['login'] if identity else clean(hello.get('name','guest'),24)
             if not re.fullmatch(r'[A-Za-z0-9_.-]{1,24}',name):
                 raise ValueError('Invalid guest username.')
+            role = hello.get('role','lobby')
+            if role not in ('lobby','game','clusters'):
+                raise ValueError('Unknown client role.')
+            if role=='clusters' and (not identity or remote_source):
+                raise AuthError('The clusters window needs a verified local Singapore sign-in.')
             remote_id=None
             if remote_source:
                 if not identity and not name.startswith('guest-'):name='guest-'+name[:18]
                 # The ID authorizes exactly this live socket, never an IP forever.
                 remote_id=await self.remote_gate.admit(source,name,writer)
-            role = hello.get('role','lobby')
-            if role not in ('lobby','game'):
-                raise ValueError('Unknown client role.')
             if len(self.clients)>=32 or any((c['name']==name or (identity and c.get('uid')==identity['uid']))
                                            and c.get('role','lobby')==role for c in self.clients.values()):
                 raise ValueError('Lobby full or this guest name is already connected.')
@@ -757,6 +763,8 @@ class Lobby:
                 if c['count']>30:
                     continue
                 try:
+                    if c.get('role')=='clusters' and msg.get('type')!='command':
+                        raise ValueError('The clusters window only accepts refresh commands.')
                     if msg.get('type')=='command':
                         await self.command(pid,msg.get('text',''))
                     elif msg.get('type')=='koel_deliver':

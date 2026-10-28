@@ -24,7 +24,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 - **Find your people:** `/who` lists peers; `/track` groups relationships/lists with a private SG whitelist. The campus header shows total/C1/C2 occupancy. Owner `/tool` skips invalid logins and continues; the saver closes photo tabs.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. Purple marks the odd-table last eater; orange marks overdue waits. `/sabo online` supports cluster filters; `/sabo verified` selects active SG sign-ins.
-- **Easy controls:** clickable footer or F2 sign in/out; F4 mute, F5 output 0/30%, F6 uwu once, F7 saved auto uwu, F3 clusters; optional 30% HQ launch volume; Up/Down history and !COMMAND for your local shell.
+- **Easy controls:** F2 sign in/out; F3 opens a separate clusters window with optional auto-open; F4 mute, F5 output 0/30%, F6 uwu once, F7 saved auto uwu; optional 30% HQ launch volume; Up/Down history and !COMMAND.
 - **Useful alerts:** moderated `/broadcast`, pinned host arrival and exam-time LAN42-only audio quiet. `/notify` separates alerts from DMs/pokes; release popups are coalesced and daily-limited.
 - **Versioned server:** startup shows version/date; `/changelog` explains releases. Enrolled operators can read own SG hours. Mac/Linux ask [y/N] before package-wide reloads after checkout updates.
 - **Web search:** `/search` defaults to Ecosia; Google/custom engines are optional. Permanent aggregate impact totals and estimated unique searches have a counting opt-out.
