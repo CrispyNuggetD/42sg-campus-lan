@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.15.4-beta.1 · 2026-10-29T04:10:34+08:00
+
+- fix: show current FORKNITE round after reload
+
 ## 2.15.3-beta.1 · 2026-10-29T04:08:45+08:00
 
 - fix: keep FORKNITE photos matched to shuffled diners

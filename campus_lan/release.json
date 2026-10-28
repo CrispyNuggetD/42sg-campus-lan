@@ -1,8 +1,16 @@
 {
-  "version": "2.15.3-beta.1",
-  "date": "2026-10-29T04:08:45+08:00",
-  "source": "1d65f4864c3b8b2cb0e3f102289dc25535fce5bf",
+  "version": "2.15.4-beta.1",
+  "date": "2026-10-29T04:10:34+08:00",
+  "source": "52942d67916ea40769a5b1f1cf2cc93e766eb519",
   "history": [
+    {
+      "version": "2.15.4-beta.1",
+      "date": "2026-10-29T04:10:34+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: show current FORKNITE round after reload"
+      ]
+    },
     {
       "version": "2.15.3-beta.1",
       "date": "2026-10-29T04:08:45+08:00",
@@ -412,5 +420,5 @@
       ]
     }
   ],
-  "runtime_sha256": "8812535bbf34958e81a9cecac4d2adcec34276a3405b96aa43253b6ffb7de775"
+  "runtime_sha256": "be4598721dff4b8d0a52721567d35848332fad88dfdbbc38f5dec43451624490"
 }
