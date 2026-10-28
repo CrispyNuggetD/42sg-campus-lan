@@ -1,8 +1,16 @@
 {
-  "version": "2.11.1-beta.1",
-  "date": "2026-10-28T20:49:51+08:00",
-  "source": "d915c120e07774d82d0357800ab16d558be55bd3",
+  "version": "2.12.0-beta.1",
+  "date": "2026-10-28T21:03:12+08:00",
+  "source": "59ab4818ec61bca744957e6e4fff4e31238495e5",
   "history": [
+    {
+      "version": "2.12.0-beta.1",
+      "date": "2026-10-28T21:03:12+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: group tracked relationships and add label shortcuts"
+      ]
+    },
     {
       "version": "2.11.1-beta.1",
       "date": "2026-10-28T20:49:51+08:00",
@@ -298,5 +306,5 @@
       ]
     }
   ],
-  "runtime_sha256": "0862a35dc21a1abd6067c334123850167520787ad361c9aa44d112b027fd8553"
+  "runtime_sha256": "4fee206ff6c20cdb35fb6c20ba289d19c9e444c6c7adb7357e175f06747a0aff"
 }
