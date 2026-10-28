@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.15.1-beta.1 · 2026-10-29T03:54:26+08:00
+
+- fix: keep cluster refresh notices inside curses UI
+
 ## 2.15.0-beta.1 · 2026-10-29T03:48:09+08:00
 
 - fix: find sibling private campus data
