@@ -1,8 +1,16 @@
 {
-  "version": "2.15.1-beta.1",
-  "date": "2026-10-29T03:54:26+08:00",
-  "source": "a2211779bf67cfcd8fbd03c66f59c05c457e9fff",
+  "version": "2.15.2-beta.1",
+  "date": "2026-10-29T03:55:59+08:00",
+  "source": "c43c2a806afaff8c7700f8c8a5a414331e48cb15",
   "history": [
+    {
+      "version": "2.15.2-beta.1",
+      "date": "2026-10-29T03:55:59+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: show cluster refresh progress and cached snapshot status"
+      ]
+    },
     {
       "version": "2.15.1-beta.1",
       "date": "2026-10-29T03:54:26+08:00",
@@ -396,5 +404,5 @@
       ]
     }
   ],
-  "runtime_sha256": "cf7e73d4eebc69206b7a6d95061dfae5cf55af27831a9b4daf78871fc24b0092"
+  "runtime_sha256": "b956f05152bc9004d911795fb584d9f265525dc8505ebb14dd78af417da555a6"
 }
