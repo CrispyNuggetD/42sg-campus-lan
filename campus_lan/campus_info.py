@@ -97,7 +97,9 @@ class API:
         if (not authenticated or data is not None or parsed.scheme!='https' or parsed.netloc!='api.intra.42.fr'
                 or parsed.fragment or not parsed.path.startswith('/v2/')):
             raise AuthError('Only approved read-only Singapore API operations are allowed.')
-        path=parsed.path[4:];params=urllib.parse.parse_qs(parsed.query,strict_parsing=True)
+        # Python 3.10's strict parser rejects even an absent query string.
+        # Profile verification and campus metadata legitimately have no query.
+        path=parsed.path[4:];params=urllib.parse.parse_qs(parsed.query,strict_parsing=True) if parsed.query else {}
         common={'page[number]','page[size]'}
         for key,values in params.items():
             if key in ('filter[id]','filter[user_id]') and not re.fullmatch(r'[1-9][0-9]{0,11}',values[0]):raise AuthError('Invalid SG user filter.')

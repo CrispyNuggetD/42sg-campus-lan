@@ -8,23 +8,31 @@ another path; unavailable means not observed by the collector.
 
 ## 42 campus terminal
 
-**Current snapshot: to be updated by the 42 terminal.** This beta preparation ran on the maintainer's Mac.
-The current 42 terminal's CPU, RAM, Linux distribution/version and home/NAS storage
-have not been verified in this checkout. Do not invent these from general 42 lab
-specifications or call the Mac campus hardware. No beta-on-campus validation is
-claimed. Archived private terminal command outputs show Ubuntu 22.04.5 LTS on
-12 September 2026; storage observations show about 186 GiB for the root
-filesystem, a separate 4.7 GiB home filesystem, and a shared 13 TiB sgoinfre
-NAS filesystem. These are historical filesystem capacities, not disk hardware
-or individual quotas. Free space is deliberately not carried forward.
-CPU, RAM, current OS build and beta validation: **to be updated**.
-Only these non-sensitive facts were transcribed; private logs stay private.
+Observed on the actual hnah Ubuntu campus terminal on 28 October 2026 SGT,
+LAN42 2.8.8-beta.1. See `system-snapshots/42-campus.json` for the current
+Ubuntu/kernel, CPU/RAM and filesystem observations. The collector includes
+system, home, local goinfre and shared sgoinfre/NFS capacity/free space. The
+separate NAS label was not found; sgoinfre is the observed shared NFS mount.
+These are filesystem capacities, not disk hardware or individual user quotas.
+No server addresses, hardware identifiers, credentials or private paths are
+included. This snapshot supersedes the earlier Mac-prepared placeholder.
 
-From the actual terminal, run the collector described in AGENTS.md, review its
-output, and record command/test result, server version and date here. Refresh the
-snapshot after any OS update. To collect a differently mounted NAS, extend the
-explicit paths in the collector; do not include server addresses, account names,
-serial numbers, credentials or private file listings.
+Campus validation on Python 3.10.12:
+
+- 138 targeted local/mocked tests passed: access policy, legacy migration,
+  auth startup/TLS/locator/diagnostics, announcements, client, notification
+  preferences, profile lookup, tracking, mesh, KoelDrop flock/file-sharing and
+  shell feature checks. Tests used isolated config roots/fake provider data.
+- Separately from tests, normal owner-host initialization verified the existing
+  legacy hnah SG owner identity, preserved TLS trust/credentials and initialized
+  its access policy. The user service became active and its pinned TLS lobby
+  answered a protocol ping. No student notifications or announcements were sent.
+- Root cause: Python 3.10 rejects an empty query passed to strict `parse_qs`.
+  Skipping query parsing when no query exists restores allowed campus metadata
+  and membership-proven profile reads, including owner startup migration.
+  Nonempty queries still use strict parsing and the existing SG-only allowlist.
+- This confirms host startup and secure endpoint availability, not completion
+  of a fresh browser OAuth authorization by the owner.
 
 ## Maintainer Mac
 

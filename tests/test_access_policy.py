@@ -56,6 +56,16 @@ class ScopedAPI(unittest.TestCase):
     def api(self):
         a=API.__new__(API);a._members={};return a
 
+    def test_queryless_scoped_requests_work_on_campus_python(self):
+        a=self.api();base='https://api.intra.42.fr/v2/'
+        a._validate_url(base+'campus/64',None,True)
+        a._members['234449']=True
+        a._validate_url(base+'users/234449',None,True)
+        for target in ('users/2','users','campus/1','campus/64/users?&',
+                       'campus/64/users?filter[id]=234449&filter[id]=2'):
+            with self.subTest(target=target),self.assertRaises((AuthError,ValueError)):
+                a._validate_url(base+target,None,True)
+
     def test_rejects_arbitrary_paths_writes_scope_overrides_and_unproven_profiles(self):
         a=self.api();base='https://api.intra.42.fr/v2/'
         for target in ('users/234449','users','campus/1/users','cursus_users?filter[campus_id]=64','campus/64/locations','campus/64/users?filter[campus_id]=1','campus/64/users?filter[id]=1&filter[id]=2','campus/64/users?page[number]=51','campus/64/../1/users'):

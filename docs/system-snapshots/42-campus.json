@@ -1,11 +1,56 @@
 {
   "label": "42-campus",
-  "status": "to be updated",
-  "observed_at": null,
-  "os": "to be updated",
-  "cpu": "to be updated",
-  "ram_bytes": null,
-  "storage": "to be updated (home, sgoinfre/NAS, local system storage)",
-  "lan42_version_checked": "to be updated",
-  "validation": "to be updated on the actual 42 terminal; historical evidence is documented separately"
+  "observed_at": "2026-10-28T10:38:56.447356+00:00",
+  "system": "Linux",
+  "kernel": "5.15.0-190-generic",
+  "architecture": "x86_64",
+  "os": {
+    "PRETTY_NAME": "Ubuntu 22.04.5 LTS",
+    "NAME": "Ubuntu",
+    "VERSION_ID": "22.04",
+    "VERSION": "22.04.5 LTS (Jammy Jellyfish)"
+  },
+  "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
+  "logical_cpus": 20,
+  "ram_bytes": 16437710848,
+  "storage": [
+    {
+      "label": "system",
+      "available": true,
+      "total_bytes": 199221768192,
+      "used_bytes": 53574029312,
+      "free_bytes": 135453274112,
+      "filesystem": "ext4"
+    },
+    {
+      "label": "home",
+      "available": true,
+      "total_bytes": 4993318912,
+      "used_bytes": 4411027456,
+      "free_bytes": 582291456,
+      "filesystem": "xfs"
+    },
+    {
+      "label": "sgoinfre",
+      "available": true,
+      "total_bytes": 13330933612544,
+      "used_bytes": 12031603245056,
+      "free_bytes": 627413352448,
+      "filesystem": "nfs4"
+    },
+    {
+      "label": "goinfre",
+      "available": true,
+      "total_bytes": 37250248704,
+      "used_bytes": 5926912,
+      "free_bytes": 35319136256,
+      "filesystem": "ext4"
+    },
+    {
+      "label": "NAS",
+      "available": false
+    }
+  ],
+  "lan42_version": "2.8.8-beta.1",
+  "validation": "Observation only; see runtime-environment.md for tests. Quotas are not filesystem capacity. NAS mount may use another path; unavailable is not proof of absence."
 }
