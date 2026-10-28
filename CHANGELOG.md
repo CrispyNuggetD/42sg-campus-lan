@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.12.1-beta.1 · 2026-10-28T21:18:14+08:00
+
+- fix: serve avatar admin batch URLs with query parameters
+
 ## 2.12.0-beta.1 · 2026-10-28T21:03:12+08:00
 
 - feat: group tracked relationships and add label shortcuts

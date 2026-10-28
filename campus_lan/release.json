@@ -1,8 +1,16 @@
 {
-  "version": "2.12.0-beta.1",
-  "date": "2026-10-28T21:03:12+08:00",
-  "source": "59ab4818ec61bca744957e6e4fff4e31238495e5",
+  "version": "2.12.1-beta.1",
+  "date": "2026-10-28T21:18:14+08:00",
+  "source": "cf57e1cb59020795dbdd0f5dc69b0241108f98d1",
   "history": [
+    {
+      "version": "2.12.1-beta.1",
+      "date": "2026-10-28T21:18:14+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: serve avatar admin batch URLs with query parameters"
+      ]
+    },
     {
       "version": "2.12.0-beta.1",
       "date": "2026-10-28T21:03:12+08:00",
@@ -306,5 +314,5 @@
       ]
     }
   ],
-  "runtime_sha256": "4fee206ff6c20cdb35fb6c20ba289d19c9e444c6c7adb7357e175f06747a0aff"
+  "runtime_sha256": "071670ca2bd879938ae9539d3dbb2bb55c3edc88fe608b5451ed13209252f5f9"
 }
