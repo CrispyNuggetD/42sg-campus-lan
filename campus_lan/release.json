@@ -1,8 +1,16 @@
 {
-  "version": "2.16.2-beta.1",
-  "date": "2026-10-29T05:03:45+08:00",
-  "source": "01c673aec1f4c0f5b55192b5dba2bd61894129ba",
+  "version": "2.17.0-beta.1",
+  "date": "2026-10-29T05:26:41+08:00",
+  "source": "7df0bcd8c78e0b3bd7d90aa55eb6f64efd0835f0",
   "history": [
+    {
+      "version": "2.17.0-beta.1",
+      "date": "2026-10-29T05:26:41+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: raise SG profile and photo budgets to 600 per hour"
+      ]
+    },
     {
       "version": "2.16.2-beta.1",
       "date": "2026-10-29T05:03:45+08:00",
@@ -452,5 +460,5 @@
       ]
     }
   ],
-  "runtime_sha256": "8cc813eae728dc82f60256bb4cdb3298ef1f2301787f678b6d528ab926901dd3"
+  "runtime_sha256": "82d65946bead9bdc3cfd7cbe11ee7178ca79af283f4a9659b940834912d261bb"
 }
