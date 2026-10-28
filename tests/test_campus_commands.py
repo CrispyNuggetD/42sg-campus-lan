@@ -51,12 +51,12 @@ class Commands(unittest.TestCase):
             self.assertTrue(all(b-a>=.49 for a,b in zip(starts,starts[1:])))
 
     def test_overlay_preserves_api_seats_and_peer_verification(self):
-        from campus_lan.lobby_view import overlay_campus,player_style
+        from campus_lan.lobby_view import API_STYLE,overlay_campus,player_style
         players=[dict(name='a',seat='c1r1s1'),dict(name='b',seat='c1r2s2'),dict(name='c',seat='c2r3s3')]
         over=overlay_campus(players,[dict(name='a',seat='unknown',verified=True),dict(name='b',verified=False)])
         self.assertEqual(over[0]['seat'],'c1r1s1');self.assertEqual(player_style(over[0]),1)
         self.assertTrue(over[1]['lan42_peer']);self.assertFalse(over[1]['verified'])
-        self.assertFalse(over[2]['lan42_peer']);self.assertEqual(player_style(over[2]),7)
+        self.assertFalse(over[2]['lan42_peer']);self.assertEqual(player_style(over[2]),API_STYLE)
 
     def test_focus_selects_cluster_and_scrolls_to_seat(self):
         import collections

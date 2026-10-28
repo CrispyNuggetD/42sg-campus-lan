@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+import time
 import unittest
 import urllib.request
 from unittest.mock import patch, AsyncMock
@@ -45,10 +46,13 @@ class RoomIdentity(unittest.IsolatedAsyncioTestCase):
                 again=await room.control(dict(action='sabo_profiles',profiles=[dict(login='thtay',avatar=None)]))
                 self.assertEqual(again['added'],[])
                 await room.control(dict(action='start'))
-                await asyncio.sleep(.2)
                 def snapshot():
                     with urllib.request.urlopen(base+'/events') as r:return json.loads(r.readline().decode()[6:])
-                state=await asyncio.to_thread(snapshot)
+                deadline=time.monotonic()+3
+                while True:
+                    state=await asyncio.to_thread(snapshot)
+                    if any(e.get('action')=='died' for e in state['events']) or time.monotonic()>=deadline:break
+                    await asyncio.sleep(.05)
                 by_name={p['name']:p for p in state['players']}
                 self.assertNotEqual(state['players'][0]['name'],'hnah')
                 self.assertTrue(by_name['hnah']['verified']);self.assertFalse(by_name['sillyguest']['verified'])

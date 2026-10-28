@@ -1,5 +1,6 @@
 import asyncio
 from collections import deque
+import contextlib
 import json
 import os
 from pathlib import Path
@@ -7,6 +8,7 @@ import queue
 import secrets
 import socket
 import ssl
+import sys
 import tempfile
 import time
 import unittest
@@ -236,28 +238,43 @@ class TLSFlow(unittest.IsolatedAsyncioTestCase):
         context.load_cert_chain(root / 'auth-cert.pem', root / 'auth-key.pem')
         new_ip = '127.0.0.2'
         broker_port = self.web.sockets[0].getsockname()[1]
-        moved_http = AuthHTTP(self.broker, f'{new_ip}:{broker_port}')
-        new_lobby = await asyncio.start_server(self.lobby.handle, new_ip, self.lobby.port, ssl=context)
-        new_web = await asyncio.start_server(moved_http.handle, new_ip, broker_port, ssl=context)
+        new_lobby = new_web = None
+        if sys.platform == 'darwin':
+            # macOS does not bind 127.0.0.2 by default. Route only the test's
+            # relocated TCP destination to the existing loopback listeners;
+            # keep the new Host header and pinned TLS identity checks intact.
+            original_connect = socket.create_connection
+            def connect(address, *args, **kwargs):
+                if address[0] == new_ip:address = ('127.0.0.1', address[1])
+                return original_connect(address, *args, **kwargs)
+            self.http.authority = f'{new_ip}:{broker_port}'
+            routing = patch('socket.create_connection', side_effect=connect)
+        else:
+            moved_http = AuthHTTP(self.broker, f'{new_ip}:{broker_port}')
+            new_lobby = await asyncio.start_server(self.lobby.handle, new_ip, self.lobby.port, ssl=context)
+            new_web = await asyncio.start_server(moved_http.handle, new_ip, broker_port, ssl=context)
+            routing = contextlib.nullcontext()
         try:
-            old_fingerprint = auth_client.fingerprint(self.trust)
-            await asyncio.to_thread(auth_client.change_host, new_ip)
-            moved = auth_client.load_trust()
-            self.assertEqual(moved['lobby_host'], new_ip)
-            self.assertEqual(moved['server_name'], '127.0.0.1')
-            self.assertEqual(auth_client.fingerprint(moved), old_fingerprint)
-            flow = await asyncio.to_thread(auth_client.post, moved, '/begin', dict(proof=secrets.token_hex(32)))
-            self.assertIn('authorization_url', flow)
-            token = self.make_session()
-            auth_client.save_session(moved, dict(session=token, expires=time.time() + 1000))
-            sock, session = await asyncio.to_thread(auth_client.connect_socket, new_ip, self.lobby.port)
-            sock.close()
-            self.assertEqual(session['session'], token)
+            with routing:
+                old_fingerprint = auth_client.fingerprint(self.trust)
+                await asyncio.to_thread(auth_client.change_host, new_ip)
+                moved = auth_client.load_trust()
+                self.assertEqual(moved['lobby_host'], new_ip)
+                self.assertEqual(moved['server_name'], '127.0.0.1')
+                self.assertEqual(auth_client.fingerprint(moved), old_fingerprint)
+                flow = await asyncio.to_thread(auth_client.post, moved, '/begin', dict(proof=secrets.token_hex(32)))
+                self.assertIn('authorization_url', flow)
+                token = self.make_session()
+                auth_client.save_session(moved, dict(session=token, expires=time.time() + 1000))
+                sock, session = await asyncio.to_thread(auth_client.connect_socket, new_ip, self.lobby.port)
+                sock.close()
+                self.assertEqual(session['session'], token)
         finally:
-            new_lobby.close()
-            new_web.close()
-            await new_lobby.wait_closed()
-            await new_web.wait_closed()
+            if new_lobby:
+                new_lobby.close()
+                new_web.close()
+                await new_lobby.wait_closed()
+                await new_web.wait_closed()
 
 
 class BadgeTests(unittest.TestCase):

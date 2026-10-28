@@ -1,11 +1,19 @@
 import collections
+import os
+import tempfile
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from campus_lan.client import Client
 from campus_lan.completion import complete
+from campus_lan.notification_preferences import Preferences
 
 
 class Settings(unittest.TestCase):
+    def setUp(self):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)
+        environment=patch.dict(os.environ,{'XDG_CONFIG_HOME':temporary.name})
+        environment.start();self.addCleanup(environment.stop)
+
     def client(self,signed=False):
         c=Client.__new__(Client);c.name='hnah';c.secure=signed
         c.lines=collections.deque();c.send=Mock();c.start_signin=Mock()
@@ -20,7 +28,9 @@ class Settings(unittest.TestCase):
         c=self.client(True);c.settings_command('/settings signout')
         c.send.assert_called_once_with(dict(type='command',text='/signout'))
         c.settings_command('/profile signin');c.start_signin.assert_called_once()
-        c.settings_command('/settings notifications off');self.assertFalse(c.notify_enabled)
+        c.settings_command('/settings notifications off')
+        self.assertFalse(Preferences().allows('tracking'))
+        self.assertTrue(Preferences().allows('host'))
 
     def test_completion_keeps_top_level_signin_unambiguous(self):
         self.assertEqual(complete('/sig')[0],'/signin ')
