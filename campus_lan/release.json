@@ -1,8 +1,16 @@
 {
-  "version": "2.12.5-beta.1",
-  "date": "2026-10-28T22:36:45+08:00",
-  "source": "e840316a15d3f39a72ff46fea6a08de41a5bb15b",
+  "version": "2.13.0-beta.1",
+  "date": "2026-10-28T22:47:41+08:00",
+  "source": "40b83c5b6914b300a45d6d5b81420893d620ffe9",
   "history": [
+    {
+      "version": "2.13.0-beta.1",
+      "date": "2026-10-28T22:47:41+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: select campus-online and verified users for FORKNITE"
+      ]
+    },
     {
       "version": "2.12.5-beta.1",
       "date": "2026-10-28T22:36:45+08:00",
@@ -346,5 +354,5 @@
       ]
     }
   ],
-  "runtime_sha256": "224b1675ca0a8f3f7a9b476ae4d0f1fb90d8202001e462a517201aafd49c62f1"
+  "runtime_sha256": "63d83190da507ce03004dbdb33f9267cb7d1b9c44c2989dc7c3dfbc0ea398988"
 }
