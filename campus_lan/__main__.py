@@ -158,6 +158,7 @@ def main():
     for name in ('lobby','host','server','join','game'):
         p = sub.add_parser(name)
         if name=='game':
+            p.add_argument('--remote-guest',action='store_true',help='Request one-time host admission over pinned TLS')
             p.add_argument('address')
             action = p.add_mutually_exclusive_group(required=True)
             action.add_argument('--room')
@@ -203,7 +204,7 @@ def main():
     username = args.guest_name or pwd.getpwuid(os.getuid()).pw_name
     if args.mode=='game':
         command = '/join '+args.room if args.room else '/host '+args.create+' '+args.game_mode
-        connect(address(args.address),args.port,username,not args.no_notify,role='game',initial_command=command)
+        connect(address(args.address),args.port,username,not args.no_notify,role='game',initial_command=command,remote_guest=args.remote_guest)
         return
     if args.mode in ('lobby','host'):
         local_port = args.port

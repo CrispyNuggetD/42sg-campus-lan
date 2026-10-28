@@ -6,10 +6,13 @@ if [ -x "${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/python/bin/python3"
     PATH="${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/python/bin:$PATH"; export PATH
 fi
 if [ "${LAN42_NO_UPDATE:-0}" != 1 ]; then
+    before_revision=$(git rev-parse HEAD)
     echo "[lan42] Updating checkout with git pull --ff-only..."
     if [ -n "$(git status --porcelain)" ]; then
         echo "[lan42] Local edits found; skipping update and using this checkout."
-    elif ! GIT_TERMINAL_PROMPT=0 git pull --ff-only; then
+    elif GIT_TERMINAL_PROMPT=0 git pull --ff-only; then
+        python3 -m campus_lan.updater --request-reload --previous "$before_revision"
+    else
         echo "[lan42] Update failed; continuing with installed checkout."
     fi
 fi

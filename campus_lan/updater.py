@@ -20,11 +20,40 @@ def reload_path(repo=None):
     return base / ('reload-' + key)
 
 
-def generation(repo=None):
+# Shared by Mac/Linux. Avoid invoking Git on every 80 ms UI tick.
+_revision_cache = {}
+
+
+def checkout_revision(repo):
+    key=str(Path(repo).resolve())
+    now=time.monotonic()
+    previous=_revision_cache.get(key)
+    if previous and now-previous[0]<5:
+        return previous[1]
+    revision=previous[1] if previous else ''
     try:
-        return reload_path(repo).read_text()
+        result=subprocess.run(['git','-C',key,'rev-parse','--verify','HEAD'],
+                              capture_output=True,text=True,check=True,timeout=3,
+                              env=dict(os.environ,GIT_OPTIONAL_LOCKS='0'))
+        value=result.stdout.strip()
+        if len(value) in (40,64) and all(c in '0123456789abcdef' for c in value):
+            revision=value
+    except (OSError,subprocess.SubprocessError):
+        pass  # A transient Git failure must not trigger a restart loop.
+    _revision_cache[key]=(now,revision)
+    return revision
+
+
+def generation(repo=None):
+    repo=Path(repo or Path(__file__).resolve().parent.parent).resolve()
+    try:
+        marker=reload_path(repo).read_text()
     except FileNotFoundError:
-        return ''
+        marker=''
+    # Only an explicitly approved signal reloads running clients/services.
+    # A changed checkout is detected by pull entry points, never by the host's
+    # watcher: Git activity must not disconnect students without approval.
+    return marker
 
 
 def notify_reload(repo):
@@ -33,6 +62,20 @@ def notify_reload(repo):
     temporary = target.with_name(target.name + '-' + secrets.token_hex(8))
     temporary.write_text(secrets.token_hex(16))
     temporary.replace(target)
+
+
+def request_reload(repo):
+    print('[lan42] Reloading ends local matches and disconnects students; Intra sessions may expire.')
+    if not sys.stdin.isatty():
+        print('[lan42] Reload deferred: run python3 -m campus_lan.updater --request-reload in a terminal.')
+        return False
+    try:answer=input('Reload LAN42 clients and host now? [y/N]: ').strip().lower()
+    except EOFError:answer=''
+    if answer not in ('y','yes'):
+        print('[lan42] Reload deferred; the host and other connections are kept.')
+        return False
+    notify_reload(repo)
+    return True
 
 
 def update_checkout(repo):
@@ -47,7 +90,7 @@ def update_checkout(repo):
             return False
         result = git('pull', '--ff-only')
         print(result.stdout.strip())
-        notify_reload(repo)
+        request_reload(repo)
         return True
     except (OSError, subprocess.SubprocessError):
         print('[lan42] Update failed; local work preserved. Restarting installed checkout.')
@@ -72,3 +115,17 @@ def restart(update=False, wait_for_node=None):
     print('[lan42] Restarting this terminal instance...', flush=True)
     env = dict(os.environ, LAN42_NO_UPDATE='1')
     os.execve('/bin/sh', ['sh', str(repo / 'lan42.sh'), *sys.argv[1:]], env)
+
+
+def main():
+    import argparse
+    parser=argparse.ArgumentParser(description='Ask before package-wide LAN42 reloads; never a network command.')
+    parser.add_argument('--request-reload',action='store_true',required=True)
+    parser.add_argument('--previous',help='Before-pull commit; skip prompt if the revision did not change')
+    args=parser.parse_args()
+    repo=Path(__file__).resolve().parent.parent
+    if args.previous is not None and (not args.previous or checkout_revision(repo)==args.previous):return
+    request_reload(repo)
+
+
+if __name__=='__main__':main()

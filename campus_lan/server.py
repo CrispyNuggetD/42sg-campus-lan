@@ -24,6 +24,7 @@ class Lobby:
     def __init__(self, round_seconds=45, auth_broker=None):
         self.clients, self.rooms = {}, {}
         self.auth_broker = auth_broker
+        self.remote_gate=None
         self.koeldrop=None
         self.callbacks = CallbackRelay()
         self.sequence = self.room_sequence = 0
@@ -66,7 +67,7 @@ class Lobby:
 
     async def route_direct(self,client,target,message,uwu=False):
         options={'uwu':True} if uwu else {}
-        delivered=await self.deliver_direct(client['name'],target,message,bool(self.auth_broker),**options)
+        delivered=await self.deliver_direct(client['name'],target,message,bool(client.get('uid')),**options)
         if not delivered and not self.auth_broker:delivered=await self.mesh.direct(client['name'],target,message,**options)
         return delivered
 
@@ -83,7 +84,7 @@ class Lobby:
         unavailable=[];delivered_count=0
         for index,target in enumerate(targets):
             await asyncio.sleep(max(0,2.05-(time.monotonic()-client.get('last_dm',-1000))))
-            if self.auth_broker and not self.auth_broker.active(client['session_key']):
+            if self.auth_broker and client.get('uid') and not self.auth_broker.active(client.get('session_key')):
                 unavailable.extend(targets[index:]);break
             client['last_dm']=time.monotonic()
             error=''
@@ -99,8 +100,12 @@ class Lobby:
         if self.auth_broker:
             people = {}
             for c in self.clients.values():
-                people[c['uid']] = dict(id=str(c['uid']), name=c['name'], hostname=c['hostname'],
-                    verified=True, seat=c.get('seat', 'unknown'))
+                key=str(c.get('uid') or ('guest-'+str(id(c))))
+                people[key] = dict(id=key, name=c['name'], hostname=c['hostname'],
+                    verified=bool(c.get('uid')),signed_in=bool(c.get('uid')),
+                    remote_approved=c.get('remote_approved',False),
+                    connection_kind='remote' if c.get('remote_approved') else 'ordinary',
+                    seat='Remote / not on campus' if c.get('remote_approved') else c.get('seat', 'unknown'))
             players = list(people.values())
         else:
             players = self.mesh.players() or [dict(id=p,name=c['name'],hostname=c['hostname'],verified=False,
@@ -132,7 +137,7 @@ class Lobby:
                 c=self.clients.get(pid)
                 if not c:continue
                 identity=self.auth_broker.sessions.get(c.get('session_key'),{}) if self.auth_broker else {}
-                members.append(dict(id=pid,name=c['name'],verified=bool(self.auth_broker),avatar=identity.get('avatar')))
+                members.append(dict(id=pid,name=c['name'],verified=bool(c.get('uid')),avatar=None if self.remote_gate else identity.get('avatar')))
             try:
                 result=await room['web'].control(dict(action='members',members=members))
                 for entry in result['entries']:
@@ -170,6 +175,7 @@ class Lobby:
 
     def api_identity(self, client):
         from .access import Policy
+        if client.get('remote_approved'):raise AuthError('Remote approval never grants campus/API access, even when signed in.')
         if not self.auth_broker:raise AuthError('Guests cannot access API-backed data. Sign in to the approved Singapore host.')
         key=client.get('session_key')
         if not self.auth_broker.active(key):raise AuthError('Sign in again for API-backed data.')
@@ -183,8 +189,13 @@ class Lobby:
         text = clean(raw)
         if not text:
             return
+        if c.get('remote_approved') and text.startswith('/'):
+            permitted={'/help','/who','/games','/dm','/uwu','/host','/game','/join','/leave','/start','/ready','/answer','/browser','/invite','/invite-room','/signout'}
+            if text.split(' ',1)[0] not in permitted:
+                raise AuthError('Remote approval allows chat, DMs and ordinary games only; campus/API services are unavailable.')
         if not text.startswith('/'):
-            await self.mesh.publish('event',f"{c['name']} [{'42 Verified' if self.auth_broker else 'Guest'}]: {text}")
+
+            await self.mesh.publish('event',f"{c['name']} [{'42 Verified' if c.get('uid') else 'Guest'}]: {text}")
             return
         cmd,_,arg = text.partition(' ')
         arg = arg.strip()
@@ -251,7 +262,7 @@ class Lobby:
         elif cmd == '/signin':
             await self.send(c,dict(type='event',text='Use /signin in your local HQ client to open 42 in your browser.'))
         elif cmd == '/signout':
-            if not self.auth_broker:
+            if not self.auth_broker or not c.get('uid'):
                 raise ValueError('You are using the guest lobby.')
             key = c['session_key']
             self.auth_broker.logout(key)
@@ -549,7 +560,7 @@ class Lobby:
             raise ValueError('Wait 10 seconds between invitations.')
         c['invite'] = now
         if self.auth_broker:
-            await self.broadcast(dict(type='invite', text=f"{c['name']} [42 Verified] invites you to {self.rooms[rid]['game']}; /join {rid}."))
+            await self.broadcast(dict(type='invite', text=f"{c['name']} [{'42 Verified' if c.get('uid') else 'Remote approved / unverified'}] invites you to {self.rooms[rid]['game']}; /join {rid}."))
             return
         await self.mesh.publish('invite',f"{c['name']} invites you to {self.rooms[rid]['game']}; server {self.mesh.host}:{self.port}, /join {rid}. Use /connect {self.mesh.host} {self.port} if on another node.")
 
@@ -561,6 +572,12 @@ class Lobby:
             if len(line)>65536:
                 raise ValueError('Handshake too large.')
             source = writer.get_extra_info('peername')[0]
+            remote_source=False
+            if self.remote_gate:
+                from .remote_access import eligible,local
+                if not local(source):
+                    if not eligible(source):raise AuthError('Remote listener accepts only approved 192.168.0.0/16 guests; other source IPs are denied.')
+                    remote_source=True
             if not self.auth_broker and line.startswith(b'GET '):
                 if not ipaddress.ip_address(source).is_loopback:
                     raise ValueError('Callback is loopback-only.')
@@ -638,10 +655,16 @@ class Lobby:
             if self.auth_broker:
                 if not writer.get_extra_info('ssl_object'):
                     raise ValueError('Authentication requires TLS.')
-                identity = self.auth_broker.authenticate(hello.get('session'))
+                if hello.get('session') or not remote_source:
+                    identity = self.auth_broker.authenticate(hello.get('session'))
             name = identity['login'] if identity else clean(hello.get('name','guest'),24)
             if not re.fullmatch(r'[A-Za-z0-9_.-]{1,24}',name):
                 raise ValueError('Invalid guest username.')
+            remote_id=None
+            if remote_source:
+                if not identity and not name.startswith('guest-'):name='guest-'+name[:18]
+                # The ID authorizes exactly this live socket, never an IP forever.
+                remote_id=await self.remote_gate.admit(source,name,writer)
             role = hello.get('role','lobby')
             if role not in ('lobby','game'):
                 raise ValueError('Unknown client role.')
@@ -651,12 +674,12 @@ class Lobby:
             self.sequence += 1
             pid = str(self.sequence)
             c = dict(writer=writer,name=name,role=role,hostname=clean(hello.get('hostname','unknown'),50),
-                     window=time.monotonic(),count=0)
+                     window=time.monotonic(),count=0,remote_approved=bool(remote_id),remote_id=remote_id)
             if identity:
                 from .network import seat_label
-                c.update(uid=identity['uid'], session_key=identity['session_key'], seat=seat_label(source))
+                c.update(uid=identity['uid'], session_key=identity['session_key'], seat='Remote / not on campus' if remote_id else seat_label(source))
             self.clients[pid] = c
-            await self.send(c,dict(type='welcome',id=pid,version=VERSION,name=name,verified=bool(identity)))
+            await self.send(c,dict(type='welcome',id=pid,version=VERSION,name=name,verified=bool(identity),remote_approved=bool(remote_id)))
             if role=='lobby':
                 await self.event(f"{name} joined as {'42 Verified' if identity else 'Guest'}.")
             await self.state()
@@ -669,7 +692,7 @@ class Lobby:
                 msg = json.loads(line)
                 if not isinstance(msg,dict):
                     raise ValueError('Expected an object.')
-                if self.auth_broker and not self.auth_broker.active(c['session_key']):
+                if self.auth_broker and c.get('uid') and not self.auth_broker.active(c.get('session_key')):
                     raise ValueError('Sign-in expired. Use /signin again.')
                 now = time.monotonic()
                 if now-c['window']>=1:
@@ -681,7 +704,7 @@ class Lobby:
                     if msg.get('type')=='command':
                         await self.command(pid,msg.get('text',''))
                     elif msg.get('type')=='koel_deliver':
-                        if not self.auth_broker or not self.koeldrop:raise ValueError('KoelDrop requires the verified host service.')
+                        if c.get('remote_approved') or not self.auth_broker or not self.koeldrop:raise ValueError('KoelDrop requires verified campus admission; remote approval is insufficient.')
                         await self.koeldrop.deliver_invite(self,pid,msg)
                     elif msg.get('type')=='direct_batch':
                         self.start_direct_batch(pid,msg)
@@ -701,6 +724,9 @@ class Lobby:
                 self.owners.pop(owner_key,None)
                 if not self.owners:
                     self.shutdown.set()
+            if self.remote_gate:
+                for key,value in list(self.remote_gate.active.items()):
+                    if value is writer:self.remote_gate.active.pop(key,None)
             if pid is not None:
                 task=self.clients[pid].get('dm_task')
                 if task:
@@ -724,7 +750,7 @@ class Lobby:
             await asyncio.sleep(.2)
             if self.auth_broker:
                 for c in list(self.clients.values()):
-                    if not self.auth_broker.active(c['session_key']):
+                    if c.get('uid') and not self.auth_broker.active(c.get('session_key')):
                         await self.send(c, dict(type='signed_out'))
                         c['writer'].close()
             for rid,room in list(self.rooms.items()):

@@ -51,9 +51,13 @@ lan42_pull() {
     print -u2 -- "Skipped local edits: $repo"
     return 1
   fi
+  local before_revision=$(git -C "$repo" rev-parse HEAD)
   print -r -- "Pulling: $repo"
   GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -o BatchMode=yes -o ConnectTimeout=10" \
-    git -C "$repo" -c merge.autostash=false -c rebase.autostash=false pull --no-rebase --ff-only
+    git -C "$repo" -c merge.autostash=false -c rebase.autostash=false pull --no-rebase --ff-only || return $?
+  if [[ "${repo:A}" == "${LAN42_REPO_ROOT:A}" ]]; then
+    (builtin cd -- "$repo" && command python3 -m campus_lan.updater --request-reload --previous "$before_revision")
+  fi
 }
 
 lan42_syncproj() {

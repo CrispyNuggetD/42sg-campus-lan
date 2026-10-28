@@ -393,10 +393,24 @@ class AuthHTTP:
             if self.connections > 32:
                 raise AuthError('Authentication service busy.')
             first=await asyncio.wait_for(reader.readline(),5)
+            remote_source=False
+            if getattr(self,'remote_guests',False):
+                from .remote_access import eligible,local
+                source=writer.get_extra_info('peername')[0]
+                if not local(source):
+                    if not eligible(source):raise AuthError('Remote source is not eligible.')
+                    remote_source=True
+                    # Only OAuth identity lifecycle is available remotely. In
+                    # particular block KoelDrop before its early HTTP dispatch.
+                    parts=first.split()
+                    if len(parts)<2 or parts[1] not in (b'/begin',b'/resume',b'/exchange'):
+                        raise AuthError('Remote connections cannot access campus services.')
             if self.koeldrop and b' /v1/' in first:
                 await self.koeldrop.handle(reader,writer,first);return
             method, target, headers = await asyncio.wait_for(http_request(reader,first), 10)
-            if method != 'POST' or headers.get('host') != self.authority or 'origin' in headers:
+            authorities={self.authority}
+            if getattr(self,'remote_authority',None):authorities.add(self.remote_authority)
+            if method != 'POST' or headers.get('host') not in authorities or 'origin' in headers:
                 raise AuthError('Native client requests only.')
             if headers.get('content-type') != 'application/json':
                 raise AuthError('Expected JSON.')

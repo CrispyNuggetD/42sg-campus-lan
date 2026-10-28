@@ -179,3 +179,18 @@ SG membership and must match the numeric local operator ID. Requests use
 50), and either a bounded recent end-time range of at most eight days or active
 sessions. Existing host approval, operator enrollment and pacing apply.
 No student/guest socket route or other-account history access is added.
+
+## Opt-in Mac remote guest admission
+
+The owner may explicitly start `auth_server serve --remote-guests` bound to an
+actual private 192.168.x.x interface on an already approved Mac. Only socket
+sources in 192.168.0.0/16 may request remote admission; other non-loopback sources
+are rejected on that listener. This flag is refused on Linux and with campus
+current-seat mode. Normal default listeners retain their prior policy.
+
+A private local controller approves one live lobby/game socket at a time. No IP
+grant is persisted. Green remote approval is not SG verification or a campus
+seat. A real Intra session may coexist but does not widen the remote connection's
+chat/DM/game scope. Remote API/roster/profile/academic/announcement and file/flock
+access is denied. The HTTP remote path exposes only OAuth session lifecycle,
+not campus-service dispatch. See [Remote access](remote-access.md).

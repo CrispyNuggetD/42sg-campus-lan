@@ -9,7 +9,7 @@ class QuickControls:
         if action == 'account':
             if getattr(self, 'role', 'lobby') == 'game':
                 self.lines.append('Use F2 or the account button in your HQ window.')
-            elif getattr(self, 'secure', False):
+            elif getattr(self,'signed_in',getattr(self,'secure',False)):
                 self.settings_command('/settings signout')
             else:
                 self.start_signin()
@@ -42,7 +42,7 @@ class QuickControls:
         if getattr(self, 'permission_prompt', False) or getattr(self, 'wizard', None):
             return
         h, w = screen.getmaxyx()
-        signed = getattr(self, 'secure', False)
+        signed = getattr(self,'signed_in',getattr(self,'secure',False))
         if getattr(self, 'role', 'lobby') != 'game':
             text = ('42 signed in: click here to sign out (F2).' if signed else
                     'Guest: /signin or click here (F2). API views need the campus host online.')

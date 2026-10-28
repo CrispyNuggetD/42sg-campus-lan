@@ -13,6 +13,7 @@ def guest_style(name):
 
 
 def seat(player):
+    if player.get('remote_approved'):return None
     value = str(player.get('seat', ''))
     match = re.fullmatch(r'Cluster ([12]), row (\d+), seat (\d+)', value)
     if not match:
@@ -31,7 +32,7 @@ def plain(text):
 
 def player_style(player):
     if player.get('api_presence') and not player.get('lan42_peer'):return 7
-    return 1 if player.get('verified') else guest_style(player.get('name','guest'))
+    return 1 if player.get('verified') or player.get('remote_approved') else guest_style(player.get('name','guest'))
 
 
 def overlay_campus(players, peers):
@@ -49,7 +50,7 @@ def overlay_campus(players, peers):
 def player_line(number, player, location):
     label = f'c{location[0]}r{location[1]}s{location[2]}' if location else 'Unknown / off campus'
     name = str(player.get('name','guest'))[:24]
-    status=('LAN42 verified' if player.get('verified') else 'LAN42 guest') if player.get('lan42_peer') else 'API login' if player.get('api_presence') else '42 Verified' if player.get('verified') else 'Guest'
+    status=('Remote approved / '+('42 signed in' if player.get('verified') else 'unverified')) if player.get('remote_approved') else ('LAN42 verified' if player.get('verified') else 'LAN42 guest') if player.get('lan42_peer') else 'API login' if player.get('api_presence') else '42 Verified' if player.get('verified') else 'Guest'
     return [(f'{number:>3}. {name:<24}', player_style(player)),(f' {label:<22} {status}',0)]
 
 

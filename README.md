@@ -20,13 +20,13 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 ## Highlights
 
 <!-- shell-installer-features:start -->
-- **Campus HQ:** no-sudo setup checks Python/curses and offers missing Python/tmux installation with explanations and per-run Allow all; `lan42` opens a separate workspace.
+- **Campus HQ:** `lan42` opens a workspace; no-sudo setup checks Python/curses and offers consent-gated Python/tmux installation. Mac hosts may opt into one-connection remote guest approval; green never means Intra-verified.
 - **Find your people:** `/who`, `/join`, private DMs and `/track` online/offline, seat and lobby identity updates; `/clusters` shows SG seats while the approved campus host is online.
 - **KoelDrop:** `/koel flock` joins the host’s 42 Singapore flock: once, always or never. Daily folders survive reconnects; optional sgoinfre link saves home quota. Upload/receive consent stays separate. `/uwu` introduces your courier.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE, a multiplayer visualiser/game for the legacy 42 C Philosophers project.
 - **Easy controls:** clickable footer or F2 sign in/out; F3 mute, F4 output 0/30%, F5 uwu once, F6 automatic uwu; Up/Down history and !COMMAND for your local shell.
 - **Useful alerts:** moderated `/broadcast`, pinned host arrival and exam-time LAN42-only audio quiet. `/notify` separates alerts from DMs/pokes; release popups are coalesced and daily-limited.
-- **Versioned server:** startup shows version/date; `/changelog` explains releases. Enrolled local operators can read their own SG login hours through shell helpers.
+- **Versioned server:** startup shows version/date; `/changelog` explains releases. Enrolled operators can read own SG hours. Mac/Linux ask [y/N] before package-wide reloads after checkout updates.
 - **Web search:** `/search` defaults to Ecosia; Google/custom engines are optional. Permanent aggregate impact totals and estimated unique searches have a counting opt-out.
 <!-- shell-installer-features:end -->
 
@@ -93,6 +93,7 @@ All four launch from HQ with `/game NAME`; friends use `/join ROOM_NUMBER`.
 | Share files or understand the uwu bird | [KoelDrop](docs/file-sharing.md) |
 | Change shortcuts, search, notifications or consent | [Personal preferences](docs/preferences.md) |
 | Sign in or configure the approved API host | [Sign-in setup](docs/sign-in.md) |
+| Approve a remote guest on the owner Mac | [Remote access](docs/remote-access.md) |
 | Host, update or troubleshoot LAN42 | [Hosting and maintenance](docs/hosting.md) |
 
 [Full documentation contents →](docs/README.md) ·

@@ -219,7 +219,7 @@ def sign_in(home, open_browser=webbrowser.open, close_tab=True):
     return endpoint(trust)
 
 
-def connect_socket(host, port):
+def connect_socket(host, port, remote_guest=False):
     """Returns (socket, LAN42 session or None). Never downgrades a trusted endpoint."""
     try:
         trust = load_trust()
@@ -232,7 +232,9 @@ def connect_socket(host, port):
     if trust and matches(trust, host, port):
         session = load_session(trust)
         if not session:
-            raise AuthError('Use /signin from your local HQ first.')
+            if not remote_guest:raise AuthError('Use /signin from your local HQ first.')
+            session=dict(session=None,uid=None,remote_guest=True)
+
         raw = socket.create_connection((host, port), timeout=5)
         try:
             secure = tls_context(trust).wrap_socket(raw, server_hostname=server_name(trust))
@@ -240,4 +242,5 @@ def connect_socket(host, port):
             raw.close()
             raise AuthError('Secure lobby certificate verification failed; connection refused.') from None
         return secure, session
+    if remote_guest:raise AuthError('Remote guest admission requires a matching pinned TLS host; import/relocate its public trust first.')
     return socket.create_connection((host, port), timeout=5), None

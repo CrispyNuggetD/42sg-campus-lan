@@ -87,8 +87,12 @@ async def wait_for_host_move(settings):
             return
 
 
-async def serve_auth(bind='127.0.0.1', current_seat=False):
+async def serve_auth(bind='127.0.0.1', current_seat=False, remote_guests=False):
     from .server import Lobby
+    if remote_guests:
+        from .remote_access import eligible
+        if sys.platform!='darwin' or current_seat or not eligible(bind):
+            raise AuthError('Remote guests require explicit 192.168.x.x binding on this Mac; never campus mode.')
     root = config_dir()
     settings = json.loads(private_read(root / 'auth-server.json'))
     from .access import Policy,migrate_legacy_host
@@ -106,6 +110,9 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     context.load_cert_chain(root / 'auth-cert.pem', root / 'auth-key.pem')
     broker = Broker(Provider(settings['client_id'], settings['client_secret']),policy_factory=Policy)
     lobby = Lobby(auth_broker=broker)
+    if remote_guests:
+        from .remote_access import RemoteGate
+        lobby.remote_gate=RemoteGate()
     lobby.api_status = "Approved Singapore API host; selected views require SG sign-in"
     lobby.port = settings['lobby_port']
     lobby.mesh.host = settings['host']
@@ -114,6 +121,8 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
     lobby.koeldrop=koeldrop
     http = AuthHTTP(broker, f"{settings['host']}:{settings['broker_port']}")
     http.koeldrop=koeldrop
+    http.remote_guests=remote_guests
+    http.remote_authority=f'{bind}:{settings["broker_port"]}' if remote_guests else None
     from .search_counts import SearchCounts
     import sqlite3
     try:http.search_counts=SearchCounts()
@@ -155,14 +164,23 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
                                                    id=context.get('request_id'),decision=decision))
                 except AuthError:pass
     announcement_moderator=asyncio.create_task(moderate_announcements())
-    web = await asyncio.start_server(http.handle, bind, settings['broker_port'], ssl=context,
-                                     ssl_handshake_timeout=5, limit=16384)
+    if lobby.remote_gate:await lobby.remote_gate.start(settings['lobby_port'])
+    try:
+        web = await asyncio.start_server(http.handle, bind, settings['broker_port'], ssl=context,
+                                         ssl_handshake_timeout=5, limit=16384)
+    except Exception:
+        if lobby.remote_gate:await lobby.remote_gate.close()
+        announcement_moderator.cancel();announcement_notifier.close()
+        await asyncio.gather(announcement_moderator,return_exceptions=True)
+        if http.search_counts:http.search_counts.close()
+        raise
     try:
         server = await asyncio.start_server(lobby.handle, bind, settings['lobby_port'], ssl=context,
                                             ssl_handshake_timeout=5, limit=65536)
     except Exception:
         web.close()
         await web.wait_closed()
+        if lobby.remote_gate:await lobby.remote_gate.close()
         if http.search_counts:http.search_counts.close()
         announcement_moderator.cancel();announcement_notifier.close()
         await asyncio.gather(announcement_moderator,return_exceptions=True)
@@ -183,6 +201,7 @@ async def serve_auth(bind='127.0.0.1', current_seat=False):
         async with web, server:
             reload_package = await wait_for_host_move(settings)
     finally:
+        if lobby.remote_gate:await lobby.remote_gate.close()
         if http.search_counts:http.search_counts.close()
         announcement_moderator.cancel();announcement_notifier.close()
         await asyncio.gather(announcement_moderator,return_exceptions=True)
@@ -220,6 +239,7 @@ def main():
     owner_parser.add_argument('login')
     run = sub.add_parser('serve')
     run.add_argument('--bind', default='127.0.0.1')
+    run.add_argument('--remote-guests',action='store_true',help='Mac-only one-connection remote chat/game approval; explicit 192.168.x.x bind required')
     run.add_argument('--current-seat', action='store_true', help='Bind only the seat prepared by dailylogin')
     export = sub.add_parser('export-trust')
     export.add_argument('output', type=Path)
@@ -242,7 +262,7 @@ def main():
         print('Imported existing app into private configuration outside the repository.')
         print('Public trust certificate SHA256:', fingerprint(trust))
     elif args.command == 'serve':
-        asyncio.run(serve_auth(args.bind, args.current_seat))
+        asyncio.run(serve_auth(args.bind, args.current_seat, args.remote_guests))
     elif args.command == 'export-trust':
         trust = validate_trust(json.loads(private_read(root / 'auth-trust.json')))
         # This allowlisted file contains ONLY public endpoint/certificate information.

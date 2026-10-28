@@ -121,3 +121,25 @@ uv, and missing tmux asks separately before downloads. Blank/no/EOF declines.
 Python recovery and consent tests use fake uv/package tools; terminal setup,
 feature and website checks plus the website build passed on Mac. No runtime
 was downloaded in tests and current campus network/permissions remain unverified.
+
+## Mac remote-approval test mode — 28 October 2026 SGT
+
+Opt-in remote guest admission is Mac-only and requires an explicit private
+192.168.x.x listener bind on an existing approved host. Grants are per live
+socket, with a private local controller and separate genuine Intra session state.
+Tests use fake identities/source addresses, temporary configuration and local
+Unix/loopback sockets. No Ignis/VPN connection, real remote invite, live listener
+or host/firewall configuration change was made. Twelve focused remote tests pass.
+The broader 193-test selection had 191 passes, one skip and the previously
+documented Mac 127.0.0.2 bind error. Website tests/build pass. End-to-end VPN
+routing, extra browser-game ports and actual user operation are unverified.
+
+## Host reload consent — 28 October 2026 SGT
+
+Revision changes alone no longer feed the package reload generation. The Mac
+and Linux dailylogin/standalone pull paths ask [y/N] before publishing a reload
+marker; No, blank input, EOF and unattended execution defer it. Installation
+Allow all is not accepted as reload permission. Existing /update requests ask
+before restarting other clients/services; its initiating terminal can reopen.
+Updater/consent, terminal, shell handoff, feature and website tests/build passed.
+No live host or student connection was restarted during validation.

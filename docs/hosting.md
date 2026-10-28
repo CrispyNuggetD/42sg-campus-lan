@@ -166,6 +166,19 @@ the pull and preserve your work; failed pulls retain the installed code. No rese
 stash, commit or push is performed. The trusted authentication/room service also reloads on a successful package update;
 its in-memory sign-ins expire, so use `/signin` again after an upgrade.
 
+Mac and Ubuntu use the same **approval-gated** reload flow. Dailylogin and
+standalone pull entry points detect a changed checkout and ask:
+`Reload LAN42 clients and host now? [y/N]`. The warning explains that matches
+can end, students disconnect and in-memory sign-ins may expire.
+Enter, No, EOF or an unattended run defers the package-wide reload. Installation
+“Allow all” never approves reloads. A Git revision change alone cannot restart
+the host. `/update` also asks before notifying other clients/services; its own
+initiating terminal may reopen because that terminal explicitly requested an update.
+
+To approve later, run `python3 -m campus_lan.updater --request-reload` locally
+in the clone. No prompt is sent to another student's computer. Ordinary failed
+or unchanged pulls do not trigger the after-pull prompt.
+
 Old processes need one manual restart to gain the update watcher. After that,
 all bundled minigames share the same LAN42 package update mechanism. Browser
 clients reconnect after the FORKNITE server reloads and reclaim their slots.

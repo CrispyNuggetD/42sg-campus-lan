@@ -103,6 +103,8 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         ensure_session()
         self.uid = auth_session.get('uid') if auth_session else None
         self.secure = auth_session is not None
+        self.signed_in = bool(auth_session and auth_session.get('uid'))
+        self.remote_approved = False
         self.session_token = auth_session['session'] if auth_session else None
         self.signing_in = False
         self.auto_login_checked=False
@@ -679,13 +681,15 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                     self.open_urls('forknite',[url],'Open this FORKNITE room in your browser?')
                     self.lines.append('FORKNITE: '+msg['url']+' | /browser reopens this room. Host uses /start here.')
             elif kind=='welcome':
+                self.signed_in=bool(getattr(self,'secure',False) and msg.get('verified'))
+                self.remote_approved=bool(getattr(self,'secure',False) and msg.get('remote_approved'))
                 self.id = msg['id']
                 if getattr(self, 'secure', False):
                     self.name = msg['name']
                 if getattr(self,'initial_command',None):
                     self.send(dict(type='command',text=self.initial_command))
                     self.initial_command = None
-                self.lines.append(f"Connected. Server {msg['version']}; " + ('42 Verified over TLS.' if getattr(self, 'secure', False) else 'Guest (unverified).'))
+                self.lines.append(f"Connected. Server {msg['version']}; " + ('Remote approved; ' if self.remote_approved else '')+('42 signed in over TLS.' if self.signed_in else 'Guest (unverified).'))
             elif kind=='state':
                 old_rooms = {(r.get('address'),r.get('port'),r['id']) for r in self.state.get('rooms',[])}
                 if not getattr(self, 'secure', False):
@@ -765,6 +769,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             target,port = self.game_target
             action = ['--room',parts[1]]
         args = ['game',target,'--port',str(port),'--guest-name',self.name,*action]
+        if getattr(self,'remote_approved',False):args.append('--remote-guest')
         opener = Path(__file__).resolve().parents[1]/'useful-scripts/open_terminal.py'
         if not approved:
             self.request_popup('terminals','Open a LAN42 game terminal?',lambda:self.open_game(text,True))
@@ -843,7 +848,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         if campus:
             heading='CAMPUS API: '+str(len(players))+' logged-in seats | snapshot '+time.strftime('%H:%M:%S',time.localtime(self.cluster_stamp))
         else:
-            heading=f"CURRENTLY ONLINE: {len(players)} | " + ('42 identities verified over TLS' if getattr(self, 'secure', False) else 'Guest names are unverified')
+            heading=f"CURRENTLY ONLINE: {len(players)} | " + ('TLS lobby: sign-in and remote approval are separate' if getattr(self, 'secure', False) else 'Guest names are unverified')
         self.line(screen,3,heading,curses.A_BOLD)
         controls=f'/clusters 1|2 | Tab: map/roster | /next /prev | page {self.lobby_page+1}/{pages}'
         if getattr(self,'focus_name',None):controls='SELECTED '+self.focus_name+' | c%dr%ds%d'%self.focus_location+' | /next /prev'
@@ -919,7 +924,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         banner = curses.A_BOLD | curses.A_REVERSE
         if getattr(self,'colors',False):
             banner |= curses.color_pair(4 if game_window else 2)
-        label = f" LAN42 | {self.window_label()} | {self.name} [{'42 Verified' if getattr(self, 'secure', False) else 'Guest'}] | "+('ONLINE' if self.connected else 'DISCONNECTED')
+        label = f" LAN42 | {self.window_label()} | {self.name} [{'42 signed in' if getattr(self,'signed_in',getattr(self,'secure',False)) else 'Guest'}] | "+('ONLINE' if self.connected else 'DISCONNECTED')
         self.line(screen,0,label.ljust(w-1),banner)
         hint = ('GAME CONTROLS: /start /leave /quit | /lobby /game | HQ stays in its other window'
                 if game_window else 'HQ: /join IP [PORT] | /game NAME | /games | /who')
@@ -1011,7 +1016,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         if len(parts)==1 and parts[0]=='/profile':
             self.open_urls('profiles',['https://profile-v3.intra.42.fr/'],'Open your personal Intra home in your browser?')
         elif len(parts) == 1:
-            signed = getattr(self,'secure',False)
+            signed = getattr(self,'signed_in',getattr(self,'secure',False))
             self.lines.extend([
                 'SETTINGS | '+self.name+(' | signed in with 42' if signed else ' | guest'),
                 '/settings signin  — open 42 sign-in (local HQ)',
@@ -1081,7 +1086,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         elif parts[1:] == ['signout']:
             from .login_settings import pause_for_session
             pause_for_session()
-            if getattr(self,'secure',False):
+            if getattr(self,'signed_in',getattr(self,'secure',False)):
                 self.send(dict(type='command',text='/signout'))
             else:
                 self.lines.append('Already a guest. Use /signin to sign in.')
@@ -1090,7 +1095,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         return True
 
     def start_signin(self, approved=False,saved_only=False):
-        if getattr(self, 'secure', False):
+        if getattr(self,'signed_in',getattr(self,'secure',False)):
             self.lines.append('Already signed in with 42. /settings signout ends this session.')
             return
         if self.role != 'lobby' or self.current != self.home:
@@ -1452,7 +1457,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 elif text == '/signin':
                     self.start_signin()
                 elif text.startswith('/authhost '):
-                    if getattr(self, 'secure', False) or self.signing_in:
+                    if getattr(self,'signed_in',getattr(self,'secure',False)) or self.signing_in:
                         self.lines.append('Sign out or finish the pending sign-in before changing the auth host.')
                     else:
                         try:
@@ -1483,7 +1488,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             elif 32<=key<=126 and len(self.input)<400:
                 self.input += chr(key)
 
-def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='lobby',initial_command=None,game_target=None):
+def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='lobby',initial_command=None,game_target=None,remote_guest=False):
     username = name or pwd.getpwuid(os.getuid()).pw_name
     if request_terminal_resize():
         # Window managers apply the request asynchronously; give curses a moment
@@ -1493,7 +1498,7 @@ def connect(host,port,name=None,notify=True,peer_callback=None,home=None,role='l
     while True:
         print(f'Connecting to {host}:{port}...')
         try:
-            sock, auth_session = auth_client.connect_socket(host, port)
+            sock, auth_session = auth_client.connect_socket(host, port,remote_guest=True) if remote_guest else auth_client.connect_socket(host, port)
         except (OSError, ValueError) as e:
             if home and (host,port)!=home:
                 print(f'Peer unavailable; returning to your node. {e}')

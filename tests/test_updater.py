@@ -2,6 +2,7 @@ import subprocess
 import unittest
 from unittest.mock import patch, Mock
 from campus_lan.updater import update_checkout, restart
+from campus_lan import updater
 
 
 class UpdaterTests(unittest.TestCase):
@@ -39,3 +40,64 @@ class UpdaterTests(unittest.TestCase):
         restart(False)
         update.assert_not_called()
         execute.assert_called_once()
+
+class RevisionWatch(unittest.TestCase):
+    def setUp(self):
+        updater._revision_cache.clear()
+
+    def test_external_commit_change_detected_and_polls_are_bounded(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp, patch.object(updater,'reload_path',return_value=Path(tmp)/'marker'), \
+             patch.object(updater.time,'monotonic',side_effect=[0,1,6]), \
+             patch.object(updater.subprocess,'run',side_effect=[Mock(stdout='a'*40),Mock(stdout='b'*40)]) as run:
+            first=updater.checkout_revision(tmp)
+            self.assertEqual(updater.checkout_revision(tmp),first)
+            self.assertNotEqual(updater.checkout_revision(tmp),first)
+            self.assertEqual(run.call_count,2)
+
+    def test_git_failure_keeps_last_revision_and_marker_still_works(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp, patch.object(updater,'reload_path',return_value=Path(tmp)/'marker'), \
+             patch.object(updater.time,'monotonic',side_effect=[0,6,7]), \
+             patch.object(updater.subprocess,'run',side_effect=[Mock(stdout='a'*40),subprocess.TimeoutExpired('git',3)]):
+            revision=updater.checkout_revision(tmp)
+            self.assertEqual(updater.checkout_revision(tmp),revision)
+            first=updater.generation(tmp)
+            (Path(tmp)/'marker').write_text('manual-reload')
+            self.assertNotEqual(updater.generation(tmp),first)
+
+    def test_real_git_commit_and_dirty_work_never_publish_reload(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp:
+            repo=Path(tmp)
+            def git(*args):
+                subprocess.run(['git','-C',tmp,*args],check=True,capture_output=True)
+            git('init');(repo/'file').write_text('one')
+            git('add','.');git('-c','user.name=Test','-c','user.email=test@example.invalid','commit','-m','one')
+            with patch.object(updater,'reload_path',return_value=repo/'marker'):
+                first=updater.generation(repo)
+                revision=updater.checkout_revision(repo)
+                (repo/'file').write_text('two')
+                updater._revision_cache.clear()
+                self.assertEqual(updater.generation(repo),first)
+                git('add','file');git('-c','user.name=Test','-c','user.email=test@example.invalid','commit','-m','two')
+                updater._revision_cache.clear()
+                self.assertEqual(updater.generation(repo),first)
+                self.assertNotEqual(updater.checkout_revision(repo),revision)
+
+class ReloadConsent(unittest.TestCase):
+    def test_only_explicit_yes_publishes_reload(self):
+        for answer,allowed in [('y',True),('yes',True),('Y',True),('',False),('n',False),('A',False)]:
+            with self.subTest(answer=answer),patch.object(updater.sys.stdin,'isatty',return_value=True),patch('builtins.input',return_value=answer),patch.object(updater,'notify_reload') as notify:
+                self.assertEqual(updater.request_reload('/example'),allowed)
+                self.assertEqual(notify.call_count,int(allowed))
+
+    def test_unattended_and_eof_never_publish(self):
+        with patch.object(updater.sys.stdin,'isatty',return_value=False),patch('builtins.input') as ask,patch.object(updater,'notify_reload') as notify:
+            self.assertFalse(updater.request_reload('/example'))
+            ask.assert_not_called();notify.assert_not_called()
+        with patch.object(updater.sys.stdin,'isatty',return_value=True),patch('builtins.input',side_effect=EOFError),patch.object(updater,'notify_reload') as notify:
+            self.assertFalse(updater.request_reload('/example'));notify.assert_not_called()

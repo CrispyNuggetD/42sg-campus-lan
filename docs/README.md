@@ -11,6 +11,7 @@ the [command reference](quick-guide.html).
 
 | Guide | What is inside |
 | --- | --- |
+| [Remote guest approval](remote-access.md) | Mac-only, per-connection host approval; green status, genuine sign-in and campus presence stay separate. |
 | [Getting started](getting-started.md) | Install, launch, tmux, shell helpers, dailylogin and guest/sign-in basics. |
 | [Campus and social features](campus-guide.md) | Peer discovery, rosters, clusters, chat, invitations, profiles, tracking and arrival rules. |
 | [Minigames](minigames.md) | Tetris, Bluff, Hex Wars and FORKNITE, together with controls and requirements. |

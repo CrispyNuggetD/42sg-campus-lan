@@ -64,7 +64,7 @@ DOCUMENT_PAGES = {
     'docs/frontend-milestone.md':'frontend-milestone.html',
     **{'docs/'+name+'.md':name+'.html' for name in (
         'getting-started','campus-guide','minigames','file-sharing','preferences',
-        'web-search','exam-quiet','sign-in','hosting','access-policy','versioning',
+        'web-search','exam-quiet','sign-in','hosting','remote-access','access-policy','versioning',
         'runtime-environment','local-testing','protocol','file-sharing-design','website-changelog')},
 }
 
