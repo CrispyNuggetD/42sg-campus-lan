@@ -1,8 +1,16 @@
 {
-  "version": "2.16.1-beta.1",
-  "date": "2026-10-29T05:00:00+08:00",
-  "source": "ee147de80aa7300b01ae4b031cf5e6551d59a90a",
+  "version": "2.16.2-beta.1",
+  "date": "2026-10-29T05:03:45+08:00",
+  "source": "01c673aec1f4c0f5b55192b5dba2bd61894129ba",
   "history": [
+    {
+      "version": "2.16.2-beta.1",
+      "date": "2026-10-29T05:03:45+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: name shared uwu mp3 in audio metadata"
+      ]
+    },
     {
       "version": "2.16.1-beta.1",
       "date": "2026-10-29T05:00:00+08:00",
@@ -444,5 +452,5 @@
       ]
     }
   ],
-  "runtime_sha256": "40fe1b807c2c2d73fc40837d260c170e60a9bed3b066df2deff7dc62510ef07a"
+  "runtime_sha256": "8cc813eae728dc82f60256bb4cdb3298ef1f2301787f678b6d528ab926901dd3"
 }

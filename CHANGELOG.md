@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.16.2-beta.1 · 2026-10-29T05:03:45+08:00
+
+- fix: name shared uwu mp3 in audio metadata
+
 ## 2.16.1-beta.1 · 2026-10-29T05:00:00+08:00
 
 - fix: use official uwu wav and add ogg-derived mp3
