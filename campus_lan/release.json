@@ -1,8 +1,16 @@
 {
-  "version": "2.13.0-beta.1",
-  "date": "2026-10-28T22:47:41+08:00",
-  "source": "40b83c5b6914b300a45d6d5b81420893d620ffe9",
+  "version": "2.14.0-beta.1",
+  "date": "2026-10-28T23:13:17+08:00",
+  "source": "bdeb4dc4c7c7f5c0a1475f368806c6df216d1167",
   "history": [
+    {
+      "version": "2.14.0-beta.1",
+      "date": "2026-10-28T23:13:17+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: show campus occupancy and filter online diners by cluster"
+      ]
+    },
     {
       "version": "2.13.0-beta.1",
       "date": "2026-10-28T22:47:41+08:00",
@@ -354,5 +362,5 @@
       ]
     }
   ],
-  "runtime_sha256": "63d83190da507ce03004dbdb33f9267cb7d1b9c44c2989dc7c3dfbc0ea398988"
+  "runtime_sha256": "d8ecbda9110b023b93dd76f0e69a638a9fe6a96dd8cb90eda538a9184b04ec05"
 }

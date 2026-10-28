@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.14.0-beta.1 · 2026-10-28T23:13:17+08:00
+
+- feat: show campus occupancy and filter online diners by cluster
+
 ## 2.13.0-beta.1 · 2026-10-28T22:47:41+08:00
 
 - feat: select campus-online and verified users for FORKNITE
