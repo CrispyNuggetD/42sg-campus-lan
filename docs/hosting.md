@@ -200,6 +200,17 @@ next login is tried. The panel prints one result per input and a final requested
 skipped, failed and successful count. Use **Download batch log** to save the
 report locally. Existing API and photo request budgets still apply.
 
+`/tool` accepts explicit logins only: `all`, `cohort1` and `cohort 1` are not
+expanded by this tool. For a long list, open `/tool` without arguments and paste
+whitespace-separated logins into the panel, then choose **Cache all logins**.
+Do not include the `/tool` prefix in that input. This avoids the terminal's
+400-character input limit. Existing cached photos count as successful results.
+Logs remain in the local panel/browser console unless you choose **Download
+batch log**; the tool does not publish them. Reopen the admin tool after an
+update, and reload the unpacked Chrome extension when its version changes.
+The whitelist source and optional `LAN42_INTRA_WHITELIST` setting are described
+under [relationships and named lists](campus-guide.md#relationships-and-named-lists).
+
 Nothing reads or exports Chrome cookies/profiles. Cache files are kept outside
 Git at `~/.cache/42sg-campus-lan/avatars` with private permissions. Joined players
 receive same-origin image responses from the game server; see the game README

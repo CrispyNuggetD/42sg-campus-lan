@@ -70,6 +70,14 @@ file sharing. Nothing starts sharing just because you try the bird. Mac playback
 uses the same call in a native WAV copy with brief silent padding; see the
 [audio controls](docs/file-sharing.md).
 
+Tracking additions and person-targeted commands check a **private local Singapore
+whitelist**: `singapore.json`, or `singapore_intra.txt` when JSON is absent.
+Missing/invalid whitelist files block new targets; supported selectors still
+work in the commands that accept them. See [relationships and whitelist setup](docs/campus-guide.md#relationships-and-named-lists).
+API operators can use [automatic avatar batches](docs/hosting.md#local-api-owner-avatar-tools):
+`/tool LOGIN...` continues after individual failures and provides a downloadable
+local report. Keep student directories and reports out of public Git.
+
 ## Games
 
 All four launch from HQ with `/game NAME`; friends use `/join ROOM_NUMBER`.
