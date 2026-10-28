@@ -28,6 +28,9 @@ jobs:
       - run: python -m unittest discover -s tests -p test_cluster_cache.py
       - run: python -m unittest discover -s tests -p test_guest_host_prompt.py
       - run: python -m unittest discover -s tests -p test_quick_controls.py
+      - run: python -m unittest discover -s tests -p test_lobby_view.py
+      - run: python -m unittest discover -s tests -p test_cluster_commands.py
+      - run: python -m unittest discover -s tests -p test_koel_desktop.py
       - run: python -m unittest discover -s tests -p test_notification_preferences.py
       - run: python -m unittest discover -s tests -p test_koel_flock.py
       - run: python -m unittest discover -s tests -p test_web_search.py
