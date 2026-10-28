@@ -163,7 +163,67 @@ def maximize_current_terminal():
         print("\033[9;1t", end="", flush=True)
 
 
-def show(session, window=None, reuse_terminal=False):
+def mac_work_tty(reuse_terminal=False):
+    """Identify the Terminal tab that hosts (or will host) the Work client."""
+    rows = tmux("list-clients", "-F", "#{client_session}\t#{client_tty}",
+                check=False).stdout.splitlines()
+    work = session_name()
+    attached_tty = next((tty for row in rows for name, _, tty in [row.partition("\t")]
+                         if name == work and tty.startswith("/dev/")), None)
+    if attached_tty:
+        return attached_tty
+    if reuse_terminal and sys.stdin.isatty() and not os.environ.get("TMUX"):
+        return os.ttyname(sys.stdin.fileno())
+    return None
+
+
+def mac_terminal_script(tab=False):
+    if not tab:
+        return ('on run argv\n tell application "Terminal"\n'
+                ' do script (item 1 of argv)\n' +
+                (' set zoomed of front window to true\n' if maximize_enabled() else '') +
+                ' activate\n end tell\nend run')
+    # Terminal cannot create a tab through its AppleScript dictionary. Route the
+    # standard New Tab shortcut to the window containing Work's exact TTY, then
+    # address the newly selected tab explicitly. No shell command is typed into
+    # Work's running tab.
+    return ('on run argv\n'
+            ' set shellCommand to item 1 of argv\n'
+            ' set parentTTY to item 2 of argv\n'
+            ' tell application "Terminal"\n'
+            '  set targetWindow to missing value\n'
+            '  repeat with candidateWindow in windows\n'
+            '   repeat with candidateTab in tabs of candidateWindow\n'
+            '    if tty of candidateTab is parentTTY then\n'
+            '     set targetWindow to candidateWindow\n'
+            '     exit repeat\n'
+            '    end if\n'
+            '   end repeat\n'
+            '   if targetWindow is not missing value then exit repeat\n'
+            '  end repeat\n'
+            '  if targetWindow is missing value then error "Work Terminal tab not found"\n'
+            '  activate\n'
+            '  set index of targetWindow to 1\n'
+            '  set parentWindowID to id of targetWindow\n'
+            ' end tell\n'
+            ' tell application "System Events" to keystroke "t" using command down\n'
+            ' tell application "Terminal"\n'
+            '  repeat 30 times\n'
+            '   if (id of front window) is not parentWindowID then exit repeat\n'
+            '   delay 0.1\n'
+            '  end repeat\n'
+            '  if (id of front window) is parentWindowID then error "New Terminal tab did not open"\n'
+            ' end tell\n'
+            ' tell application "System Events" to tell application process "Terminal"\n'
+            '  if (count radio buttons of tab group 1 of front window) < 2 then error "Terminal opened another window instead of a tab"\n'
+            ' end tell\n'
+            ' tell application "Terminal"\n'
+            '  do script shellCommand in selected tab of front window\n' +
+            ('  set zoomed of front window to true\n' if maximize_enabled() else '') +
+            ' end tell\nend run')
+
+
+def show(session, window=None, reuse_terminal=False, mac_parent_tty=None):
     if not exists(session):
         print("No daily windows yet. Run start_codex, start_lan42, or dailylogin.")
         return
@@ -194,14 +254,13 @@ def show(session, window=None, reuse_terminal=False):
             subprocess.run(attach, check=True)
             return
         if sys.platform == "darwin":
-            script = ('on run argv\n tell application "Terminal"\n'
-                      ' do script (item 1 of argv)\n' +
-                      (' set zoomed of front window to true\n' if maximize_enabled() else '') +
-                      ' activate\n end tell\nend run')
+            if mac_parent_tty is None and session == session_name("lan42"):
+                mac_parent_tty = mac_work_tty()
             # zsh expands unquoted =NAME as a command path, unlike POSIX sh.
             # shlex.join considers '=' safe, so quote the exact-session target.
             shell_command = shlex.join(attach[:-1]) + " '=" + session + "'"
-            desktop = ["osascript", "-e", script, shell_command]
+            desktop = ["osascript", "-e", mac_terminal_script(bool(mac_parent_tty)),
+                       shell_command, *([mac_parent_tty] if mac_parent_tty else [])]
         elif shutil.which("gnome-terminal"):
             # A terminal tab is a separate tmux client/session, not nested tmux.
             # The parent screen below explicitly selects the Work terminal window.
@@ -224,12 +283,15 @@ def show(session, window=None, reuse_terminal=False):
         # Hold the launch lock until attached, preventing simultaneous GUI requests.
         process = subprocess.Popen(desktop, env=env, start_new_session=True,
                                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                   stderr=subprocess.DEVNULL)
+                                   stderr=subprocess.PIPE if sys.platform == "darwin" else subprocess.DEVNULL,
+                                   text=True)
         for _ in range(40):
             if attached(session):
                 return
             if process.poll() not in (None, 0):
-                raise RuntimeError("Terminal launch failed. Reconnect: tmux attach -t " + session)
+                detail = (process.stderr.read().strip() if process.stderr else "")
+                raise RuntimeError("Terminal launch failed" + (": " + detail if detail else ".")
+                                   + " Reconnect: tmux attach -t " + session)
             time.sleep(0.1)
         raise RuntimeError("Terminal did not attach. Session is running; use: tmux attach -t " + session)
 
@@ -261,6 +323,17 @@ def main():
             print("No daily windows yet.")
     elif args.action == "show-all":
         lan = session_name("lan42")
+        if sys.platform == "darwin":
+            # A foreground dli may attach Work in its original Terminal tab.
+            # Otherwise establish Work first and locate its actual GUI tab by TTY.
+            reuse = sys.stdin.isatty() and not os.environ.get("TMUX")
+            if not reuse:
+                show(session)
+            if lan != session and exists(lan):
+                show(lan, mac_parent_tty=mac_work_tty(reuse_terminal=reuse))
+            if reuse:
+                show(session, reuse_terminal=True)
+            return
         desktop_batch = (sys.platform != "darwin" and shutil.which("gnome-terminal")
                          and (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
                          and (not sys.stdin.isatty() or os.environ.get("TMUX")))
