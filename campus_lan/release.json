@@ -1,8 +1,16 @@
 {
-  "version": "2.11.0-beta.1",
-  "date": "2026-10-28T20:45:06+08:00",
-  "source": "fe4053a6088362db410a2da870e0747e3db856d8",
+  "version": "2.11.1-beta.1",
+  "date": "2026-10-28T20:49:51+08:00",
+  "source": "d915c120e07774d82d0357800ab16d558be55bd3",
   "history": [
+    {
+      "version": "2.11.1-beta.1",
+      "date": "2026-10-28T20:49:51+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: promote clusters to F3 and shift audio shortcuts"
+      ]
+    },
     {
       "version": "2.11.0-beta.1",
       "date": "2026-10-28T20:45:06+08:00",
@@ -290,5 +298,5 @@
       ]
     }
   ],
-  "runtime_sha256": "1f74297c63a483a2c5b021a9c76fc3841521a8aab308849d6b5374134e42a022"
+  "runtime_sha256": "0862a35dc21a1abd6067c334123850167520787ad361c9aa44d112b027fd8553"
 }

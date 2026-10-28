@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.11.1-beta.1 · 2026-10-28T20:49:51+08:00
+
+- fix: promote clusters to F3 and shift audio shortcuts
+
 ## 2.11.0-beta.1 · 2026-10-28T20:45:06+08:00
 
 - feat: add append-only KoelDrop, cluster shortcuts and relationship map colors
