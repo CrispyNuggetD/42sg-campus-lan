@@ -1,8 +1,18 @@
 {
-  "version": "2.14.2-beta.1",
-  "date": "2026-10-29T03:12:41+08:00",
-  "source": "c9ae56ad125999980459d4a4597cf31a0dd9bf22",
+  "version": "2.15.0-beta.1",
+  "date": "2026-10-29T03:48:09+08:00",
+  "source": "fa61852a30f3d68e15569ce7be77dd07bf1a8d59",
   "history": [
+    {
+      "version": "2.15.0-beta.1",
+      "date": "2026-10-29T03:48:09+08:00",
+      "kind": "minor",
+      "notes": [
+        "fix: find sibling private campus data",
+        "feat: persist auto uwu and opt-in startup volume",
+        "feat: open campus clusters in a dedicated tmux miniapp"
+      ]
+    },
     {
       "version": "2.14.2-beta.1",
       "date": "2026-10-29T03:12:41+08:00",
@@ -378,5 +388,5 @@
       ]
     }
   ],
-  "runtime_sha256": "5e9bc8c2b5906360996856573eda2e51719da70037b483f3ae91422655c8f24d"
+  "runtime_sha256": "477ff0c6015548851123e3f2ed24d196d490516012903332eee5744115ef77e7"
 }

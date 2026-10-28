@@ -4,6 +4,12 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.15.0-beta.1 · 2026-10-29T03:48:09+08:00
+
+- fix: find sibling private campus data
+- feat: persist auto uwu and opt-in startup volume
+- feat: open campus clusters in a dedicated tmux miniapp
+
 ## 2.14.2-beta.1 · 2026-10-29T03:12:41+08:00
 
 - fix: keep Mac LAN42 in Work Terminal tabs
