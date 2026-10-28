@@ -249,9 +249,11 @@ Relationships, lists and independent arrival rules are configured locally:
 
 ```text
 /track dthoo thtay
-/track status friends dthoo
-/track status moots thtay
-/track status oomf another-login
+/track
+/track friends
+/track friends dthoo
+/track moots thtay
+/track oomf another-login
 /track list lunch add dthoo thtay
 /track list lunch remove thtay
 /track alerts friends campus off
@@ -260,6 +262,12 @@ Relationships, lists and independent arrival rules are configured locally:
 /settings clusters c1
 /settings clusters on
 ```
+
+`/track` displays sorted names under relationship headings and named lists.
+`/track friends`, `/track mutuals` (or `/track moots`), `/track oomf` and
+`/track tracked` display a group without changing it. Add logins or an `@list`
+after a relationship label to assign it, for example `/track friends @furs`.
+The existing `/track status friends LOGIN...` syntax also works.
 
 Newly tracked people are acquaintances (`tracked`). A relationship is one local
 label: `tracked`, `friends`, `mutuals` (alias `moots`), or `oomf`. Labels do not

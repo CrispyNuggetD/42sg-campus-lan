@@ -51,7 +51,8 @@ HELP = [
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
     '/tool LOGIN...: batch private photos | /info [FILTER] [PAGE]: API-operator campus directory',
     '/clusters: both clusters | /cluster 1|2, /c1, /c2: one cluster | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
-    '/track help: relationships/lists | /settings clusters: include/exclude arrival rules',
+    '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
+    '/settings clusters: include/exclude arrival rules',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
@@ -1464,7 +1465,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                         self.lines.append('philo ready. Host FORKNITE to open the browser.')
                     except (OSError,ValueError,subprocess.SubprocessError) as error:
                         self.lines.append('Build failed: '+str(error))
-                elif text.split()[0] in ('/admin','/tool','/tools'):
+                elif text.split()[:1] in (['/admin'],['/tool'],['/tools']):
                     self.open_admin(text.split()[1:])
                 elif self.settings_command(text):
                     pass

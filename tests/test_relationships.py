@@ -66,6 +66,39 @@ class Relationships(unittest.TestCase):
         configure(t,['list','lunch','remove','thtay']);self.assertEqual(t.resolve(['@lunch']),['dthoo'])
         self.assertIn(str(t.path),configure(t,['config'])[0])
 
+    def test_grouped_display_is_sorted_and_does_not_save(self):
+        t=self.tracker
+        t.set_relationship(['zebra','alpha'],'friends')
+        t.set_relationship(['mutual'],'mutuals');t.change(['other'])
+        t.change_list('furs',['zebra','alpha'])
+        before=t.path.read_bytes()
+        with patch.object(t,'save',side_effect=AssertionError('Display must not save')):
+            lines=configure(t,[])
+            self.assertIn('  Friends (2)',lines)
+            self.assertIn('  Mutuals (1)',lines)
+            self.assertIn('  Acquaintances (tracked) (1)',lines)
+            self.assertIn('  @furs (2)',lines)
+            self.assertLess(lines.index('    alpha'),lines.index('    zebra'))
+            friends=configure(t,['friends'])
+            self.assertIn('    mutual',friends)  # Existing friendly selector union.
+            self.assertNotIn('    other',friends)
+            self.assertEqual(configure(t,['moots']),['Local relationships','  Mutuals (1)','    mutual'])
+            self.assertIn('  Nobody tracked here yet.',configure(t,['oomf']))
+        self.assertEqual(t.path.read_bytes(),before)
+
+    def test_relationship_shorthand_tracks_logins_and_list_members(self):
+        t=self.tracker;t.change_list('furs',['dthoo','thtay'])
+        configure(t,['friends','@furs'])
+        self.assertEqual(set(t.resolve(['friends'])),{'dthoo','thtay'})
+        t.set_alerts(['dthoo'],'campus',False)
+        configure(t,['moots','dthoo'])
+        self.assertEqual(t.data['people']['dthoo']['relationship'],'mutuals')
+        self.assertFalse(t.data['people']['dthoo']['alerts']['campus'])
+        configure(t,['oomf','guolio'])
+        self.assertEqual(t.data['people']['guolio']['relationship'],'oomf')
+        configure(t,['tracked','guolio'])
+        self.assertEqual(t.resolve(['tracked']),['guolio'])
+
     def client(self):
         c=Client.__new__(Client);c.name='owner';c.lines=collections.deque();c.send=Mock()
         return c

@@ -51,7 +51,7 @@ def complete(text):
         elif command=='/uwu' and len(parts)<=2:
             choices=('auto','on','off')
         elif command=='/track' and len(parts)<=2:
-            choices=('help','status','list','lists','alerts','clusters','config')
+            choices=('help','status','list','lists','alerts','clusters','config','tracked','friends','mutuals','moots','oomf')
         elif command=='/track' and parts[1:2]==['status'] and len(parts)<=3:
             choices=('tracked','friends','mutuals','moots','oomf')
         elif command=='/settings' and parts[1:2]==['clusters'] and len(parts)<=3:

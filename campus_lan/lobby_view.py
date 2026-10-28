@@ -86,8 +86,9 @@ def player_line(number, player, location):
 
 def lobby_lines(players, view='roster', cluster=1):
     if cluster == 0 and view != 'roster':
-        first = lobby_lines(players, view, 1)
-        second = lobby_lines(players, view, 2)
+        # Cluster 2 is physically above Cluster 1.
+        first = lobby_lines(players, view, 2)
+        second = lobby_lines(players, view, 1)
         marker = plain('CURRENTLY ONLINE - map markers match these roster numbers')
         return first[:first.index(marker)-1] + [plain('')] + second
     entries = roster(players)
