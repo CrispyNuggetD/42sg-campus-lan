@@ -1,8 +1,16 @@
 {
-  "version": "2.8.7-beta.1",
-  "date": "2026-10-28T16:46:41+08:00",
-  "source": "b416a52ee4c00861678ee92ad7ddf1459f138136",
+  "version": "2.8.8-beta.1",
+  "date": "2026-10-28T17:15:25+08:00",
+  "source": "200ae282b72ac27a27ddfd41ffd39a02470d21e6",
   "history": [
+    {
+      "version": "2.8.8-beta.1",
+      "date": "2026-10-28T17:15:25+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: explain dependency choices and allow remaining setup installs"
+      ]
+    },
     {
       "version": "2.8.7-beta.1",
       "date": "2026-10-28T16:46:41+08:00",
@@ -242,5 +250,5 @@
       ]
     }
   ],
-  "runtime_sha256": "3060a8e1b5283c24121de8b77c1fda0013747990c940293c9ea0238037131cf2"
+  "runtime_sha256": "eb09e83038fc01bc7dc25a784fe297cefa5841cfab394bbdc302fee54be16092"
 }
