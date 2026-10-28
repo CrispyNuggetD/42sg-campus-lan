@@ -141,3 +141,17 @@ not after one 100ms eating slot. The card labels distinguish waiting overdue
 from an already late meal. This is a display estimate, not a native scheduler
 verdict; the starvation countdown still uses `time_to_die`. Completed rounds
 freeze their timing display.
+
+### Select online campus users
+
+In a FORKNITE room, the signed-in room host can use `/sabo online [COUNT]` for
+stand-ins from the host's last campus API presence snapshot. These users need
+not run LAN42. The snapshot age is reported; this command does not refresh it.
+If no snapshot exists, load `/clusters` on the API host first. No snapshot or an
+empty result never selects the whole directory or substitutes sign-ins.
+
+`/sabo verified [COUNT]` instead selects active verified SG users connected to
+this LAN42 host; it makes no campus-presence claim. Both selectors exclude
+already seated people, use alphabetical order up to the free 50-seat capacity,
+and retain whitelist, membership and API-budget checks. Stand-ins are not
+contacted. See [campus selectors](campus-guide.md#select-campus-online-people-for-forknite).

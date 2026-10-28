@@ -173,6 +173,16 @@ based on the real `time_to_die` argument and last observed eating start.
 The replay clock stops advancing when the native round ends; replay speed and
 pause affect display time only.
 
+- `/sabo online [COUNT]`: stand-ins from the approved host's last completed
+  campus API crawl, including people who do not use LAN42. Reports snapshot age;
+  never refreshes or substitutes sign-ins. Load `/clusters` first if no snapshot
+  exists on the API host.
+- `/sabo verified [COUNT]`: active authenticated SG users connected to this
+  LAN42 host, independent of campus presence. Guests, expired sessions and
+  remote-approval-only clients are excluded. Both selectors require the signed-in
+  FORKNITE room host; exclude existing seats; sort/deduplicate logins; cap at the
+  requested count/free 50-seat capacity; and retain whitelist/profile/budget checks.
+  They add stand-ins without contacting anyone.
 - `/diners 7`: fill to seven total diners with fictional random stand-ins.
   Repeating the command replaces its generated stand-ins; joined users and
   explicitly named students remain. Use `/stop` before changing the table.

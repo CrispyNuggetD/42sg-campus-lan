@@ -353,3 +353,32 @@ than being added as logins. The include/exclude lists still contain people or
 cohort selectors. `login:c1` addresses a literal login with that spelling.
 
 Cluster map colors: **magenta** friends/mutuals/oomf; **cyan** members of your named lists; **green** signed-in or explicitly remote-approved LAN42 connections (the roster distinguishes approval from Intra sign-in); **yellow** guests; **blue** API-only logins; **dim** desks with no reported occupant. Friend coloring takes priority over list coloring. Local relationship/list labels stay on your computer; unverified guest names cannot claim friend/list colors. The map legend and roster labels explain the colors. An unreported desk is not proof that it is physically empty.
+
+## Select campus-online people for FORKNITE
+
+`/sabo online` means the Intra logins in the API host's **last completed campus
+presence crawl**, including people who have never opened or signed into LAN42.
+It does not mean LAN42 peers or verified sign-ins. The command uses that snapshot
+without starting a fresh crawl; its response reports the snapshot age. If none is
+cached yet, load `/clusters` on the approved API host first. An empty snapshot
+selects nobody; it never falls back to the directory or LAN42 sign-ins.
+
+`/sabo verified` is separate: active verified Singapore users currently connected
+to this LAN42 host, using their authenticated Intra login rather than a claimed
+nickname or verification flag. It does not claim those users are on campus.
+Expired, guest and remote-approval-only connections are excluded.
+
+```text
+/sabo online
+/sabo online 5
+/sabo verified
+```
+
+These bare words are host-resolved `/sabo` selectors. Use `@online` or
+`@verified` explicitly if an existing local list has the same name.
+Use them as the signed-in FORKNITE room host. Already seated people are excluded;
+remaining unique logins are sorted and capped at the requested count and free
+seats in the 50-seat table. The usual private whitelist, SG profile membership
+checks and API budgets still apply. These are stand-ins: nobody is contacted or
+actually joins your game. Use `login:online` or `login:verified` if you explicitly
+mean a whitelisted literal login that collides with a selector.

@@ -53,6 +53,7 @@ HELP = [
     '/clusters: both clusters | /cluster 1|2, /c1, /c2: one cluster | /locate LOGIN: highlight | /profile LOGIN...: browser tabs | /make: build philo',
     '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
+    '/sabo online [COUNT]: last host campus snapshot | /sabo verified [COUNT]: active SG sign-ins on this host',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit',
@@ -483,6 +484,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 message=' '.join(shlex.split(body)) if body.lstrip().startswith(('\"',"'")) else body.strip()
                 parts=[command,selector,message] if separator else [command,selector]
             if len(parts)<2:return False
+            if command=='/sabo' and any(p.lower() in ('online','verified') for p in parts[1:]):return False
             # Re-read local settings so the game window sees HQ relationship edits.
             from .tracking import Tracker
             tracker=Tracker(self.name)
@@ -494,7 +496,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 names=tracker.resolve(parts[1:])
                 if not names:raise ValueError('That local selector is empty. /track status friends LOGIN')
                 if len(names)>50:raise ValueError('SABO selectors may expand to at most 50 people.')
-                self.send(dict(type='command',text='/sabo '+' '.join(names)))
+                self.send(dict(type='command',text='/sabo '+' '.join('login:'+n if n in ('online','verified') else n for n in names)))
                 self.lines.append('SABO selected locally: '+', '.join(names))
             else:
                 if len(parts)<3:raise ValueError('Use /dm friends "do you all want lunch?" or /dm LOGIN MESSAGE')

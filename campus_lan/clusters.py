@@ -29,3 +29,11 @@ def snapshot():
         records=api.pages('campus/'+str(int(campus['id']))+'/locations',**{'filter[active]':'true'})
         _snapshot=normalize_locations(records);_stamp=time.time()
         return _snapshot,_stamp
+
+
+def cached_snapshot():
+    """Last completed host crawl only: never refresh or substitute LAN42 peers."""
+    with _lock:
+        if _snapshot is None:
+            raise ValueError('No campus presence snapshot yet. Load /clusters on this API host first, then retry /sabo online.')
+        return [dict(player) for player in _snapshot],_stamp

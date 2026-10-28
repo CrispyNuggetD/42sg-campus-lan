@@ -99,3 +99,9 @@ class Whitelist(unittest.TestCase):
         c.popup_prompts.return_value.confirm.call_args.args[1]()
         self.assertEqual(self.tracker.names,[])
         self.assertTrue(any('whitelist' in line for line in c.lines))
+
+    def test_presence_words_are_reserved_for_host_not_local_login_or_list_alias(self):
+        for word in ('online','verified'):
+            with self.assertRaisesRegex(ValueError,'Use /sabo'):self.tracker.resolve([word])
+            self.tracker.change_list(word,['fixture-one'])
+            self.assertEqual(self.tracker.resolve(['@'+word]),['fixture-one'])

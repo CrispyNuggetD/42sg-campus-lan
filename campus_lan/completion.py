@@ -58,7 +58,9 @@ def complete(text):
             choices=('c1','c2','all','on','off','include','exclude','clear')
         elif command=='/settings' and parts[1:3]==['clusters','scope'] and len(parts)<=4:
             choices=('1','2','all')
-        elif command in ('/dm','/alert','/sabo') and len(parts)<=2:
+        elif command=='/sabo' and len(parts)<=2:
+            choices=('online','verified','random','history','friends','tracked','alltracked','mutuals','moots','oomf')
+        elif command in ('/dm','/alert') and len(parts)<=2:
             choices=('friends','tracked','alltracked','mutuals','moots','oomf')
         elif command in ('/settings','/profile') and parts[1:2]==['notifications'] and len(parts)<=3:
             choices = ('on','off','all','host','announcements','releases','warnings','tracking','flock','files','chat','dms','pokes')

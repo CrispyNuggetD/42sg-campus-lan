@@ -108,6 +108,7 @@ class Tracker:
         result=[]
         for raw in selectors:
             value=raw.lower();status=ALIASES.get(value,value)
+            if value in ('online','verified'):raise ValueError('Use /sabo '+value+'; this presence selector is resolved by the API host, not the local relationship list.')
             if value.startswith('login:'):names=[login(value[6:])]
             elif value=='alltracked':names=self.names
             elif status in RELATIONSHIPS:

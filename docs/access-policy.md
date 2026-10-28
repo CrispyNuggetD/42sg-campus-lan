@@ -199,3 +199,14 @@ seat. A real Intra session may coexist but does not widen the remote connection'
 chat/DM/game scope. Remote API/roster/profile/academic/announcement and file/flock
 access is denied. The HTTP remote path exposes only OAuth session lifecycle,
 not campus-service dispatch. See [Remote access](remote-access.md).
+
+### FORKNITE presence selectors
+
+`/sabo online` is authenticated room-host use of the existing in-memory campus
+seat snapshot, not a new directory/export endpoint. It neither refreshes that
+snapshot nor falls back to peer presence or the full campus directory. Source
+age is shown. `/sabo verified` uses only active SG sessions connected to that host,
+with canonical broker logins and live identity checks, never nickname/role flags.
+Both exclude existing seats and retain the 50-seat cap, 10-profile lookup batches,
+SG membership checks, local whitelist and API budgets. No new durable presence
+history or student roster export is introduced.

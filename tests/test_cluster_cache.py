@@ -25,3 +25,14 @@ class ClusterCache(unittest.TestCase):
             refreshed,stamp=clusters.snapshot()
             self.assertEqual(api.pages.call_count,2);self.assertEqual(stamp,130)
             self.assertEqual(refreshed[0]['seat'],'c2r2s2')
+
+    def test_cached_snapshot_keeps_last_success_without_refresh_or_shared_mutation(self):
+        previous=[dict(name='fixture-user',seat='c1r1s1')]
+        with patch.object(clusters,'_snapshot',previous),patch.object(clusters,'_stamp',1),patch.object(clusters,'API') as api:
+            result,stamp=clusters.cached_snapshot()
+            self.assertEqual(stamp,1);self.assertEqual(result,previous)
+            result[0]['name']='changed';self.assertEqual(previous[0]['name'],'fixture-user')
+            api.assert_not_called()
+        with patch.object(clusters,'_snapshot',None),patch.object(clusters,'API') as api:
+            with self.assertRaisesRegex(ValueError,'Load /clusters'):clusters.cached_snapshot()
+            api.assert_not_called()

@@ -342,7 +342,39 @@ class Lobby:
                 elif bit.lower()=='random':random_selection=True
                 elif bit.isdecimal():counts.append(int(bit))
                 elif any(op in bit for op in ('=','>','<')):filters.append(bit)
-            if cohorts or random_selection or filters:
+            presence=[b.lower() for b in bits if b.lower() in ('online','verified')]
+            if presence:
+                if len(presence)!=1 or len(bits)>2 or any(b.lower() not in ('online','verified') and not b.isdecimal() for b in bits):
+                    raise ValueError('Use /sabo online [COUNT] or /sabo verified [COUNT].')
+                requested=counts[0] if counts else None
+                if requested is not None and not 1<=requested<=50:raise ValueError('Choose a count from 1 to 50.')
+                if presence[0]=='online':
+                    from .clusters import cached_snapshot
+                    present,stamp=await asyncio.to_thread(cached_snapshot)
+                    candidates={p['name'].lower() for p in present}
+                    source='Host campus API snapshot ('+str(max(0,int(time.time()-stamp)))+'s old)'
+                else:
+                    candidates=set()
+                    for peer in list(self.clients.values()):
+                        try:person=self.api_identity(peer)
+                        except AuthError:continue
+                        name=person.get('login')
+                        if isinstance(name,str) and re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',name):candidates.add(name.lower())
+                    source='Active verified SG users connected to this LAN42 host'
+                seated=await room['web'].control(dict(action='roster'))
+                seated_names={p['name'].lower() for p in seated['players']}
+                available=max(0,50-len(seated['players']))
+                names=sorted(candidates-seated_names)[:min(available,requested or available)]
+                from .login_whitelist import validate_logins
+                names=validate_logins(names)
+                await self.event(source+': '+str(len(candidates))+' unique; selecting '+str(len(names))+' unseated (capacity '+str(available)+').',{pid})
+                if not names:
+                    await self.event('No matching unseated people, or the table is full.',{pid});return
+                profiles=[];errors=[]
+                for offset in range(0,len(names),10):
+                    batch,failed=await self.profile_lookup.lookup_many(names[offset:offset+10])
+                    profiles.extend(batch);errors.extend(failed)
+            elif cohorts or random_selection or filters:
                 if len(counts)>1 or any(not (x.lower() in ('random','where','and') or x in filters or x.isdecimal() or (x.lower().startswith('cohort') and x[6:].isdecimal())) for x in bits):
                     raise ValueError('Use /sabo [COUNT] random [cohort4 cohort5] or /sabo cohort4 cohort5.')
                 if cohorts or filters:
@@ -362,6 +394,7 @@ class Lobby:
                 profiles=checked
                 errors=[]
             else:
+                bits=[bit[6:] if bit.lower().startswith('login:') else bit for bit in bits]
                 if not 1<=len(bits)<=50 or any(not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',bit) for bit in bits):
                     raise ValueError('Use /sabo LOGIN... (1–50), or /sabo [COUNT] random cohort4.')
                 profiles=[];errors=[]
