@@ -81,4 +81,4 @@ metadata and filenames alone may not survive forwarding.
 Exact-file SHA-256 fingerprints:
 
 - `uwu.wav`: `31c36b176ae978d56b8ece69370c7e6a5450821ba90069879825ff25feb64edd`
-- `uwu.mp3`: `a1ee11d78144765d265e1f690612f5f053c5f4e26fef2e59ae793aa3f8c5cb28`
+- `uwu.mp3`: `0b6b84be360eb25b2e8b2510d47ace1996a9fb9e0dcee9d66d0138eed8e56f3e`
