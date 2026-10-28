@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock,patch
 
 from campus_lan import api_pacing
-from campus_lan.cluster_viewer import ClusterViewer,age_label,launch,source_for
+from campus_lan.cluster_viewer import ClusterViewer,LocalSource,age_label,launch,source_for
 
 
 class ClusterViewerTests(unittest.TestCase):
@@ -41,6 +41,28 @@ class ClusterViewerTests(unittest.TestCase):
         viewer.command('/locate fixture')
         self.assertEqual(viewer.cluster,2)
         self.assertIn('c2r2s2',viewer.status)
+
+    def test_refresh_before_new_snapshot_reports_cached_data_and_keeps_page(self):
+        viewer,source=self.viewer()
+        players=[dict(name='fixture',seat='c1r1s1')]
+        viewer.events.put(dict(type='clusters',players=players,updated_at=100,cluster=0))
+        viewer.consume()
+        viewer.page=2
+        viewer.command('')
+        source.refresh.assert_called_once_with(0)
+        viewer.events.put(dict(type='clusters',players=players,updated_at=100,cluster=0))
+        viewer.consume()
+        self.assertIn('No newer campus snapshot yet',viewer.status)
+        self.assertEqual(viewer.page,2)
+
+    def test_local_refresh_in_progress_reports_waiting(self):
+        viewer,source=self.viewer()
+        source.refresh.return_value=False
+        viewer.command('')
+        self.assertIn('already in progress',viewer.status)
+        local=LocalSource.__new__(LocalSource)
+        local.busy=True
+        self.assertIs(local.refresh(0),False)
 
     def test_numeric_tracking_requires_confirmation_of_captured_occupants(self):
         viewer,_=self.viewer();viewer.owner='fixture-owner'

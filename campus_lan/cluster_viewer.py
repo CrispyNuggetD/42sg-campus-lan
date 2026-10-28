@@ -83,7 +83,7 @@ class LocalSource:
         self.busy=False
 
     def refresh(self,cluster):
-        if self.busy:return
+        if self.busy:return False
         self.busy=True
         def work():
             try:
@@ -95,6 +95,7 @@ class LocalSource:
                 self.events.put(dict(type='error',text='Local Singapore API seats unavailable. Retry later.'))
             finally:self.busy=False
         threading.Thread(target=work,daemon=True).start()
+        return True
 
     def close(self):pass
 
@@ -129,7 +130,9 @@ class ClusterViewer:
 
     def refresh(self):
         try:
-            self.source.refresh(self.cluster)
+            if self.source.refresh(self.cluster) is False:
+                self.status='Refresh already in progress; waiting for the campus snapshot.'
+                return
             self.last_request=time.monotonic()
             self.status='Refreshing from '+self.source.label+'; host cache lasts 30s and API requests may queue.'
         except OSError as error:self.status='Refresh failed: '+str(error)
@@ -144,10 +147,14 @@ class ClusterViewer:
                 stamp=message.get('updated_at')
                 if not isinstance(players,list) or not isinstance(stamp,(int,float)) or stamp<=0:
                     self.status='Invalid cluster snapshot; keeping the last view.';continue
+                unchanged=stamp==self.stamp and self.stamp>0
                 self.players=players
                 self.stamp=stamp
-                self.page=0
-                self.status='Loaded '+str(len(players))+' campus seats from '+self.source.label+'. Press r or Enter to refresh.'
+                if unchanged:
+                    self.status='No newer campus snapshot yet; showing cached seats ('+age_label(stamp)+'). The host cache lasts 30s.'
+                else:
+                    self.page=0
+                    self.status='Loaded '+str(len(players))+' campus seats from '+self.source.label+'. Press r or Enter to refresh.'
             elif kind=='error':self.status='Campus seats unavailable: '+str(message.get('text','Unknown error'))[:180]
             elif kind=='event' and not str(message.get('text','')).startswith('Loading campus API seats'):
                 self.status=str(message.get('text',''))[:180]
