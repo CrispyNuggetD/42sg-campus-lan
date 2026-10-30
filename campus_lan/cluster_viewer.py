@@ -127,6 +127,8 @@ class ClusterViewer(ProfileCommands):
         self.pending_profile_decision=None
         self.focus_location=None
         self.hits=[]
+        self.session_hint_pending=False
+        self.session_hint_shown=False
         self.tracker_data={}
         if owner:
             try:
@@ -189,13 +191,16 @@ class ClusterViewer(ProfileCommands):
 
     def number_players(self):return self.players if self.stamp else None
 
-    def report_profile(self,text):self.status=text
+    def report_profile(self,text):
+        self.session_hint_pending=False
+        self.status=text
 
     def load_number_roster(self,callback):
         self.pending_number_action=callback
         self.refresh()
 
     def confirm_profile(self,description,accept,decline):
+        self.session_hint_pending=False
         self.pending_profile_decision=(description,accept,decline)
         self.status=description
 
@@ -221,17 +226,44 @@ class ClusterViewer(ProfileCommands):
         active=self.popup_prompts().activate()
         if active:self.status=active[1]+' [y/N]'
 
-    def click(self,x,y):
+    def click(self,x,y,double=False):
         if self.pending_profile_decision or getattr(getattr(self,'consent',None),'active',None):return False
         for row,left,right,members in self.hits:
             if row==y and left<=x<right:
+                self.session_hint_pending=False
+                identity=tuple(sorted((player.get('name','').lower(),seat(player)) for player in members))
+                previous=getattr(self,'last_click',None)
+                now=time.monotonic()
+                self.last_click=(x,y,identity,now)
+                if double and previous and previous[:2]==(x,y) and now-previous[3]<0.8 and previous[2]!=identity:
+                    self.report_profile('Campus occupant or map position changed; select again.')
+                    return True
                 self.focus_location=seat(members[0])
                 self.status='Selected '+', '.join(str(next((n for n,p,_ in roster(self.players) if p.get('name')==player.get('name') and seat(p)==seat(player)),'?'))+' = '+player.get('name','') for player in members)+' at c%dr%ds%d'%self.focus_location
+                if double:
+                    if len(members)!=1:
+                        self.report_profile('Shared seat: double-click an individual roster entry, or use /profile NUMBER to choose a student.')
+                    else:
+                        player=members[0]
+                        name=player.get('name','').lower()
+                        if not any(p.get('name','').lower()==name and seat(p)==seat(player) for p in self.players):
+                            self.report_profile('Campus occupant changed; select again.')
+                        else:
+                            try:
+                                from .profile_browser import resolve
+                                urls=resolve([name],literal_logins=[name])
+                                self.open_urls('profiles',urls,'Open the Intra profile for '+name+' in your browser?')
+                            except (OSError,ValueError) as error:self.report_profile(str(error))
                 return True
         return False
 
     def command(self,text):
         text=text.strip()
+        if self.session_hint_pending:
+            self.session_hint_pending=False
+            if not text and not self.pending_profile_decision and not getattr(getattr(self,'consent',None),'active',None):
+                self.status='Double-click opens a student profile; single-click highlights their seat.'
+                return True
         if getattr(self,'confirmation_truncated',False) and text.lower() in ('y','yes'):
             self.status='Confirmation does not fit. Resize the terminal or cancel and select fewer people.'
             return True
@@ -299,8 +331,8 @@ class ClusterViewer(ProfileCommands):
         self.cohorts=cohort_index()
         screen.timeout(250)
         try:
-            curses.mousemask(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED)
-            curses.mouseinterval(150)
+            curses.mousemask(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED|curses.BUTTON1_DOUBLE_CLICKED)
+            curses.mouseinterval(250)
         except curses.error:pass
         colors=False
         if curses.has_colors():
@@ -314,6 +346,9 @@ class ClusterViewer(ProfileCommands):
             colors=True
         installed=generation()
         self.refresh()
+        if not self.session_hint_shown:
+            self.session_hint_shown=True
+            self.session_hint_pending=True
         while True:
             if generation()!=installed:raise RestartRequested()
             if getattr(self,'refresh_requested',None) and self.refresh_requested.is_set():
@@ -327,14 +362,19 @@ class ClusterViewer(ProfileCommands):
             line(1,'r/Enter refresh from host · /clusters both · /c1 /c2 · Tab map/roster · PgUp/PgDn · q quit')
             decision=self.pending_profile_decision
             active=getattr(getattr(self,'consent',None),'active',None)
-            description=decision[0] if decision else active[1]+' [y/N]' if active else self.status
-            wrapped=textwrap.wrap(description,max(1,width-1)) if decision or active else [description]
-            self.confirmation_truncated=len(wrapped)>max(1,height-6)
-            for y,value in enumerate(wrapped[:max(1,height-6)],2):line(y,value)
-            content_start=2+min(len(wrapped),max(1,height-6))
-            if self.confirmation_truncated:line(content_start-1,'Resize or cancel and select fewer occupants; confirmation disabled.')
+            description=decision[0] if decision else active[1]+' [y/N]' if active else (
+                'Tip: double-click an occupied seat or roster entry to open its Intra profile; single-click highlights. Browser permission still applies. Enter dismisses.'
+                if self.session_hint_pending else self.status)
+            wrapped=textwrap.wrap(description,max(1,width-1)) or ['']
+            max_notice=max(1,height-6)
+            self.confirmation_truncated=len(wrapped)>max_notice
+            notice_rows=min(len(wrapped),max_notice)
+            notice_start=max(2,height-1-notice_rows)
+            for y,value in enumerate(wrapped[:max_notice],notice_start):line(y,value)
+            content_start=2
+            if self.confirmation_truncated:line(height-2,'Resize or cancel and select fewer occupants; confirmation disabled.')
             content=self.segments() if self.stamp else [[('Waiting for the first campus snapshot…',0)]]
-            capacity=max(1,height-content_start-2)
+            capacity=max(1,notice_start-content_start-1)
             pages=max(1,(len(content)+capacity-1)//capacity)
             self.page=min(self.page,pages-1)
             from .lobby_view import occupant_hits
@@ -351,19 +391,21 @@ class ClusterViewer(ProfileCommands):
                     try:screen.addnstr(index,x,value,width-1-x,attr)
                     except curses.error:pass
                     x+=len(value)
-            line(height-2,f'{self.view} · page {self.page+1}/{pages} · {self.source.label} · {age_label(self.stamp)}')
+            line(notice_start-1,f'{self.view} · page {self.page+1}/{pages} · {self.source.label} · {age_label(self.stamp)}')
             line(height-1,'> '+self.input)
             screen.refresh()
             key=screen.getch()
             if key==curses.KEY_MOUSE:
                 try:
                     _,x,y,_,buttons=curses.getmouse()
-                    if buttons&(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED):self.click(x,y)
+                    if buttons&(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED|curses.BUTTON1_DOUBLE_CLICKED):
+                        self.click(x,y,double=bool(buttons&curses.BUTTON1_DOUBLE_CLICKED))
                 except curses.error:pass
                 continue
             if key in (3,4):return
             if key==ord('q') and not self.input:return
-            if key==ord('r') and not self.input:self.refresh();continue
+            if key==ord('r') and not self.input and not self.pending_profile_decision and not active:
+                self.session_hint_pending=False;self.refresh();continue
             if key in (curses.KEY_F0+3,):self.refresh()
             elif key==9:self.view='roster' if self.view=='map' else 'map';self.page=0
             elif key==curses.KEY_NPAGE:self.page+=1

@@ -199,8 +199,15 @@ after refresh; always check the displayed login before saying yes.
 Click an occupied campus map cell or roster entry to highlight its seat and show
 its login. This works for ordinary markers, intake labels such as `4:13` and shared
 `[++]` cells. Shared cells list all occupants in the clusters tab. Empty desks
-have no student identity to select. Mouse selection does not open a profile or
-grant permission to act on the student.
+have no student identity to select. Single-click highlights without opening a profile. Double-click opens that
+occupant's Intra profile, subject to normal browser permission. On shared map
+cells, choose an individual roster entry (or `/profile NUMBER`) instead of
+opening an arbitrary occupant. Stale click targets are rejected.
+
+Profile confirmations, browser questions and status messages appear at the bottom
+of the clusters tab, directly above its input line. Each fresh clusters-tab session
+shows one tip explaining single-click versus double-click; Enter dismisses it.
+The tip does not grant browser permission and does not return on refresh.
 
 `/profile thtay hnah` requests permission to open both Intra profiles in local browser tabs. `all`, `sg`, `42sg` and
 `cohort4` expand from the local private campus cache. Selections above ten tabs

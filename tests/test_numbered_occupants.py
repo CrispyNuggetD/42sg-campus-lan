@@ -142,7 +142,7 @@ class NumberedOccupants(unittest.TestCase):
         with patch('campus_lan.cluster_viewer.curses.has_colors',return_value=False), \
              patch('campus_lan.cluster_viewer.curses.mousemask'), \
              patch('campus_lan.cluster_viewer.curses.mouseinterval'), \
-             patch('campus_lan.cluster_viewer.curses.getmouse',return_value=(0,left,row+3,0,curses.BUTTON1_CLICKED)), \
+             patch('campus_lan.cluster_viewer.curses.getmouse',return_value=(0,left,row+2,0,curses.BUTTON1_CLICKED)), \
              patch('campus_lan.cluster_viewer.generation',return_value='fixture'), \
              patch('campus_lan.cohort_display.cohort_index',return_value={}):
             v.run(screen)
