@@ -21,7 +21,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <!-- shell-installer-features:start -->
 - **Campus HQ:** `lan42` uses its own tmux session in an Ubuntu terminal tab; no-sudo setup asks before Python/tmux installation. Mac hosts can opt into one-connection remote guest approval; approval is separate from Intra sign-in.
-- **Find your people:** `/who` and `/track` show friends/lists. Clusters show friend/cohort/You markers. Private linked settings carry preferences. Owner `/tool` supports SG selectors; photos persist until manually refreshed.
+- **Find your people:** `/who` and `/track` show friends/lists; clusters mark cohorts and you. Private linked settings carry preferences. Owner cohort SABO uses saved data. `/tool` saves photos until manual refresh.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. FORKNITE fits 50 diners with zoom. Purple: odd turn; orange: overdue. `/sabo online` supports cluster filters; `/sabo verified` selects active SG sign-ins.
 - **Easy controls:** F2 sign in/out, F3 clusters, F4 mute, F5 volume, F6/F7 uwu. `/alarm`, `/timer`, `/stopwatch` and `/clock` add account-scoped GMT+8 schedules, recurring alarms and explicit timezone offsets.

@@ -30,6 +30,7 @@ class PresenceSelection(unittest.IsolatedAsyncioTestCase):
         self.lobby.event=AsyncMock()
         async def lookup(names):return [dict(login=n,avatar=None) for n in names],[]
         self.lobby.profile_lookup.lookup_many=AsyncMock(side_effect=lookup)
+        self.lobby.profile_lookup.lookup_game_many=self.lobby.profile_lookup.lookup_many
 
     def add_member(self,pid,name,uid,**changes):
         key='key-'+pid
@@ -104,8 +105,11 @@ class PresenceSelection(unittest.IsolatedAsyncioTestCase):
             policy.return_value.data={'api_operators':[1]}
             await self.lobby.command('host','/sabo all')
             random_profiles.assert_called_once_with(None,['fixture-host'],[],[])
-            self.lobby.profile_lookup.lookup_many.assert_awaited_once_with(['fixture-01','fixture-02'])
-            self.lobby.profile_lookup.lookup_many.reset_mock()
+            self.lobby.profile_lookup.lookup_many.assert_not_called()
+            sent=[call.args[0] for call in self.web.control.call_args_list if call.args[0]['action']=='sabo_profiles']
+            self.assertEqual(sent[-1]['profiles'],profiles)
+            await self.lobby.command('host','/sabo cohort4')
+            self.lobby.profile_lookup.lookup_many.assert_not_called()
             with self.assertRaisesRegex(ValueError,'cohort1'):
                 await self.lobby.command('host','/sabo cohort 1')
             self.lobby.profile_lookup.lookup_many.assert_not_called()

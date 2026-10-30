@@ -72,6 +72,9 @@ class Admin(unittest.TestCase):
                     self.assertEqual(batch_one('no-photo')['status'],'skipped')
                     self.assertEqual(batch_one('valid')['status'],'cached')
                     fetch.assert_called_once_with('valid','https://cdn.intra.42.fr/photo.jpg',force=False)
+                with patch.object(avatar_admin.ProfileLookup,'lookup_many',new_callable=AsyncMock) as lookup:
+                    self.assertEqual(batch_one('fixture-owner')['status'],'cached')
+                    lookup.assert_not_called()
                 pending=Mock();pending.result.side_effect=FutureTimeout()
                 def delayed(coroutine,loop):
                     coroutine.close()

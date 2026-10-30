@@ -402,7 +402,7 @@ class Lobby:
                     await self.event('No matching unseated people, or the table is full.',{pid});return
                 profiles=[];errors=[]
                 for offset in range(0,len(names),10):
-                    batch,failed=await self.profile_lookup.lookup_many(names[offset:offset+10])
+                    batch,failed=await self.profile_lookup.lookup_game_many(names[offset:offset+10])
                     profiles.extend(batch);errors.extend(failed)
             elif cohorts or random_selection or filters or all_selection:
                 if all_selection and cohorts:raise ValueError('Choose all/sg/42sg or cohortN, not both.')
@@ -418,11 +418,9 @@ class Lobby:
                 available=50-len(seated['players'])
                 if requested is not None and requested>available:raise ValueError('Not enough empty seats (50 maximum).')
                 profiles=random_profiles(requested,[p['name'] for p in seated['players']],cohorts,filters)[:available]
-                checked=[]
-                for offset in range(0,len(profiles),10):
-                    batch,_=await self.profile_lookup.lookup_many([p['login'] for p in profiles[offset:offset+10]])
-                    checked.extend(batch)
-                profiles=checked
+                # This operator-approved SG directory already supplies the roster.
+                # A missing avatar URL makes FORKNITE read the persistent photo
+                # cache directly; selection must not re-fetch every profile.
                 errors=[]
             else:
                 bits=[bit[6:] if bit.lower().startswith('login:') else bit for bit in bits]
@@ -431,7 +429,7 @@ class Lobby:
                 profiles=[];errors=[]
                 for offset in range(0,len(bits),10):
                     await self.event('Loading profiles '+str(offset+1)+'–'+str(min(offset+10,len(bits)))+' of '+str(len(bits))+'; API requests may queue.',{pid})
-                    batch,failed=await self.profile_lookup.lookup_many(bits[offset:offset+10])
+                    batch,failed=await self.profile_lookup.lookup_game_many(bits[offset:offset+10])
                     profiles.extend(batch);errors.extend(failed)
             if profiles:
                 if rid not in self.rooms or self.rooms[rid] is not room:

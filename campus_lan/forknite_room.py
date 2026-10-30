@@ -51,10 +51,11 @@ class ForkniteRoom:
 
     async def prepare_avatar(self,name,url):
         async with self.avatar_gate:
-            if url:result=await asyncio.to_thread(self.avatar_cache.fetch,name,url)
-            else:
-                try:self.avatar_cache.read(name);result=dict(status='cached')
-                except (OSError,ValueError):result=dict(status='missing')
+            try:
+                await asyncio.to_thread(self.avatar_cache.read,name)
+                return  # Existing pictures never need profile/download work.
+            except (OSError,ValueError):pass
+            result=await asyncio.to_thread(self.avatar_cache.fetch,name,url) if url else dict(status='missing')
             if result.get('status')!='cached':
                 self.tool_pending.add(name)
                 if not self.tool_task or self.tool_task.done():
@@ -68,13 +69,6 @@ class ForkniteRoom:
 
     async def control(self,data):
         records=data.get('members',[]) if data.get('action')=='members' else data.get('profiles',[]) if data.get('action')=='sabo_profiles' else []
-        for record in records:
-            name=record.get('name') or record.get('login')
-            if name and (record.get('avatar') or record.get('login') or record.get('verified')) and name not in self.avatar_names:
-                self.avatar_names.add(name)
-                task=asyncio.create_task(self.prepare_avatar(name,record.get('avatar')))
-                self.avatar_jobs.add(task)
-                task.add_done_callback(self.avatar_jobs.discard)
         def request():
             req=urllib.request.Request('http://127.0.0.1:'+str(self.port)+'/internal/room',data=json.dumps(data).encode(),
                 headers={'Content-Type':'application/json','Authorization':'Bearer '+self.secret})
@@ -84,7 +78,19 @@ class ForkniteRoom:
                 try:message=json.loads(error.read(4096)).get('error','FORKNITE request failed')
                 except (ValueError,AttributeError):message='FORKNITE request failed'
                 raise ValueError(message) from None
-        return await asyncio.to_thread(request)
+        result=await asyncio.to_thread(request)
+        # Seat first. Only accepted SABO additions can request missing photos.
+        if data.get('action')=='sabo_profiles':
+            added=set(result.get('added',[]))
+            records=[record for record in records if record.get('login') in added]
+        for record in records:
+            name=record.get('name') or record.get('login')
+            if name and (record.get('avatar') or record.get('login') or record.get('verified')) and name not in self.avatar_names:
+                self.avatar_names.add(name)
+                task=asyncio.create_task(self.prepare_avatar(name,record.get('avatar')))
+                self.avatar_jobs.add(task)
+                task.add_done_callback(self.avatar_jobs.discard)
+        return result
 
     async def close(self):
         for task in getattr(self,"avatar_jobs",set()):task.cancel()

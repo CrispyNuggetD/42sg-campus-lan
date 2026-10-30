@@ -113,3 +113,36 @@ class RoomIdentity(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(urllib.error.HTTPError) as denied:await asyncio.to_thread(status,cookies[0])
                 self.assertEqual(denied.exception.code,403)
             finally:await room.close()
+
+
+class CacheFirstAvatars(unittest.IsolatedAsyncioTestCase):
+    async def test_only_missing_photos_queue_tools(self):
+        from campus_lan.avatar_cache import AvatarCache
+        from unittest.mock import Mock
+        with tempfile.TemporaryDirectory() as tmp:
+            room=ForkniteRoom()
+            room.avatar_cache=AvatarCache(tmp)
+            room.avatar_cache.store('cached',b'\x89PNG\r\n\x1a\nfixture')
+            room.avatar_gate=asyncio.Semaphore(1)
+            room.tool_pending=set();room.tool_task=None;room.open_tools=AsyncMock()
+            with patch.object(room.avatar_cache,'fetch') as fetch:
+                await room.prepare_avatar('cached','https://cdn.intra.42.fr/changed.jpg')
+                fetch.assert_not_called()
+                self.assertEqual(room.tool_pending,set())
+                room.open_tools.assert_not_called()
+                await room.prepare_avatar('missing',None)
+                self.assertEqual(room.tool_pending,{'missing'})
+                await room.tool_task
+                room.open_tools.assert_awaited_once()
+
+    async def test_photo_work_starts_only_after_accepted_seating(self):
+        from unittest.mock import MagicMock
+        room=ForkniteRoom();room.port=12345;room.secret='fixture'
+        room.avatar_names=set();room.avatar_jobs=set();room.prepare_avatar=AsyncMock()
+        response=MagicMock();response.__enter__.return_value.read.return_value=b'{"added":["accepted"]}'
+        with patch('campus_lan.forknite_room.urllib.request.urlopen',return_value=response):
+            result=await room.control(dict(action='sabo_profiles',profiles=[
+                dict(login='accepted',avatar=None),dict(login='room-full',avatar=None)]))
+        self.assertEqual(result['added'],['accepted'])
+        await asyncio.gather(*list(room.avatar_jobs))
+        room.prepare_avatar.assert_awaited_once_with('accepted',None)

@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import Mock,patch
+from unittest.mock import Mock,patch,AsyncMock
 from campus_lan.profile_lookup import PROFILE_LOOKUPS_PER_HOUR, ProfileLookup
 from campus_lan.auth import AuthError
 
@@ -41,3 +41,21 @@ class Lookup(unittest.IsolatedAsyncioTestCase):
             profiles,errors=await lookup.lookup_many(['dthoo'])
             self.assertEqual(profiles,[]);self.assertEqual(errors,['dthoo'])
             self.assertEqual(api.return_value.member_profile.call_count,1)
+
+    async def test_game_snapshot_seats_cached_members_without_api_or_photo_work(self):
+        lookup=ProfileLookup()
+        with patch('campus_lan.campus_info.load',return_value={'students':[{'login':'cached'},{'login':'missing-photo'}]}), \
+             patch.object(lookup,'lookup_many',new_callable=AsyncMock) as live, \
+             patch('campus_lan.campus_info.API') as api:
+            profiles,errors=await lookup.lookup_game_many(['cached','missing-photo'])
+            self.assertEqual(profiles,[dict(login='cached',avatar=None),dict(login='missing-photo',avatar=None)])
+            self.assertFalse(errors);live.assert_not_called();api.assert_not_called()
+
+    async def test_unknown_game_target_still_requires_sg_profile_validation(self):
+        lookup=ProfileLookup()
+        with patch('campus_lan.campus_info.load',return_value={'students':[{'login':'cached'}]}), \
+             patch.object(lookup,'lookup_many',new_callable=AsyncMock,return_value=([],['outsider'])) as live:
+            profiles,errors=await lookup.lookup_game_many(['cached','outsider'])
+            live.assert_awaited_once_with(['outsider'])
+            self.assertEqual(profiles,[dict(login='cached',avatar=None)])
+            self.assertEqual(errors,['outsider'])

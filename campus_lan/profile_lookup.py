@@ -42,6 +42,19 @@ class ProfileLookup:
         self.cache[login]=dict(profile=profile,expires=self.clock()+60)
         return profile
 
+    async def lookup_game_many(self, logins):
+        """Use the approved SG snapshot for games; acquire missing photos later."""
+        if not 1<=len(logins)<=10 or any(not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',x) for x in logins):
+            raise AuthError('Use /sabo LOGIN... with 1–10 valid Intra logins.')
+        from .campus_info import load
+        data=await asyncio.to_thread(load)
+        known={p['login'].lower() for p in (data or {}).get('students',[]) if isinstance(p.get('login'),str)}
+        names=list(dict.fromkeys(x.lower() for x in logins))
+        missing=[name for name in names if name not in known]
+        live,errors=await self.lookup_many(missing) if missing else ([],[])
+        profiles={p['login']:p for p in live}
+        return [dict(login=name,avatar=None) if name in known else profiles[name] for name in names if name in known or name in profiles],errors
+
     async def lookup_many(self, logins):
         if not 1 <= len(logins) <= 10 or any(not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',x) for x in logins):
             raise AuthError('Use /sabo LOGIN... with 1–10 valid Intra logins.')

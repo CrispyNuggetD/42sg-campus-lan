@@ -144,6 +144,11 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                     if url.path=='/batch_one':
                         self.reply(200,dict(status='failed' if isinstance(error,WhitelistUnavailable) else 'skipped',reason=str(error)));return
                     raise
+                if url.path=='/batch_one':
+                    try:cache.read(login)
+                    except (OSError,ValueError):pass
+                    else:
+                        self.reply(200,dict(status='cached'));return
                 future=asyncio.run_coroutine_threadsafe(lookup.lookup_many([login]),loop)
                 try:profiles,errors=future.result(timeout=25)
                 except FutureTimeout:

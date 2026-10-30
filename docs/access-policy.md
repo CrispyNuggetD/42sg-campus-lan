@@ -231,7 +231,8 @@ snapshot nor falls back to peer presence or the full campus directory. Source
 age is shown. `/sabo verified` uses only active SG sessions connected to that host,
 with canonical broker logins and live identity checks, never nickname/role flags.
 Both exclude existing seats and retain the 50-seat cap, 10-profile lookup batches,
-SG membership checks, local whitelist and API budgets. No new durable presence
+SG membership evidence from the approved local directory (or a live scoped
+check for unknown names), local whitelist and API budgets. No new durable presence
 history or student roster export is introduced.
 
 ### Current occupancy status
@@ -246,3 +247,17 @@ operator checks. FORKNITE's private status read requires an authoritative campus
 access flag from the host, not a nickname, cosmetic verified flag or remote guest
 approval. The fixed-schema control payload is numeric data only and is excluded
 from public events/logs. There is no new student collection endpoint or history.
+
+### Offline operator game selection
+
+Academic/cohort/all game selections remain restricted to the authenticated room
+host and numeric API-operator role. They use the operator-approved private SG
+directory snapshot directly rather than revalidating each profile over the API.
+Cached photos do not confer membership, identity, roles or host approval. Missing
+photos show fallback faces while the existing consent-controlled local photo
+tool handles only the selected missing entries. Selection cannot refresh the
+bulk directory. The
+50-seat bound and guest/remote denial are retained. Online/verified and explicit
+login selections may reuse known directory entries too; unknown names still
+require live scoped SG membership checks. Photo tools retain live lookup for
+missing photos and manual refresh.

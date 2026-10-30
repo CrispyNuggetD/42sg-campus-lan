@@ -282,3 +282,13 @@ mode-600 current `campus-status.json` outside Git. Guest and remote-approval-onl
 clients receive no counts. Browser reads require the room's authoritative campus
 access flag, which is revoked with identity/membership updates. No campus counts
 are put in public game events or appended as a presence history.
+
+Operator `/sabo cohortN`, `/sabo all` and academic-filter selections use the
+explicitly refreshed private Singapore directory and existing avatar files
+directly, without per-person API requests. Diners are seated first, then only
+missing pictures are sent to the existing automatic photo tool, respecting the
+owner’s tool/photo permissions. Cached entries skip profile and download calls
+even in a batch. Missing pictures show fallback faces while imports complete. Directory membership/academic values
+reflect the saved snapshot, not live profile revalidation. Online/verified and
+explicit-login selections also reuse known SG directory entries; only targets
+absent from the directory need a live SG membership/profile check.
