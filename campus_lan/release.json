@@ -1,8 +1,16 @@
 {
-  "version": "2.19.1-beta.1",
-  "date": "2026-10-30T14:30:19+08:00",
-  "source": "20ca107c1c106fe669a2df06ac5988e9158666cc",
+  "version": "2.19.2-beta.1",
+  "date": "2026-10-30T14:34:03+08:00",
+  "source": "54794b635b896aeb71205ccd32bfb05896c98ff6",
   "history": [
+    {
+      "version": "2.19.2-beta.1",
+      "date": "2026-10-30T14:34:03+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: seat cached SABO profiles before acquiring missing photos"
+      ]
+    },
     {
       "version": "2.19.1-beta.1",
       "date": "2026-10-30T14:30:19+08:00",
@@ -501,5 +509,5 @@
       ]
     }
   ],
-  "runtime_sha256": "1cf1abcaa6ef3737db9a54dc24e97140c8a5e3e8b7d4e8840f52ac80db42818f"
+  "runtime_sha256": "545164cf4767c94b5aa67eff969d90027baf777a65a11aa2118e8500f374578b"
 }

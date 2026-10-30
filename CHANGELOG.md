@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.19.2-beta.1 · 2026-10-30T14:34:03+08:00
+
+- fix: seat cached SABO profiles before acquiring missing photos
+
 ## 2.19.1-beta.1 · 2026-10-30T14:30:19+08:00
 
 - fix: fit full FORKNITE table with adjustable zoom
