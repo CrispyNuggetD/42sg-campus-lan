@@ -1,8 +1,17 @@
 {
-  "version": "2.20.0-beta.1",
-  "date": "2026-10-30T14:46:53+08:00",
-  "source": "d5f1954624acf1daa3b676e73e115e702e27d784",
+  "version": "2.20.1-beta.1",
+  "date": "2026-10-30T15:01:32+08:00",
+  "source": "2f1d548b18fc8af38646e90d58e0fe8444389ebe",
   "history": [
+    {
+      "version": "2.20.1-beta.1",
+      "date": "2026-10-30T15:01:32+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: seat diners around a true circular tabletop",
+        "fix: let round tables extend the full browser page"
+      ]
+    },
     {
       "version": "2.20.0-beta.1",
       "date": "2026-10-30T14:46:53+08:00",
@@ -525,5 +534,5 @@
       ]
     }
   ],
-  "runtime_sha256": "136ba8d086dd3f147a473cfdeb15ce2c2c817f23afc1131b9d564fde9c8737a1"
+  "runtime_sha256": "38ed0c5094d13f3fabe208d9e6abf3d7e5c4574db15c5ae572a1a197bb2a70ec"
 }

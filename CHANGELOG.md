@@ -4,6 +4,11 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.20.1-beta.1 · 2026-10-30T15:01:32+08:00
+
+- fix: seat diners around a true circular tabletop
+- fix: let round tables extend the full browser page
+
 ## 2.20.0-beta.1 · 2026-10-30T14:46:53+08:00
 
 - feat: show closed-loop dinner table with layout toggle
