@@ -186,7 +186,11 @@ clients reconnect after the FORKNITE server reloads and reclaim their slots.
 ## Local API-owner avatar tools
 
 `/admin` opens the master computer's private avatar importer in the normal local
-browser. It supports profile-link lookup, a bounded ordinary download attempt,
+browser. Cached photos never expire automatically, including existing imports.
+FORKNITE and batches reuse valid pictures regardless of age. Use **Refresh photo
+from server**, import a replacement, or run `python3 -m campus_lan.avatar_cache
+fetch LOGIN --force` to manually update one. Failed refreshes preserve the old photo.
+It supports profile-link lookup, a bounded ordinary download attempt,
 and manual file selection/drop after opening the photo in the user's browser.
 For automatic batches, use `/tool LOGIN...` and install or reload the
 [avatar-saver extension](../browser-tools/avatar-saver/README.md) in Chrome.

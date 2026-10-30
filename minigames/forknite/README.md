@@ -82,9 +82,10 @@ cannot be recalled from a player's browser. No remote cache-sharing endpoint or
 public directory listing is provided. Existing game transport remains HTTP on the
 LAN: access checks do not provide TLS encryption; use a trusted LAN or SSH tunnel.
 
-Automatic public-CDN acquisition is best effort, with a 24-hour freshness target,
+Cached photos persist without expiry until manually refreshed or replaced.
+Automatic public-CDN acquisition for missing photos is best effort, with
 one photo acquisition at a time across local processes, one-second spacing,
-a shared 300-download/hour budget and a persistent 15-minute failure
+a shared 600-download/hour budget and a persistent 15-minute failure
 backoff. A failed refresh retains the previous image. Imports appear immediately
 when the player clicks Reload cached photo. Empty caches show a silly face and
 an explicit cache-missing message. CDN HTML/error responses are never cached or

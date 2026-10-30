@@ -71,7 +71,7 @@ class Admin(unittest.TestCase):
                     self.assertEqual(batch_one('missing')['status'],'failed')
                     self.assertEqual(batch_one('no-photo')['status'],'skipped')
                     self.assertEqual(batch_one('valid')['status'],'cached')
-                    fetch.assert_called_once_with('valid','https://cdn.intra.42.fr/photo.jpg')
+                    fetch.assert_called_once_with('valid','https://cdn.intra.42.fr/photo.jpg',force=False)
                 pending=Mock();pending.result.side_effect=FutureTimeout()
                 def delayed(coroutine,loop):
                     coroutine.close()

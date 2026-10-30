@@ -19,6 +19,19 @@ class Cache(unittest.TestCase):
             for path in c.root.iterdir():self.assertEqual(path.stat().st_mode&0o777,0o600)
             self.assertNotIn('hnah',(c.root/(key('hnah')+'.json')).read_text())
 
+    def test_old_or_missing_metadata_reuses_photo_without_network(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            c=AvatarCache(tmp)
+            c.store('hnah',PNG)
+            meta=c.root/(key('hnah')+'.json')
+            for metadata in ({'saved_at':1}, None):
+                if metadata is None:meta.unlink()
+                else:meta.write_text(json.dumps(metadata))
+                with patch('campus_lan.avatar_cache.urllib.request.build_opener') as opener:
+                    self.assertEqual(c.fetch('hnah','https://cdn.intra.42.fr/a.jpg')['status'],'cached')
+                    opener.assert_not_called()
+                self.assertEqual(c.read('hnah')[0],PNG)
+
     def test_no_html_svg_paths_or_git(self):
         for payload in (b'<html>denied</html>',b'<svg></svg>',b'x'*1048577):
             with self.assertRaises(ValueError):image_type(payload)

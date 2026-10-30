@@ -23,7 +23,7 @@ PAGE=r'''<!doctype html><meta charset="utf-8"><title>LAN42 · private avatar too
 <style>body{max-width:720px;margin:50px auto;padding:20px;background:#151723;color:#eee;font:16px system-ui}input,button{padding:10px;margin:6px}a{color:#d8f96b}#drop{border:2px dashed #aaa;padding:25px;margin-top:20px}pre{white-space:pre-wrap}</style>
 <h1>LAN42 · private avatar cache</h1><p>This panel runs on this computer only. Photos stay outside Git. It cannot read your Chrome profile or cookies. It watches only exact filenames for photo imports you explicitly start, not your other downloads.</p>
 <label>Intra logins <input id="login" placeholder="thtay hnah" size="55"></label>
-<button id="lookup">Look up photo link</button><button id="fetch">Try normal server download</button>
+<button id="lookup">Look up photo link</button><button id="fetch">Refresh photo from server</button>
 <p><button id="extension">Extension setup</button> <button id="prepare">Prepare one-click save</button></p>
 <p><a id="photo" target="_blank" rel="noopener noreferrer" hidden>Open photo in my browser</a></p>
 <details><summary>Chrome download folder</summary><p>Set the folder Chrome uses, not the private avatar cache.</p><input id="downloads" size="55"><button id="save-downloads">Use this folder</button></details>
@@ -160,7 +160,7 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
                 elif url.path in ('/fetch','/batch_one'):
                     if url.path=='/batch_one' and not profile.get('avatar'):
                         self.reply(200,dict(status='skipped',reason='No photo available'));return
-                    result=cache.fetch(login,profile['avatar'])
+                    result=cache.fetch(login,profile['avatar'],force=url.path=='/fetch')
                     if url.path=='/batch_one' and result.get('status')!='cached':
                         from .popup_permissions import Permissions
                         if Permissions(owner).mode('photos')=='deny':raise ValueError('Photo popups are denied in settings')

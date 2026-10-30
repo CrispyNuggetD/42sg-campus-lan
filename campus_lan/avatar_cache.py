@@ -14,7 +14,6 @@ import urllib.request
 from .auth import NoRedirect, provider_tls_context
 
 MAX_IMAGE=1024*1024
-TTL=86400
 PHOTO_FETCHES_PER_HOUR=600
 
 
@@ -81,7 +80,8 @@ class AvatarCache:
         meta=self.root/(digest+'.json')
         try:info=json.loads(meta.read_text())
         except (OSError,ValueError):info={}
-        if not force and time.time()-info.get('saved_at',0)<TTL:
+        # Valid photos persist until the owner explicitly requests a refresh.
+        if not force:
             try:self.read(login);return dict(status='cached')
             except (OSError,ValueError):pass
         if not force and time.time()-info.get('attempted_at',0)<900:
@@ -117,7 +117,7 @@ def main():
     parser=argparse.ArgumentParser(description='Private LAN42 avatar cache')
     sub=parser.add_subparsers(dest='command',required=True)
     p=sub.add_parser('import');p.add_argument('login');p.add_argument('file',type=Path)
-    p=sub.add_parser('fetch');p.add_argument('login')
+    p=sub.add_parser('fetch');p.add_argument('login');p.add_argument('--force',action='store_true',help='Manually refresh an existing photo')
     args=parser.parse_args();cache=AvatarCache()
     if args.command=='import':
         with args.file.open('rb') as f:result=cache.store(args.login,f.read(MAX_IMAGE+1))
@@ -127,7 +127,7 @@ def main():
         import asyncio
         from .profile_lookup import ProfileLookup
         profiles,errors=asyncio.run(ProfileLookup().lookup_many([args.login]))
-        result=cache.fetch(args.login,profiles[0]['avatar']) if profiles else dict(status='profile_lookup_failed')
+        result=cache.fetch(args.login,profiles[0]['avatar'],force=args.force) if profiles else dict(status='profile_lookup_failed')
     print(json.dumps(result))
 
 

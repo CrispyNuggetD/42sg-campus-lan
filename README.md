@@ -21,7 +21,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <!-- shell-installer-features:start -->
 - **Campus HQ:** `lan42` uses its own tmux session in an Ubuntu terminal tab; no-sudo setup asks before Python/tmux installation. Mac hosts can opt into one-connection remote guest approval; approval is separate from Intra sign-in.
-- **Find your people:** `/who` and `/track` show friends/lists. Cyan/amber clusters combine friend/cohort markers with a You badge. Settings link/export/import portable preferences to a private folder. Owner `/tool` supports SG selectors.
+- **Find your people:** `/who` and `/track` show friends/lists. Clusters show friend/cohort/You markers. Private linked settings carry preferences. Owner `/tool` supports SG selectors; photos persist until manually refreshed.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. Purple marks the odd-table last eater; orange marks overdue waits. `/sabo online` supports cluster filters; `/sabo verified` selects active SG sign-ins.
 - **Easy controls:** F2 sign in/out, F3 clusters, F4 mute, F5 volume, F6/F7 uwu. `/alarm`, `/timer`, `/stopwatch` and `/clock` add account-scoped GMT+8 schedules, recurring alarms and explicit timezone offsets.
@@ -81,7 +81,8 @@ work in the commands that accept them. See [relationships and whitelist setup](d
 API operators can use [automatic avatar batches](docs/hosting.md#local-api-owner-avatar-tools):
 `/tool LOGIN...`, `/tool cohort1`, and `/tool all` (also `sg` or `42sg`)
 use the local Singapore student cache. Batches continue after individual failures
-and provide a downloadable local report. Keep student directories and reports out
+and provide a downloadable local report. Photos persist until manually refreshed.
+Keep student directories and reports out
 of public Git.
 
 ## Games
