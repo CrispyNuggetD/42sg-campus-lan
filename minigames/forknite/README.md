@@ -263,3 +263,7 @@ verified-looking nicknames or remote guest approval do not grant access.
 Counts are kept out of the public event stream and game log. The private current
 aggregate file used by local operator terminal windows contains no names and is
 outside Git. No per-student presence history is added.
+
+The browser fits the entire dinner table (up to 50 diners) to the available width
+and 70% of the window height by default. Use **Table zoom** to enlarge diners
+and scroll inside the table, or **Fit whole table** to return to the overview.
