@@ -9,8 +9,9 @@ import time
 
 
 class RestartRequested(Exception):
-    def __init__(self, update=False):
+    def __init__(self, update=False, ask_all=False):
         self.update = update
+        self.ask_all = ask_all
 
 
 def reload_path(repo=None):
@@ -69,7 +70,7 @@ def request_reload(repo):
     if not sys.stdin.isatty():
         print('[lan42] Reload deferred: run python3 -m campus_lan.updater --request-reload in a terminal.')
         return False
-    try:answer=input('Reload LAN42 clients and host now? [y/N]: ').strip().lower()
+    try:answer=input('Reload all local LAN42 tabs and host services now? [y/N]: ').strip().lower()
     except EOFError:answer=''
     if answer not in ('y','yes'):
         print('[lan42] Reload deferred; the host and other connections are kept.')
@@ -97,9 +98,11 @@ def update_checkout(repo):
         return False
 
 
-def restart(update=False, wait_for_node=None):
+def restart(update=False, wait_for_node=None, ask_all=False):
     # Called only after curses, sockets and the owner's heartbeat have closed.
     repo = Path(__file__).resolve().parent.parent
+    if ask_all:
+        request_reload(repo)
     if update:
         update_checkout(repo)
     if wait_for_node:

@@ -161,14 +161,17 @@ as the fallback when Linux `notify-send` isn't available.
 this checkout and notifies all updated local HQ/game clients, managed lobby
 nodes and supervised FORKNITE servers to reload. Active local matches end.
 Each computer updates its own checkout; no command restarts a friend's machine.
-`/restart` restarts only the current terminal without pulling. Local changes skip
+`/restart` asks whether to reload all local LAN42 tabs and host services without
+pulling. Answer **y** for all; Enter/No restarts only the initiating terminal.
+The avatar admin panel also reopens with updated code. Active matches end on a
+package-wide reload; in-memory sign-ins may expire. Local changes skip
 the pull and preserve your work; failed pulls retain the installed code. No reset,
 stash, commit or push is performed. The trusted authentication/room service also reloads on a successful package update;
 its in-memory sign-ins expire, so use `/signin` again after an upgrade.
 
 Mac and Ubuntu use the same **approval-gated** reload flow. Dailylogin and
 standalone pull entry points detect a changed checkout and ask:
-`Reload LAN42 clients and host now? [y/N]`. The warning explains that matches
+`Reload all local LAN42 tabs and host services now? [y/N]`. The warning explains that matches
 can end, students disconnect and in-memory sign-ins may expire.
 Enter, No, EOF or an unattended run defers the package-wide reload. Installation
 “Allow all” never approves reloads. A Git revision change alone cannot restart

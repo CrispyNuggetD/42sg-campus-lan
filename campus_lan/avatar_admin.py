@@ -175,7 +175,12 @@ def launch(logins=(),approved=False,photos_approved=False,owner=None):
             except Exception:
                 self.reply(400,{'error':'Operation failed. Check login/file type, API availability and the 1 MiB limit. No private details were logged.'})
             finally:gate.release()
+    from .updater import generation, RestartRequested
+    installed=generation()
+    def check_reload():
+        if generation()!=installed:raise RestartRequested()
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+    server.service_actions=check_reload
     address='http://127.0.0.1:'+str(server.server_port)
     # Token goes directly to a local browser fragment, never to logs or Git.
     opened=webbrowser.open(address+'/?'+urllib.parse.urlencode({'logins':' '.join(logins)})+'#key='+token)

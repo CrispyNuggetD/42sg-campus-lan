@@ -63,7 +63,7 @@ HELP = [
     '/game forknite: browser game room | /browser: reopen current FORKNITE website',
     '/koel flock once|always|never|ask: host-started 42SG flock | /koel flock-dir PATH: service root; local copies are kept',
     '/roadmap koeldrop | /koel help: campus file sharing; /koel create | /koel pending',
-    '/update (or /upgrade): update package + reload local instances | /restart: reload installed code',
+    '/update (or /upgrade): update package + reload local instances | /restart: choose this window or all local LAN42 tabs',
     'Chat: type and Enter. Tab completes /commands and games. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
     'Bluff: identify each entry author in order; own entry is ignored in scoring.',
@@ -1531,7 +1531,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 from .cluster_commands import normalize_cluster_command
                 text=normalize_cluster_command(text)
                 self.scroll = 0
-                if text=='/restart':raise RestartRequested()
+                if text=='/restart':raise RestartRequested(ask_all=True)
                 if self.permission_setup_command(text):continue
                 if getattr(self,'permission_prompt',False):
                     self.permission_answer(text)
@@ -1611,7 +1611,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                     else:
                         break
                 elif text in ('/update','/upgrade','/restart'):
-                    raise RestartRequested(update=text!='/restart')
+                    raise RestartRequested(update=text!='/restart',ask_all=text=='/restart')
                 elif text=='/quit':
                     break
                 elif text == '/make':

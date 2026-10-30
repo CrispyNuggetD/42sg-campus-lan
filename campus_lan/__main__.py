@@ -243,14 +243,14 @@ def main():
     finally:
         owner.close()
     if maintenance is not None:
-        restart(maintenance.update, wait_for_node=lambda: local_node_busy(local,local_port))
+        restart(maintenance.update, wait_for_node=lambda: local_node_busy(local,local_port), ask_all=maintenance.ask_all)
 
 if __name__=='__main__':
     try:
         main()
     except RestartRequested as request:
         # Standalone game clients do not own a background node.
-        restart(request.update)
+        restart(request.update, ask_all=request.ask_all)
     except (KeyboardInterrupt,EOFError):
         pass
     except (OSError,RuntimeError,ValueError) as e:

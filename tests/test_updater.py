@@ -41,6 +41,15 @@ class UpdaterTests(unittest.TestCase):
         update.assert_not_called()
         execute.assert_called_once()
 
+    def test_typed_restart_offers_package_reload_but_watcher_does_not(self):
+        for ask_all in (False,True):
+            with self.subTest(ask_all=ask_all), patch.object(updater,'request_reload') as ask, \
+                 patch.object(updater.os,'execve'), patch.object(updater.time,'sleep'), \
+                 patch.object(updater,'update_checkout') as update:
+                restart(False,ask_all=ask_all)
+                self.assertEqual(ask.call_count,int(ask_all))
+                update.assert_not_called()
+
 class RevisionWatch(unittest.TestCase):
     def setUp(self):
         updater._revision_cache.clear()
