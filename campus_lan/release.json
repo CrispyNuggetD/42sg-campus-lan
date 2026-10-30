@@ -1,8 +1,17 @@
 {
-  "version": "2.17.1-beta.1",
-  "date": "2026-10-29T06:01:11+08:00",
-  "source": "8dd0abcb49005ae1d60960e9ea75adfe0276af6b",
+  "version": "2.18.0-beta.1",
+  "date": "2026-10-30T14:01:16+08:00",
+  "source": "dc81774be0bede0b435547c895a3fa24cc064084",
   "history": [
+    {
+      "version": "2.18.0-beta.1",
+      "date": "2026-10-30T14:01:16+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: add account-scoped preferences, cluster colors and clock tools",
+        "feat: combine cohort patterns with friend and self cluster markers"
+      ]
+    },
     {
       "version": "2.17.1-beta.1",
       "date": "2026-10-29T06:01:11+08:00",
@@ -468,5 +477,5 @@
       ]
     }
   ],
-  "runtime_sha256": "20b058716282665f1200771c1dd574b2ec12ed7236c56b8c6457956ab7071aca"
+  "runtime_sha256": "0f23f8b96bf292cd2c12c72cd449d10bc14434e0509da6e77bf196c5577936e3"
 }

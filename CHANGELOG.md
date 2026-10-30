@@ -4,6 +4,11 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.18.0-beta.1 · 2026-10-30T14:01:16+08:00
+
+- feat: add account-scoped preferences, cluster colors and clock tools
+- feat: combine cohort patterns with friend and self cluster markers
+
 ## 2.17.1-beta.1 · 2026-10-29T06:01:11+08:00
 
 - fix: pause avatar batch on shared request failures
