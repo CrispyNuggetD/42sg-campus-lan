@@ -1,8 +1,16 @@
 {
-  "version": "2.20.1-beta.1",
-  "date": "2026-10-30T15:01:32+08:00",
-  "source": "2f1d548b18fc8af38646e90d58e0fe8444389ebe",
+  "version": "2.21.0-beta.1",
+  "date": "2026-10-30T15:03:38+08:00",
+  "source": "6bb15825a79f2e518d91f5d2cf2688fde676f288",
   "history": [
+    {
+      "version": "2.21.0-beta.1",
+      "date": "2026-10-30T15:03:38+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: sound clock alerts with opted-in uwu and audio rules"
+      ]
+    },
     {
       "version": "2.20.1-beta.1",
       "date": "2026-10-30T15:01:32+08:00",
@@ -534,5 +542,5 @@
       ]
     }
   ],
-  "runtime_sha256": "38ed0c5094d13f3fabe208d9e6abf3d7e5c4574db15c5ae572a1a197bb2a70ec"
+  "runtime_sha256": "3bce57470db1116cf5cf2817724f2a24835dfd58a059f990f237fc8b43bf205f"
 }

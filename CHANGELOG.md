@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.21.0-beta.1 · 2026-10-30T15:03:38+08:00
+
+- feat: sound clock alerts with opted-in uwu and audio rules
+
 ## 2.20.1-beta.1 · 2026-10-30T15:01:32+08:00
 
 - fix: seat diners around a true circular tabletop
