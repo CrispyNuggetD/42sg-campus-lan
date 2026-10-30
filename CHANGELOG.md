@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.18.1-beta.1 · 2026-10-30T14:13:10+08:00
+
+- fix: retain cached avatars until manually refreshed
+
 ## 2.18.0-beta.1 · 2026-10-30T14:01:16+08:00
 
 - feat: add account-scoped preferences, cluster colors and clock tools

@@ -1,8 +1,16 @@
 {
-  "version": "2.18.0-beta.1",
-  "date": "2026-10-30T14:01:16+08:00",
-  "source": "dc81774be0bede0b435547c895a3fa24cc064084",
+  "version": "2.18.1-beta.1",
+  "date": "2026-10-30T14:13:10+08:00",
+  "source": "7c4a2e8c7c04b366e613e0ba5850cd068226820e",
   "history": [
+    {
+      "version": "2.18.1-beta.1",
+      "date": "2026-10-30T14:13:10+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: retain cached avatars until manually refreshed"
+      ]
+    },
     {
       "version": "2.18.0-beta.1",
       "date": "2026-10-30T14:01:16+08:00",
@@ -477,5 +485,5 @@
       ]
     }
   ],
-  "runtime_sha256": "0f23f8b96bf292cd2c12c72cd449d10bc14434e0509da6e77bf196c5577936e3"
+  "runtime_sha256": "3000eab66bfc53546dc418bae6da12c7adfb4c337784dd7d00a64ade2045ddb7"
 }
