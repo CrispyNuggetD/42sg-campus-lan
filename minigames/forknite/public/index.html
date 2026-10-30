@@ -101,7 +101,6 @@ function roundTable(count,cardWidth,cardHeight){
 let tableZoom=1,tableLayout='round',roundGeometry=null;
 function fitTable(){
  const viewport=$('#arena-viewport'),frame=$('#arena-frame'),view=tableView(viewport.clientWidth,tableZoom);
- const previous=roundGeometry,previousWidth=frame.offsetWidth,previousHeight=frame.offsetHeight;
  const ordered=players.slice().sort((a,b)=>a.id-b.id),columns=Math.min(view.columns,Math.max(1,ordered.length)),isRound=tableLayout==='round';
  arena.dataset.layout=tableLayout;
  arena.style.gridTemplateColumns='repeat('+columns+',minmax(0,1fr))';
@@ -122,12 +121,8 @@ function fitTable(){
   ordered.forEach((p,i)=>{const c=cards[p.id];if(c){c.el.style.left=roundGeometry.seats[i].x+'px';c.el.style.top=roundGeometry.seats[i].y+'px';}});
   arena.style.transform='scale('+tableZoom+')';
   frame.style.width=roundGeometry.size*tableZoom+'px';frame.style.height=roundGeometry.size*tableZoom+'px';frame.style.overflow='hidden';
-  viewport.style.overflow='auto';viewport.style.maxHeight='80vh';
-  if(!previous||previous.seats.length!==ordered.length){viewport.scrollLeft=Math.max(0,(frame.offsetWidth-viewport.clientWidth)/2);viewport.scrollTop=0;}
-  else if(previousWidth!==frame.offsetWidth){
-   viewport.scrollLeft=(viewport.scrollLeft+viewport.clientWidth/2)/Math.max(1,previousWidth)*frame.offsetWidth-viewport.clientWidth/2;
-   viewport.scrollTop=(viewport.scrollTop+viewport.clientHeight/2)/Math.max(1,previousHeight)*frame.offsetHeight-viewport.clientHeight/2;
-  }
+  // The entire scene extends the document; never trap it in a nested scroller.
+  viewport.style.overflow='visible';viewport.style.maxHeight='none';
  }else{
   roundGeometry=null;arena.style.width='100%';arena.style.height='';arena.style.transform='';
   frame.style.width='100%';frame.style.height='';frame.style.overflow='visible';viewport.style.overflow='visible';viewport.style.maxHeight='none';

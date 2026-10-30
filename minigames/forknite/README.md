@@ -267,7 +267,8 @@ outside Git. No per-student presence history is added.
 The default **Round table** places every diner around a real circular tabletop,
 with a shared fork between every neighboring pair. The last seat sits beside the
 first. It starts at **100%** with full-size cards; 50 diners intentionally need a
-large scene. Scroll in both directions, use **Table zoom** (10–150%), or zoom out
+large scene that extends the full browser page, without an inner scroll frame.
+Scroll the page in both directions, use **Table zoom** (10–150%), or zoom out
 the browser for an overview. Nothing is automatically shrunk to fit the screen.
 **Layout → Readable grid** remains available as a compact alternate view.
 Both layouts label the two fork neighbors and preserve native seat order.
