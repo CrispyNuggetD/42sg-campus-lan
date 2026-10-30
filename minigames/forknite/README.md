@@ -264,6 +264,8 @@ Counts are kept out of the public event stream and game log. The private current
 aggregate file used by local operator terminal windows contains no names and is
 outside Git. No per-student presence history is added.
 
-The browser fits the entire dinner table (up to 50 diners) to the available width
-and 70% of the window height by default. Use **Table zoom** to enlarge diners
-and scroll inside the table, or **Fit whole table** to return to the overview.
+The browser shows up to 50 diners in a responsive grid in seat order, starting
+at **100%**. **Table zoom** changes card density and reflows rows; it never scales
+text into tiny labels. Cards keep readable text and pictures at every zoom.
+Additional rows extend the page normally, without a clipped table viewport.
+**Reset to 100%** restores the default card size.
