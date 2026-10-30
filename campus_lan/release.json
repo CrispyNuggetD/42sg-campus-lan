@@ -1,8 +1,16 @@
 {
-  "version": "2.21.0-beta.1",
-  "date": "2026-10-30T15:03:38+08:00",
-  "source": "6bb15825a79f2e518d91f5d2cf2688fde676f288",
+  "version": "2.22.0-beta.1",
+  "date": "2026-10-30T15:13:02+08:00",
+  "source": "a9e645c69b8c3fdce57c72ccb5f963b20892c93a",
   "history": [
+    {
+      "version": "2.22.0-beta.1",
+      "date": "2026-10-30T15:13:02+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: distinguish cluster selectors from intake aliases"
+      ]
+    },
     {
       "version": "2.21.0-beta.1",
       "date": "2026-10-30T15:03:38+08:00",
@@ -542,5 +550,5 @@
       ]
     }
   ],
-  "runtime_sha256": "3bce57470db1116cf5cf2817724f2a24835dfd58a059f990f237fc8b43bf205f"
+  "runtime_sha256": "08bcab58b2f4afea7fdc59455b536890d89b90352d65fb5484a48ff21f82f3eb"
 }
