@@ -264,13 +264,10 @@ Counts are kept out of the public event stream and game log. The private current
 aggregate file used by local operator terminal windows contains no names and is
 outside Git. No per-student presence history is added.
 
-The browser shows up to 50 diners in a responsive grid in seat order, starting
-at **100%**. **Table zoom** changes card density and reflows rows; it never scales
-text into tiny labels. Cards keep readable text and pictures at every zoom.
-Additional rows extend the page normally, without a clipped table viewport.
-**Reset to 100%** restores the default card size.
-
-**Connected table** (default) folds the seats into a closed table loop. Consecutive
-seat IDs follow the table; an outside return edge joins the last seat to the
-first. Each card lists both fork neighbors. Switch **Layout** to **Readable grid**
-for the compact seat-order overview. Both preserve readable text at every zoom.
+The default **Round table** places every diner around a real circular tabletop,
+with a shared fork between every neighboring pair. The last seat sits beside the
+first. It starts at **100%** with full-size cards; 50 diners intentionally need a
+large scene. Scroll in both directions, use **Table zoom** (10–150%), or zoom out
+the browser for an overview. Nothing is automatically shrunk to fit the screen.
+**Layout → Readable grid** remains available as a compact alternate view.
+Both layouts label the two fork neighbors and preserve native seat order.

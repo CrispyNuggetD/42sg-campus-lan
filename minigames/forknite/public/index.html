@@ -3,7 +3,7 @@
 *{box-sizing:border-box}body{margin:0;background:#11121a;color:#f3f0df;font:15px monospace}header,main{max-width:1400px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;gap:20px;align-items:center;border-bottom:2px solid #383b4a}h1{font-size:clamp(30px,6vw,70px);margin:0;color:#e8fc62;letter-spacing:-4px}small{color:#a6a6b4}button,input,select{font:inherit;padding:10px;background:#252735;color:inherit;border:1px solid #595c6c;border-radius:4px}button{background:#e8fc62;color:#171820;cursor:pointer;font-weight:bold}label{display:inline-block;margin:8px 12px 8px 0}#banner{font-size:24px;margin:22px 0;color:#e8fc62}#arena{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:10px}.philo{position:relative;text-align:center;min-height:150px;border:2px solid #414353;border-radius:8px;padding:12px 6px;background:#20222d;overflow:hidden}.philo.eating{border-color:#e8fc62;background:#353c24}.philo.sleeping{border-color:#8181ff}.philo.dead{background:#50252c;border-color:#ff7782;transform:rotate(-3deg)}.sprite{font-size:32px;line-height:1.4;white-space:pre}.eating .sprite{animation:chomp .16s infinite alternate}.thinking .sprite{animation:wobble .4s infinite alternate}.dead .sprite{transform:rotate(180deg)}.photo-status{display:block;font-size:10px;color:#ffb58d}.sprite a,.sprite button{font:10px monospace;padding:3px}.sprite img{width:48px;height:48px;object-fit:cover;border-radius:50%;image-rendering:auto}#identity{margin-bottom:14px}a{color:#e8fc62}.name{display:block;margin:6px 0;color:#fff;overflow-wrap:anywhere}.state{font-size:11px;color:#bbc0cf}.bar{height:5px;background:#57576a;margin-top:12px}.bar i{display:block;height:100%;background:#e8fc62;width:100%}#feed{max-height:180px;overflow:auto;background:#090a10;padding:16px;color:#b7c68d;white-space:pre-wrap}#status,#message{color:#ffb58d}details{margin:20px 0}footer{margin-top:25px;color:#a6a6b4}@keyframes chomp{to{transform:translateY(-5px) rotate(8deg)}}@keyframes wobble{to{transform:rotate(-5deg)}}@media(prefers-reduced-motion:reduce){*{animation:none!important}}
 
 #arena{display:grid;position:relative;grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--card-width,160px)),1fr));gap:var(--card-gap,10px);width:100%;min-width:0;min-height:0;margin:0;isolation:isolate;padding:26px;background:#2c251f;border:3px solid #745334;border-radius:14px}#arena:before{content:none}.philo{position:relative;width:auto;min-width:0;min-height:0;transform:none;font-size:12px;padding:var(--card-padding,8px) 6px;overflow-wrap:anywhere}.philo.dead{transform:none}.bar{margin-top:6px}.bar i{background:var(--meal-color,#e8fc62)}.sprite{font-size:26px;line-height:1.2}.sprite img{width:var(--photo-size,48px);height:var(--photo-size,48px)}.name{margin:4px 0}.hunger{display:block;font-size:11px;color:#c4c6d3;margin-top:5px}#round-stats{line-height:1.8;color:#d8dfeb}main{min-width:0}#arena-viewport{width:100%;margin:20px 0;overflow:visible}#arena-frame{width:100%;min-width:0}#table-zoom{width:160px}header{flex-wrap:wrap}
-#arena[data-layout="table"]{background:#14151d}#arena-connections{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;overflow:visible}.neighbors{display:block;font-size:11px;color:#d2b88c;margin-top:5px}.table-rim{fill:none;stroke:#916b43;stroke-width:34;stroke-linejoin:round}.table-link{fill:none;stroke:#d2b88c;stroke-width:2;stroke-dasharray:4 4;stroke-linejoin:round}
+#arena[data-layout="round"]{display:block;padding:0;border:0;background:transparent;transform-origin:top left}#arena[data-layout="round"] .philo{position:absolute;min-height:220px;transform:translate(-50%,-50%)}#arena[data-layout="round"] .philo.dead{transform:translate(-50%,-50%)}#arena-connections{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}.neighbors{display:block;font-size:11px;color:#d2b88c;margin-top:5px}.table-top{fill:#493a2a;stroke:#916b43;stroke-width:16}.table-link{fill:none;stroke:#d2b88c;stroke-width:2;stroke-dasharray:6 6}.table-title{fill:#d2b88c;font:24px monospace;text-anchor:middle}.table-fork{font-size:25px;text-anchor:middle;dominant-baseline:middle}
 .philo.eating.odd-turn{border-color:#bc8cff;background:#40304f;box-shadow:0 0 0 2px #bc8cff55}.odd-turn .meal-timing{color:#d9baff}
 .philo.meal-late{border-color:#ffad42;background:#443321}.meal-timing{display:block;font-size:11px;color:#c4c6d3;margin-top:5px}.meal-late .meal-timing{color:#ffbd65}
 </style>
@@ -11,7 +11,7 @@
 <main><div id="identity"><span id="identity-label">Guest mode · silly face included</span></div><form id="join"><label>Campus nickname <input id="nickname" placeholder="hnah" maxlength="20" required pattern="[a-zA-Z0-9_-]+"></label><label>Philosopher <input id="slot" type="number" min="1" value="1" required style="width:85px"></label><button>Possess this idiot</button> <span id="message"></span></form>
 <div><label>Replay speed <select id="speed"><option value="1">1× actual chaos</option><option value="0.1" selected>0.1× edible chaos</option><option value="0.02">0.02× forensic dinner</option></select></label><button id="pause">Pause replay</button> <button id="replay">Replay history</button></div>
 <div><button id="fox-toggle" type="button" aria-pressed="false">Sounds: off</button> <label>Volume <input id="fox-volume" type="range" min="0" max="100" value="20" aria-label="Sound volume"></label> <small id="exam-audio-state" role="status" aria-live="polite"></small></div>
-<div id="banner">WAITING FOR THE DINNER BUS</div><small id="clock">Room host uses /start in LAN42.</small><div id="round-stats" role="status">Waiting for native round settings · meal 1: lime / meal 2: cyan / meal 3+: pink · purple: odd last eater / orange: overdue</div><div><label>Layout <select id="table-layout"><option value="table" selected>Connected table</option><option value="grid">Readable grid</option></select></label><button id="table-fit" type="button">Reset to 100%</button> <label>Table zoom <input id="table-zoom" type="range" min="50" max="150" value="100" aria-label="Table zoom"></label><output id="table-scale" for="table-zoom" aria-live="polite">100%</output></div><div id="arena-viewport" tabindex="0" aria-label="Connected dinner table; last and first seats share a fork"><div id="arena-frame"><div id="arena"></div></div></div>
+<div id="banner">WAITING FOR THE DINNER BUS</div><small id="clock">Room host uses /start in LAN42.</small><div id="round-stats" role="status">Waiting for native round settings · meal 1: lime / meal 2: cyan / meal 3+: pink · purple: odd last eater / orange: overdue</div><div><label>Layout <select id="table-layout"><option value="round" selected>Round table</option><option value="grid">Readable grid</option></select></label><button id="table-fit" type="button">Reset to 100%</button> <label>Table zoom <input id="table-zoom" type="range" min="10" max="150" value="100" aria-label="Table zoom"></label><output id="table-scale" for="table-zoom" aria-live="polite">100%</output></div><div id="arena-viewport" tabindex="0" aria-label="Connected dinner table; last and first seats share a fork"><div id="arena-frame"><div id="arena"></div></div></div>
 <details><summary>What am I controlling?</summary><p>Your attendance. Joined players and host-requested stand-ins sit at this table. Adjacent seats share forks. Seats and native philosopher IDs are shuffled every round. The C threads handle every fork, meal, sleep, thought and death. You are emotionally responsible.</p><p>Storm mode reduces the starvation deadline between fresh native rounds. The hunger bars and approximate milliseconds remaining are inferred from eating-start timestamps. Lime, cyan, and pink mark the first, second, and third-or-later eating starts. Purple highlights the last diner to start each numbered meal wave at an odd table, while that diner is eating. This extra odd-table turn is distinct from an overdue wait. Orange marks an overdue wait or a meal that started late. The estimated start-to-start window is max(eat + sleep, 2 × eat) for even tables or max(eat + sleep, 3 × eat) for odd tables, with max(2ms, 5% of eat) grace. Normal fork waiting is included; a single eating duration is not the late threshold. This is a display estimate, not proof of a scheduler fault. Meal counters count observed meal starts, not confirmed completed meals.</p></details><pre id="feed" aria-label="Recent moves"></pre><footer>Server writes the real history to .logs/ · browser time is theatre · only joined players and requested sabo stand-ins · ✓42 means verified by LAN42</footer></main>
 <script src="/avatar.js"></script>
 <script src="/campus-status.js"></script>
@@ -79,7 +79,7 @@ let count=0, players=[], history=[], queue=[], cursor=0, base=null, sim=0, round
 $('#fox-toggle').onclick=()=>{const on=foxAudio.toggle();$('#fox-toggle').textContent='Sounds: '+(on?'on':'off');$('#fox-toggle').setAttribute('aria-pressed',String(on));};
 $('#fox-volume').oninput=ev=>foxAudio.setVolume(Number(ev.target.value)/100);
 const faces=['(•_•)','(ಠ_ಠ)','(=^.^=)','(o_o)','(¬_¬)','(°□°)'];
-function makeCard(id){const el=document.createElement('div');el.className='philo';el.innerHTML='<div class="sprite"></div><b class="name"></b><div class="state">waiting for carbs</div><div class="bar"><i></i></div><small class="hunger">waiting</small><small class="meal-timing">Waiting for round timings</small><small class="neighbors"></small>';arena.append(el);return {el,meals:0,lastMeal:0,lastDelay:0,dead:false};}
+function makeCard(id){const el=document.createElement('div');el.className='philo';el.innerHTML='<div class="sprite"></div><b class="name"></b><div class="state">waiting for carbs</div><div class="bar"><i></i></div><small class="hunger">waiting</small><small class="meal-timing">Waiting for round timings</small><small class="neighbors"></small>';arena.append(el);if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{if(roundGeometry&&el.offsetHeight>roundGeometry.cardHeight+1)fitTable();}).observe(el);return {el,meals:0,lastMeal:0,lastDelay:0,dead:false};}
 function build(n){count=n;arena.textContent='';cards=[];$('#slot').max=n;names();}
 // TABLE_VIEW_START
 function tableView(width,zoom=1){
@@ -90,49 +90,68 @@ function tableView(width,zoom=1){
  const columns=Math.max(1,Math.floor((available+gap)/(cardWidth+gap)));
  return {cardWidth,gap,columns,padding:Math.max(4,8*density),photo:Math.max(40,48*density)};
 }
-function tableSeats(count,columns){
- return Array.from({length:count},(_,i)=>{const row=Math.floor(i/columns),offset=i%columns;return {row,column:row%2?columns-1-offset:offset};});
-}
-function tableLoop(points,left,bottom){
- if(!points.length)return '';
- const first=points[0],last=points[points.length-1];
- return 'M '+points.map(p=>p.x+' '+p.y).join(' L ')+' L '+last.x+' '+bottom+' L '+left+' '+bottom+' L '+left+' '+first.y+' L '+first.x+' '+first.y;
+function roundTable(count,cardWidth,cardHeight){
+ const diagonal=Math.hypot(cardWidth,cardHeight),spacing=diagonal+28;
+ const radius=Math.max(240,spacing/(2*Math.sin(Math.PI/Math.max(3,count))));
+ const margin=diagonal/2+30,size=2*(radius+margin),center=size/2;
+ const seats=Array.from({length:count},(_,i)=>{const angle=2*Math.PI*i/Math.max(1,count)-Math.PI/2;return {x:center+radius*Math.cos(angle),y:center+radius*Math.sin(angle),angle};});
+ return {size,center,radius,cardHeight,tableRadius:Math.max(140,radius-diagonal/2-14),seats};
 }
 // TABLE_VIEW_END
-let tableZoom=1,tableLayout='table';
+let tableZoom=1,tableLayout='round',roundGeometry=null;
 function fitTable(){
- const view=tableView($('#arena-viewport').clientWidth,tableZoom);
- const ordered=players.slice().sort((a,b)=>a.id-b.id),columns=Math.min(view.columns,Math.max(1,ordered.length));
+ const viewport=$('#arena-viewport'),frame=$('#arena-frame'),view=tableView(viewport.clientWidth,tableZoom);
+ const previous=roundGeometry,previousWidth=frame.offsetWidth,previousHeight=frame.offsetHeight;
+ const ordered=players.slice().sort((a,b)=>a.id-b.id),columns=Math.min(view.columns,Math.max(1,ordered.length)),isRound=tableLayout==='round';
  arena.dataset.layout=tableLayout;
  arena.style.gridTemplateColumns='repeat('+columns+',minmax(0,1fr))';
- const seats=tableSeats(ordered.length,columns);
- ordered.forEach((p,i)=>{const c=cards[p.id];if(!c)return;
-  c.el.style.gridColumn=tableLayout==='table'?String(seats[i].column+1):'';
-  c.el.style.gridRow=tableLayout==='table'?String(seats[i].row+1):'';
-  const neighbors=c.el.querySelector('.neighbors');
-  if(neighbors)neighbors.textContent=ordered.length>1?'Fork neighbors: #'+ordered[(i+ordered.length-1)%ordered.length].id+' · #'+ordered[(i+1)%ordered.length].id:'Only diner · both forks are yours';
- });
  arena.style.setProperty('--card-width',view.cardWidth+'px');
  arena.style.setProperty('--card-gap',view.gap+'px');
- arena.style.setProperty('--card-padding',view.padding+'px');
- arena.style.setProperty('--photo-size',view.photo+'px');
+ arena.style.setProperty('--card-padding','8px');
+ arena.style.setProperty('--photo-size','48px');
+ ordered.forEach((p,i)=>{const c=cards[p.id];if(!c)return;
+  c.el.style.gridColumn='';c.el.style.gridRow='';c.el.style.left='';c.el.style.top='';
+  c.el.style.width=isRound?'160px':'';
+  const neighbors=c.el.querySelector('.neighbors');
+  if(neighbors)neighbors.textContent=ordered.length>1?'Fork neighbors: #'+ordered[(i+ordered.length-1)%ordered.length].id+' · #'+ordered[(i+1)%ordered.length].id:'Only diner · one fork';
+ });
+ if(isRound){
+  const height=Math.max(220,...ordered.map(p=>cards[p.id]?cards[p.id].el.offsetHeight:0));
+  roundGeometry=roundTable(ordered.length,160,height);
+  arena.style.width=roundGeometry.size+'px';arena.style.height=roundGeometry.size+'px';
+  ordered.forEach((p,i)=>{const c=cards[p.id];if(c){c.el.style.left=roundGeometry.seats[i].x+'px';c.el.style.top=roundGeometry.seats[i].y+'px';}});
+  arena.style.transform='scale('+tableZoom+')';
+  frame.style.width=roundGeometry.size*tableZoom+'px';frame.style.height=roundGeometry.size*tableZoom+'px';frame.style.overflow='hidden';
+  viewport.style.overflow='auto';viewport.style.maxHeight='80vh';
+  if(!previous||previous.seats.length!==ordered.length){viewport.scrollLeft=Math.max(0,(frame.offsetWidth-viewport.clientWidth)/2);viewport.scrollTop=0;}
+  else if(previousWidth!==frame.offsetWidth){
+   viewport.scrollLeft=(viewport.scrollLeft+viewport.clientWidth/2)/Math.max(1,previousWidth)*frame.offsetWidth-viewport.clientWidth/2;
+   viewport.scrollTop=(viewport.scrollTop+viewport.clientHeight/2)/Math.max(1,previousHeight)*frame.offsetHeight-viewport.clientHeight/2;
+  }
+ }else{
+  roundGeometry=null;arena.style.width='100%';arena.style.height='';arena.style.transform='';
+  frame.style.width='100%';frame.style.height='';frame.style.overflow='visible';viewport.style.overflow='visible';viewport.style.maxHeight='none';
+ }
  $('#table-zoom').value=String(Math.round(tableZoom*100));
- $('#table-scale').textContent=Math.round(tableZoom*100)+'% · '+columns+' columns · '+(tableLayout==='table'?'closed fork loop':'seat-order grid');
+ $('#table-scale').textContent=Math.round(tableZoom*100)+'% · '+(isRound?'round table · scroll or zoom out for large dinners':columns+' columns · seat-order grid');
  drawConnections();
 }
 function drawConnections(){
  let svg=arena.querySelector('#arena-connections');
- if(tableLayout!=='table'){if(svg)svg.remove();return;}
+ if(!roundGeometry){if(svg)svg.remove();return;}
  const ns='http://www.w3.org/2000/svg';
  if(!svg){svg=document.createElementNS(ns,'svg');svg.id='arena-connections';svg.setAttribute('aria-hidden','true');arena.prepend(svg);}
- const bounds=arena.getBoundingClientRect(),ordered=players.slice().sort((a,b)=>a.id-b.id);
- const points=ordered.map(p=>cards[p.id]).filter(Boolean).map(c=>{const r=c.el.getBoundingClientRect();return {x:r.left-bounds.left+r.width/2,y:r.top-bounds.top+r.height/2};});
- const d=tableLoop(points,13,Math.max(13,bounds.height-15));
- svg.setAttribute('viewBox','0 0 '+Math.max(1,bounds.width)+' '+Math.max(1,bounds.height));
- svg.replaceChildren();
- for(const cls of ['table-rim','table-link']){const path=document.createElementNS(ns,'path');path.setAttribute('class',cls);path.setAttribute('d',d);svg.append(path);}
+ const g=roundGeometry;svg.setAttribute('viewBox','0 0 '+g.size+' '+g.size);svg.replaceChildren();
+ function element(type,attrs,text){const el=document.createElementNS(ns,type);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);if(text)el.textContent=text;svg.append(el);}
+ element('circle',{class:'table-top',cx:g.center,cy:g.center,r:g.tableRadius});
+ element('circle',{class:'table-link',cx:g.center,cy:g.center,r:g.radius});
+ element('text',{class:'table-title',x:g.center,y:g.center},'FORKNITE');
+ element('text',{class:'table-title',x:g.center,y:g.center+38},g.seats.length+' diners · last ↔ first');
+ g.seats.forEach((seat,i)=>{const angle=seat.angle+Math.PI/Math.max(1,g.seats.length),r=g.tableRadius-18;
+  element('text',{class:'table-fork',x:g.center+r*Math.cos(angle),y:g.center+r*Math.sin(angle)},'🍴');
+ });
 }
-$('#table-layout').onchange=ev=>{tableLayout=ev.target.value;fitTable();};
+$('#table-layout').onchange=ev=>{tableLayout=ev.target.value;if(tableLayout==='grid')tableZoom=Math.max(.5,tableZoom);fitTable();};
 $('#table-fit').onclick=()=>{tableZoom=1;fitTable();};
 $('#table-zoom').oninput=ev=>{tableZoom=Number(ev.target.value)/100;fitTable();};
 window.addEventListener('resize',fitTable);

@@ -15,19 +15,21 @@ for(const width of [280,320,768,1280,1920]){
 }
 assert.equal(context.tableView(1280).cardWidth,160);
 assert(html.includes('let tableZoom=1,tableLayout='),'Initial table view must be 100%');
-assert(!html.includes("arena.style.transform='scale("),'Never shrink the entire table');
-assert(!html.includes('frame.style.height='),'Rows must remain reachable through normal page scrolling');
-console.log('Readable 100% cards and density reflow checks passed');
-
+assert(html.includes("tableLayout='round'"),'Default layout must seat diners around a table');
 for(const count of [1,2,5,7,8,25,49,50]){
- for(const cols of [1,2,3,7,10]){
-  const seats=context.tableSeats(count,cols);
-  assert.equal(new Set(seats.map(s=>s.row+':'+s.column)).size,count);
-  for(let i=1;i<count;i++)assert.equal(Math.abs(seats[i].row-seats[i-1].row)+Math.abs(seats[i].column-seats[i-1].column),1,'Consecutive diners stay next to each other');
-  const points=seats.map(s=>({x:50+s.column*170,y:70+s.row*200}));
-  const path=context.tableLoop(points,13,points[points.length-1].y+150);
-  assert(path.endsWith('L '+points[0].x+' '+points[0].y),'The last fork returns to the first seat');
+ const g=context.roundTable(count,160,240);
+ assert.equal(g.seats.length,count);
+ for(const p of g.seats){
+  assert(p.x-80>=0&&p.x+80<=g.size&&p.y-120>=0&&p.y+120<=g.size,'Every card stays inside the scrollable scene');
+  assert(Math.abs(Math.hypot(p.x-g.center,p.y-g.center)-g.radius)<.001,'Every diner sits around the same table');
+ }
+ for(let i=0;i<count;i++)for(let j=i+1;j<count;j++){
+  const a=g.seats[i],b=g.seats[j];assert(Math.abs(a.x-b.x)>=160||Math.abs(a.y-b.y)>=240,'Diner cards never overlap');
+ }
+ if(count>2){
+  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),expected=distance(g.seats[0],g.seats[1]);
+  assert(Math.abs(distance(g.seats[count-1],g.seats[0])-expected)<.001,'Last and first are physically adjacent, just like every other pair');
  }
 }
 assert(html.includes('id="table-layout"'));
-console.log('Connected table: consecutive-seat adjacency, unique positions and last-to-first closure passed');
+console.log('Round table: perimeter seating, last-to-first adjacency, no overlap and reachable scene bounds passed');
