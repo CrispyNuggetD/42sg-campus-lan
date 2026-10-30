@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.19.1-beta.1 · 2026-10-30T14:30:19+08:00
+
+- fix: fit full FORKNITE table with adjustable zoom
+
 ## 2.19.0-beta.1 · 2026-10-30T14:15:31+08:00
 
 - feat: offer package-wide reload when restarting LAN42

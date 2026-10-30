@@ -1,8 +1,16 @@
 {
-  "version": "2.19.0-beta.1",
-  "date": "2026-10-30T14:15:31+08:00",
-  "source": "4bbf1ef3407e18fac9906469714ca282a4ff7d5f",
+  "version": "2.19.1-beta.1",
+  "date": "2026-10-30T14:30:19+08:00",
+  "source": "20ca107c1c106fe669a2df06ac5988e9158666cc",
   "history": [
+    {
+      "version": "2.19.1-beta.1",
+      "date": "2026-10-30T14:30:19+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: fit full FORKNITE table with adjustable zoom"
+      ]
+    },
     {
       "version": "2.19.0-beta.1",
       "date": "2026-10-30T14:15:31+08:00",
@@ -493,5 +501,5 @@
       ]
     }
   ],
-  "runtime_sha256": "e9d7b7759fe3dbc8e9257b995d348bf15ef75c9a6ce62ff678854b07c6a86498"
+  "runtime_sha256": "1cf1abcaa6ef3737db9a54dc24e97140c8a5e3e8b7d4e8840f52ac80db42818f"
 }
