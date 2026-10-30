@@ -1,8 +1,16 @@
 {
-  "version": "2.26.0-beta.1",
-  "date": "2026-10-30T17:38:14+08:00",
-  "source": "8f44e17fab7c116db7ffe4ef0ba84a4829e42507",
+  "version": "2.26.1-beta.1",
+  "date": "2026-10-30T20:37:45+08:00",
+  "source": "331541706b9c59ac849853eb3809ab6d74d32a65",
   "history": [
+    {
+      "version": "2.26.1-beta.1",
+      "date": "2026-10-30T20:37:45+08:00",
+      "kind": "patch",
+      "notes": [
+        "EOD: checkpoint 2026-10-30T20:37:29+08:00"
+      ]
+    },
     {
       "version": "2.26.0-beta.1",
       "date": "2026-10-30T17:38:14+08:00",
@@ -582,5 +590,5 @@
       ]
     }
   ],
-  "runtime_sha256": "3bc945bfb12886131dd86e33dc0f1000c33ae9ba9bd124e909f76ae9b4567f7c"
+  "runtime_sha256": "6c36c8cc5f18a0de3eeac9110950aedd7d3542d735cb980b5da4242667517c3d"
 }
