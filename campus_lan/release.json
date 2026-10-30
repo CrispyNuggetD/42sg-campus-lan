@@ -1,8 +1,16 @@
 {
-  "version": "2.19.2-beta.1",
-  "date": "2026-10-30T14:34:03+08:00",
-  "source": "54794b635b896aeb71205ccd32bfb05896c98ff6",
+  "version": "2.19.3-beta.1",
+  "date": "2026-10-30T14:38:27+08:00",
+  "source": "50c8ee81483f57cba9af75b694424910fc441b73",
   "history": [
+    {
+      "version": "2.19.3-beta.1",
+      "date": "2026-10-30T14:38:27+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: reflow readable diners at full-size table zoom"
+      ]
+    },
     {
       "version": "2.19.2-beta.1",
       "date": "2026-10-30T14:34:03+08:00",
@@ -509,5 +517,5 @@
       ]
     }
   ],
-  "runtime_sha256": "545164cf4767c94b5aa67eff969d90027baf777a65a11aa2118e8500f374578b"
+  "runtime_sha256": "adeeef3da53046d4f3c3fa207724bfd90cdecd03c78b5ce2c7e67a0d15eee4f3"
 }

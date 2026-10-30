@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.19.3-beta.1 · 2026-10-30T14:38:27+08:00
+
+- fix: reflow readable diners at full-size table zoom
+
 ## 2.19.2-beta.1 · 2026-10-30T14:34:03+08:00
 
 - fix: seat cached SABO profiles before acquiring missing photos
