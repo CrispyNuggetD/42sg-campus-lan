@@ -54,7 +54,7 @@ HELP = [
     '/clusters: open a separate map window | /c1 /c2: one cluster | in that window r/Enter refreshes and shows snapshot age',
     '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
     '/alarm [30m|8pm|162532|daily 8pm|weekly mon,wed 08:00] | /timer 5m | /stopwatch | /clock: GMT+8 clock tools',
-    '/settings storage [FOLDER] | /settings export FOLDER | /settings import FOLDER: portable friends, lists and preferences',
+    '/settings storage [FOLDER] | export/import FOLDER [combine|overwrite] | /settings resolve FOLDER combine|overwrite: portable preferences',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
     '/sabo c1|c2 [COUNT]: campus-online cluster | c1r3:4s1:2: inclusive seat ranges | /sabo I4 or intake4 (cohort4 also works): intake | /sabo verified [COUNT]: SG sign-ins',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
@@ -1213,18 +1213,20 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         if self.notification_command(text):return True
         if self.host_settings_command(text):return True
         parts = text.split()
-        if parts[:1]==['/settings'] and len(parts)>1 and parts[1] in ('storage','export','import'):
+        if parts[:1]==['/settings'] and len(parts)>1 and parts[1] in ('storage','export','import','resolve'):
             import shlex
             from .preferences import perform
             try:
                 args=shlex.split(text)
-                if len(args)>3:raise ValueError('Quote folder paths containing spaces.')
-                self.lines.append(perform(args[1],args[2] if len(args)>2 else None))
-                if args[1]=='import' or args[1]=='storage' and len(args)>2:
+                if len(args)>4:raise ValueError('Use /settings ACTION "FOLDER" [combine|overwrite].')
+                self.lines.append(perform(args[1],args[2] if len(args)>2 else None,args[3] if len(args)>3 else None))
+                if args[1] in ('import','resolve') or args[1]=='storage' and len(args)>2:
                     from .tracking import Tracker
                     self.tracker=Tracker(self.name)
                 self.lines.append('Friends, lists, cluster choices and login preferences are portable. Credentials, sessions and device consent stay local. Reopen LAN42 after changing storage/importing.')
-            except (OSError,ValueError) as error:self.lines.append(str(error))
+            except (OSError,ValueError) as error:
+                self.lines.append(str(error))
+                self.lines.append('/settings '+parts[1]+' \"FOLDER\" combine | overwrite (quote your folder path; combine keeps both friend lists).')
             return True
         if not parts or parts[0] not in ('/settings','/profile'):
             return False
@@ -1241,7 +1243,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 '/volume [0–100] — desktop output; /settings audio-auto-on on|off — uwu unmute',
                 '/settings audio-startup-volume on|off — set output to 30% on HQ launch',
                 '/settings clusters-auto-open on|off — open the clusters miniapp with HQ',
-                '/settings storage [FOLDER] — link portable preferences; /settings export FOLDER | import FOLDER',
+                '/settings storage [FOLDER] [combine|overwrite] — symlink preferences; export/import FOLDER [combine|overwrite]; resolve FOLDER combine|overwrite — Git conflicts',
                 '/uwu auto|off — persistent local automatic calls; /settings koel-sound always — persistent sound consent',
                 '/settings host-discovery on|off | auto-host-join on|off | host-poll 60–300',
                 '/settings permissions — browser, popup and notification consent',

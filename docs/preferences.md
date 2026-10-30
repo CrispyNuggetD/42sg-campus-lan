@@ -219,3 +219,74 @@ Local uwu toasts have their own `/notify uwu on|off` channel (default on), separ
 from received pokes. Automatic uwu stays account-scoped across HQ/game windows;
 HQ alone schedules calls and gives one consent-controlled startup chirp. The
 saved clusters auto-open choice waits for access and retries failed launches.
+
+
+## Portable settings on Mac and campus
+
+Friends, named lists and account preferences can live in a dedicated folder in
+**your own private repository**. Keep the entire authentication/config directory
+outside Git. The portable folder accepts only the named preference JSON files;
+credentials, sessions, keys, host grants, device-only consent and command history
+stay local. Sign in separately on each computer with the same Intra login.
+
+Inside LAN42, quote paths containing spaces:
+
+```text
+/settings storage "/path/to/private-repo/42/lan42"
+/settings import "/path/to/portable-folder"
+/settings export "/path/to/portable-folder"
+```
+
+Different existing files stop the operation and ask you to choose `combine` or
+`overwrite`. Repeat the command with that final word:
+
+```text
+/settings storage "/path/to/private-repo/42/lan42" combine
+/settings import "/path/to/incoming-folder" combine
+/settings import "/path/to/incoming-folder" overwrite
+```
+
+`combine` (append) recursively unions friends, list members and other collections,
+without duplicates. Your current local scalar choices win when values disagree
+(for example, the relationship for an existing friend or a notification switch).
+When exporting, existing destination scalar choices win. Combining does not infer
+deletions; choose overwrite to adopt an incoming removal. Tracking limits still
+apply; an oversized union stops before changing any files.
+
+`overwrite` uses the incoming folder's version for matching files; files absent
+from that folder remain. With `storage`, the selected folder is incoming and its
+matching files win over local versions. Replaced files get private local backups
+under `${XDG_STATE_HOME:-~/.local/state}/42sg-campus-lan/backups/`.
+
+`storage` creates a **directory symlink**, so atomic JSON saves continue to write
+into the private checkout. A symlink saves locally; commit and push that checkout
+to back it up remotely. Stop/reopen other LAN42 windows after importing or changing
+storage so cached preferences reload. The CLI works while LAN42 is stopped:
+
+```sh
+cd /path/to/42sg-campus-lan
+python3 -m campus_lan.preferences storage /path/to/private-repo/42/lan42
+python3 -m campus_lan.preferences import /path/to/incoming-folder --mode combine
+```
+
+The CLI asks interactively on conflict. Noninteractive invocations require an
+explicit `--mode combine` or `--mode overwrite` when files differ; EOF/cancel
+keeps conflicting preferences unchanged.
+
+Before pulling a checkout containing active settings, commit your local settings.
+Use a normal Git merge rather than rebase when both computers have commits. For
+JSON merge conflicts in the portable folder, choose through settings or CLI:
+
+```text
+/settings resolve "/path/to/private-repo/42/lan42" combine
+```
+
+```sh
+python3 -m campus_lan.preferences resolve /path/to/private-repo/42/lan42 --mode combine
+```
+
+This combines Git's local and incoming JSON versions and stages only those
+preference files. `overwrite` selects the incoming Git version. Review and commit
+the merge, then push it yourself. Delete/modify conflicts require manual review;
+unrelated conflicts remain untouched. Conflict markers are never loaded as valid
+preferences. This explicit `/settings` flow does not run Git operations at startup.

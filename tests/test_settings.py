@@ -34,6 +34,22 @@ class Settings(unittest.TestCase):
         self.assertFalse(Preferences().allows('tracking'))
         self.assertTrue(Preferences().allows('host'))
 
+    def test_portable_import_conflict_offers_choice_and_accepts_combine(self):
+        from campus_lan.login_settings import LoginSettings
+        from campus_lan.auth import private_write
+        from pathlib import Path
+        import json
+        LoginSettings().set('close_tab', True)
+        incoming=Path(os.environ['XDG_CONFIG_HOME'])/'portable'
+        private_write(incoming/'login-settings.json',json.dumps(dict(close_tab=False)))
+        c=self.client()
+        c.settings_command('/settings import "'+str(incoming)+'"')
+        self.assertIn('combine','\n'.join(c.lines))
+        self.assertTrue(LoginSettings().data['close_tab'])
+        c.settings_command('/settings import "'+str(incoming)+'" combine')
+        self.assertTrue(LoginSettings().data['close_tab'])
+        c.send.assert_not_called()
+
     def test_completion_keeps_top_level_signin_unambiguous(self):
         self.assertEqual(complete('/sig')[0],'/signin ')
         self.assertEqual(complete('/settings signo')[0],'/settings signout ')
