@@ -17,11 +17,13 @@ def unsupported_photo_selector(names):
     return any(name in SG_SELECTORS or re.fullmatch(r'(?:cohort|intake|i)\d*',name) for name in parts)
 
 
-def expand_photo_targets(names):
+def expand_photo_targets(names, literal_logins=()):
     """Expand local cohort selectors, never interpreting a bare number as one."""
     result=[]
     for raw in names:
         value=raw.lower() if isinstance(raw,str) else ''
+        if raw in literal_logins:
+            result.extend(validate_logins([raw]));continue
         if value in ('cohort','intake'):raise ValueError('Use cohort1 as one word; "cohort 1" is not a photo selector.')
         number=intake_number(value)
         if value in SG_SELECTORS or number is not None:

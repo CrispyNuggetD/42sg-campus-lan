@@ -159,3 +159,33 @@ def lobby_lines(players, view='roster', cluster=1):
         lines.append(plain('Some reported seats are outside this layout; see the roster.'))
     lines.append(plain('Unmarked desks mean no LAN42 peer reported; not necessarily vacant. In~ = locally inferred intake.'))
     return lines
+
+
+def occupant_hits(players, view='map', cluster=0):
+    """Return row/column hit regions from layout geometry, including cohort/shared markers."""
+    entries=roster(players)
+    ordered={number:player for number,player,_ in entries}
+    occupied={}
+    for _,player,location in entries:
+        if location:occupied.setdefault(location,[]).append(player)
+    hits=[];current_cluster=None;current_row=None
+    for y,segments in enumerate(lobby_lines(players,view,cluster)):
+        first=segments[0][0] if segments else ''
+        heading=re.match(r'CLUSTER ([12]) - physical',first)
+        if heading:current_cluster=int(heading[1]);current_row=None
+        row=re.match(r'R(\d+)\s',first)
+        if row:current_row=int(row[1])
+        numbered=re.match(r'\s*(\d+)\. ',first)
+        if numbered:
+            player=ordered.get(int(numbered[1]))
+            if player:hits.append((y,0,sum(len(text) for text,_ in segments),[player]))
+            current_row=None
+            continue
+        if first.startswith('CURRENTLY ONLINE'):current_row=None
+        if current_cluster and current_row and len(segments)==LAYOUT[current_cluster][current_row]+1:
+            x=len(first)
+            for desk,(text,_) in enumerate(segments[1:],1):
+                members=occupied.get((current_cluster,current_row,desk),[])
+                if text.strip() and members:hits.append((y,x,x+len(text),members))
+                x+=len(text)
+    return hits

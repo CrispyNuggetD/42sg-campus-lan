@@ -25,6 +25,7 @@ from . import auth_client
 from .updater import RestartRequested, generation
 from .completion import complete
 from .local_console import LocalConsole,History,shell_command
+from .numbered_occupants import ProfileCommands
 from .notification_preferences import NotificationControls,IMPORTANT
 from .quiet_ui import QuietUI
 from .web_search import SearchControls
@@ -52,7 +53,7 @@ HELP = [
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
     '/tool LOGIN...|cohort1|all: private photo batch from local SG cache | /info [FILTER] [PAGE]: API-operator campus directory',
     '/clusters: open a separate map window | /c1 /c2: one cluster | in that window r/Enter refreshes and shows snapshot age',
-    '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
+    '/track: friends/lists | /track friends LOGIN|NUMBER: label | /profile [LOGIN|NUMBER]: any tab; numbers confirm campus occupants',
     '/alarm [30m|8pm|162532|daily 8pm|weekly mon,wed 08:00] | /timer 5m | /stopwatch | /clock: GMT+8 clock tools',
     '/settings storage [FOLDER] | export/import FOLDER [combine|overwrite] | /settings resolve FOLDER combine|overwrite: portable preferences',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
@@ -105,7 +106,7 @@ from .file_sharing.ui import KoelUI
 _uwu_startup_owners=set()
 
 
-class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
+class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
@@ -277,6 +278,9 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
             return True
         if text.startswith('/uwu '):
             target=text.split(maxsplit=1)[1].strip()
+            if target.isdecimal():
+                self.confirm_occupants([target],lambda names:self.uwu_command('/uwu '+names[0]))
+                return True
             try:
                 from .login_whitelist import validate_logins
                 target=validate_logins([target])[0]
@@ -369,6 +373,9 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         self.popup_prompts().request(category,description,action)
 
     def permission_tick(self):
+        if getattr(self,'pending_number_action',None) and time.monotonic()-self.number_request_started>30:
+            self.pending_number_action=None
+            self.lines.append('Campus occupant lookup timed out. Refresh /clusters and retry.')
         if getattr(self,'wizard',None) and self.wizard[0].startswith('permissions-'):return
         prompts=getattr(self,'consent',None)
         if not prompts:return
@@ -440,27 +447,8 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
             return True
         tracker=self.get_tracker()
         try:
-            if parts[0]=='/track' and parts[1:] and any(value.isdecimal() for value in parts[1:]):
-                if not all(value.isdecimal() for value in parts[1:]):raise ValueError('Use either /track NUMBERS or /track LOGINS, separately.')
-                shown=getattr(self,'campus_selection',{})
-                if not getattr(self,'cluster_source',False) or not shown:raise ValueError('Load /clusters first; numbers refer to its displayed online roster.')
-                selected=[]
-                for value in dict.fromkeys(parts[1:]):
-                    entry=shown.get(int(value))
-                    if not entry:raise ValueError('No online campus entry '+value+'. Refresh /clusters and check the displayed numbers.')
-                    selected.append(entry)
-                description=', '.join(name+' ('+'c%dr%ds%d'%location+')' for name,location in selected)
-                def accept():
-                    current={(p.get('name','').lower(),seat(p)) for p in getattr(self,'cluster_players',[])}
-                    if any(entry not in current for entry in selected):
-                        self.lines.append('Campus seats changed; refresh /clusters and select again. Nobody added.')
-                        return
-                    try:tracker.change([name for name,_ in selected])
-                    except (OSError,ValueError) as error:
-                        self.lines.append(safe(str(error)));return
-                    self.track_next=0
-                    self.lines.append('Added to tracking: '+', '.join(name for name,_ in selected))
-                self.popup_prompts().confirm('Track these current occupants? '+description,accept)
+            if parts[1:3]!=['clusters','scope'] and any(value.isdecimal() for value in parts[1:]):
+                self.confirm_occupants(parts[1:],lambda names:self.tracking_command(parts[0]+' '+' '.join('login:'+name if original.isdecimal() else name for original,name in zip(parts[1:],names))))
                 return True
             if parts[0]=='/untrack':
                 names=tracker.names[:] if parts[1:]==['all'] else tracker.resolve(parts[1:],validate=False)
@@ -636,6 +624,12 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
     def group_command(self,text):
         command=text.split(maxsplit=1)[0] if text else ''
         if command not in ('/sabo','/dm','/alert'):return False
+        if command in ('/dm','/alert'):
+            bits=text.split(maxsplit=2)
+            if len(bits)>1 and bits[1].isdecimal():
+                body=bits[2] if len(bits)>2 else ''
+                self.confirm_occupants([bits[1]],lambda names:self.group_command(command+' login:'+names[0]+' '+body))
+                return True
         try:
             if command=='/sabo':parts=shlex.split(text)
             else:
@@ -814,8 +808,17 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 else:
                     self.auth_destination = tuple(msg['destination'])
             elif kind == 'clusters':
+                if not isinstance(msg.get('players'),list) or not isinstance(msg.get('updated_at'),(int,float)) or msg['updated_at']<=0:
+                    self.pending_number_action=None
+                    self.lines.append('Invalid campus snapshot; occupant selection cancelled.')
+                    continue
+                pending=getattr(self,'pending_number_action',None)
+                self.pending_number_action=None
                 self.cluster_players=msg.get('players',[])
                 self.cluster_stamp=msg.get('updated_at',0)
+                if pending:
+                    pending()
+                    continue
                 self.cluster=msg.get('cluster',0)
                 self.focus_name=None
                 self.focus_location=None
@@ -824,6 +827,10 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 self.lobby_view,self.lobby_page='map',0
                 self.show_lobby,self.play=True,False
             elif kind == 'signed_out':
+                self.pending_number_action=None
+                self.cluster_players=None
+                self.cluster_source=False
+                self.signed_in=False
                 self.campus_occupancy=None
                 if getattr(self, 'secure', False):
                     auth_client.clear_session(getattr(self, 'session_token', None))
@@ -999,6 +1006,10 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 self.cluster = int(text[-1])
             self.show_lobby, self.play = True, False
         elif text.startswith('/locate '):
+            value=text.split(maxsplit=1)[1].strip()
+            if value.isdecimal():
+                self.confirm_occupants([value],lambda names:self.lobby_command('/locate '+names[0]))
+                return True
             try:
                 from .login_whitelist import validate_logins
                 name=validate_logins([text.split(maxsplit=1)[1]])[0]
@@ -1035,8 +1046,11 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
             self.lobby_page=(2+row_index*2+(location[2]%2))//capacity
             self.focus_pending=False
         self.lobby_page = min(getattr(self,'lobby_page',0),pages-1)
-        self.lobby_hits=[]
-        ordered={n:p for n,p,_ in roster(players)}
+        from .lobby_view import occupant_hits
+        start=self.lobby_page*capacity
+        self.lobby_hits=[(row-start+5,left,right,members[0])
+                         for row,left,right,members in occupant_hits(players,getattr(self,'lobby_view','roster'),getattr(self,'cluster',1))
+                         if start<=row<start+capacity]
         self.campus_selection={n:(p.get('name','').lower(),location) for n,p,location in roster(players) if location} if campus else {}
         if campus:
             heading='CAMPUS API: '+str(len(players))+' logged-in seats | snapshot '+time.strftime('%H:%M:%S',time.localtime(self.cluster_stamp))
@@ -1052,15 +1066,10 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 attr = curses.A_BOLD if style else 0
                 if style and getattr(self,'colors',False):
                     attr |= curses.color_pair(style)
-                match=re.match(r'\s*(\d+)\. ',text)
-                player=ordered.get(int(match[1])) if match else None
-                marker=re.fullmatch(r'\[(?:#)?(\d+)\]',text)
-                if marker and style:player=ordered.get(int(marker[1]))
-                elif marker:attr|=curses.A_DIM
-                if player:
-                    self.lobby_hits.append((y,x,x+len(text),player))
-                    if seat(player)==getattr(self,'focus_location',None) and int(time.monotonic()*2)%2==0:
-                        attr|=curses.A_REVERSE|curses.A_BOLD
+                if re.fullmatch(r'\[\d+\]',text) and not style:attr|=curses.A_DIM
+                if any(row==y and left<x+len(text) and x<right and seat(member)==getattr(self,'focus_location',None)
+                       for row,left,right,member in self.lobby_hits) and int(time.monotonic()*2)%2==0:
+                    attr|=curses.A_REVERSE|curses.A_BOLD
                 self.line(screen,y,text,attr,x)
                 x += len(text)
         bottom = 5+capacity
@@ -1182,17 +1191,20 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         self.line(screen,h-1,('[y/N] > ' if getattr(self,'permission_prompt',False) else 'PLAY > ' if self.play else '> ')+self.input[-(w-12):])
         screen.refresh()
 
-    def open_admin(self, logins=(), approved=False, photos_approved=False):
+    def open_admin(self, logins=(), approved=False, photos_approved=False, literal_logins=()):
+        if not any(value.lower() in ('cohort','intake') for value in logins) and any(value.isdecimal() for value in logins):
+            self.confirm_occupants(logins,lambda names:self.open_admin(names,approved,photos_approved,[name for original,name in zip(logins,names) if original.isdecimal()]))
+            return False
         from .login_whitelist import expand_photo_targets
-        try:logins=expand_photo_targets(logins)
+        try:logins=expand_photo_targets(logins,literal_logins=literal_logins)
         except ValueError as error:
             self.lines.append(str(error))
             return False
         if not approved:
-            self.request_popup('tools','Open the local photo-tool terminal and browser panel?',lambda:self.open_admin(logins,True,photos_approved))
+            self.request_popup('tools','Open the local photo-tool terminal and browser panel?',lambda:self.open_admin(logins,True,photos_approved,literal_logins))
             return False
         if logins and not photos_approved:
-            self.request_popup('photos','Allow photo tabs and extension saves for this batch of '+str(len(logins))+' logins?',lambda:self.open_admin(logins,True,True))
+            self.request_popup('photos','Allow photo tabs and extension saves for this batch of '+str(len(logins))+' logins?',lambda:self.open_admin(logins,True,True,literal_logins))
             return False
         try:
             from .auth import private_read, config_dir
@@ -1207,7 +1219,28 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
             self.lines.append('Avatar admin is local to the API owner computer; run sh lan42.sh admin there.')
             return False
 
+    def number_players(self):
+        return getattr(self,'cluster_players',None)
+
+    def report_profile(self,text):self.lines.append(text)
+
+    def confirm_profile(self,description,accept,decline):
+        self.popup_prompts().confirm(description,accept,decline)
+
+    def load_number_roster(self,callback):
+        if getattr(self,'pending_number_action',None):
+            self.lines.append('A campus occupant lookup is already pending.');return
+        self.pending_number_action=callback
+        self.number_request_started=time.monotonic()
+        self.lines.append('Loading the campus numbered roster before choosing an occupant…')
+        if self.local_api_command('/clusters'):return
+        if not getattr(self,'secure',False) or not getattr(self,'signed_in',False):
+            self.pending_number_action=None
+            self.lines.append('Sign in to load campus occupants; guest/room numbers are not campus identities.');return
+        self.send(dict(type='command',text='/clusters'))
+
     def settings_command(self, text):
+        if self.profile_command(text):return True
         if self.quiet_command(text):return True
         if self.search_command(text):return True
         if self.notification_command(text):return True
@@ -1306,12 +1339,6 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
             except (OSError,ValueError) as error:self.lines.append(str(error))
         elif parts[0]=='/settings' and parts[1]=='clusters':
             self.tracking_command('/track clusters '+' '.join(parts[2:]))
-        elif parts[0]=='/profile' and parts[1] not in ('signin','signout','notifications'):
-            try:
-                from .profile_browser import resolve
-                urls=resolve(parts[1:])
-                self.open_urls('profiles',urls,'Open '+str(len(urls))+' Intra profile tab(s) in your browser?')
-            except ValueError as error:self.lines.append(str(error))
         elif parts[1:] == ['signin']:
             self.start_signin()
         elif parts[1:] == ['signout']:
@@ -1617,6 +1644,8 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 if not self.wizard and text.startswith('!'):
                     if text[1:].strip():shell_command(screen,text[1:].strip())
                     continue
+                if not self.wizard and getattr(self,'role','lobby')=='lobby' and text.isdecimal():
+                    self.profile_command('/profile '+text);continue
                 if not self.wizard and self.volume_command(text):continue
                 if not self.wizard and self.search_command(text):continue
                 if self.wizard:

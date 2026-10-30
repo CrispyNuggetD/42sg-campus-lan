@@ -178,6 +178,30 @@ https://api.intra.42.fr/apidoc/2.0/locations/index.html
 
 ## Profile browsing
 
+`/profile` works in HQ, game tabs and the separate clusters tab. `/profile 13`
+means **occupant 13 in the campus map/roster**, not physical desk s13, a room
+number or a literal numeric login. LAN42 shows the captured Intra login and full
+seat (for example `13 = student (c2r1s3)`) and asks `[y/N]`. `y` continues with
+that exact login; Enter/no cancels. If a newer snapshot changes that numbered
+occupant before confirmation, LAN42 cancels and asks you to select again. Normal
+browser permission still applies separately; persistent browser allow never skips
+this identity confirmation. A tab without a campus snapshot loads one through its
+existing signed-in host/local-operator path, without using game-room roster numbers
+or changing the game view. Guests must sign in for campus occupancy.
+
+Bare numeric input in HQ or clusters follows the same confirmed profile flow.
+Game answers, timer/alarm values, counts, room IDs and file-offer numbers retain
+their command-specific meanings. Numeric person targets in `/track`, `/untrack`,
+`/locate`, `/dm`, `/alert`, `/uwu` and photo tools also confirm the campus identity
+before continuing. Message bodies remain unchanged. Snapshot numbers can change
+after refresh; always check the displayed login before saying yes.
+
+Click an occupied campus map cell or roster entry to highlight its seat and show
+its login. This works for ordinary markers, intake labels such as `4:13` and shared
+`[++]` cells. Shared cells list all occupants in the clusters tab. Empty desks
+have no student identity to select. Mouse selection does not open a profile or
+grant permission to act on the student.
+
 `/profile thtay hnah` requests permission to open both Intra profiles in local browser tabs. `all`, `sg`, `42sg` and
 `cohort4` expand from the local private campus cache. Selections above ten tabs
 show the count first; `/profile --open-many cohort4` explicitly opens a large

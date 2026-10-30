@@ -9,6 +9,7 @@ import signal
 import socket
 import threading
 import time
+import textwrap
 
 from . import PROTOCOL,auth_client
 from .access import Policy
@@ -16,6 +17,7 @@ from .api_pacing import ui_notices
 from .cluster_commands import normalize_cluster_command
 from .lobby_view import lobby_lines,overlay_campus,relationship_overlay,roster,seat
 from .updater import RestartRequested,generation
+from .numbered_occupants import ProfileCommands
 
 
 def age_label(stamp,now=None):
@@ -109,7 +111,7 @@ def source_for(events,owner):
         except (OSError,ValueError):raise host_error
 
 
-class ClusterViewer:
+class ClusterViewer(ProfileCommands):
     def __init__(self,source,events,cluster=0,owner=None):
         self.source,self.events=source,events
         self.cluster=cluster
@@ -122,7 +124,9 @@ class ClusterViewer:
         self.connected=True
         self.last_request=0
         self.owner=owner
-        self.pending_track=None
+        self.pending_profile_decision=None
+        self.focus_location=None
+        self.hits=[]
         self.tracker_data={}
         if owner:
             try:
@@ -152,6 +156,11 @@ class ClusterViewer:
                 unchanged=stamp==self.stamp and self.stamp>0
                 self.players=players
                 self.stamp=stamp
+                pending=getattr(self,'pending_number_action',None)
+                self.pending_number_action=None
+                if pending:
+                    pending()
+                    continue
                 if unchanged:
                     self.status='No newer campus snapshot yet; showing cached seats ('+age_label(stamp)+'). The host cache lasts 30s.'
                 else:
@@ -160,6 +169,7 @@ class ClusterViewer:
             elif kind=='error':self.status='Campus seats unavailable: '+str(message.get('text','Unknown error'))[:180]
             elif kind=='event' and not str(message.get('text','')).startswith('Loading campus API seats'):
                 self.status=str(message.get('text',''))[:180]
+            elif kind=='local_profile_notice':self.status=str(message.get('text',''))[:300]
             elif kind=='local_api_notice':self.status=str(message.get('text',''))[:180]
             elif kind=='signed_out':self.status='Sign-in expired. Renew it in HQ, then reopen clusters.'
             elif kind=='closed':
@@ -177,25 +187,68 @@ class ClusterViewer:
     def heading(self,now=None):
         return f'LAN42 CLUSTERS | {self.source.label} | {len(self.players)} seats | snapshot {age_label(self.stamp,now)}'
 
+    def number_players(self):return self.players if self.stamp else None
+
+    def report_profile(self,text):self.status=text
+
+    def load_number_roster(self,callback):
+        self.pending_number_action=callback
+        self.refresh()
+
+    def confirm_profile(self,description,accept,decline):
+        self.pending_profile_decision=(description,accept,decline)
+        self.status=description
+
+    def popup_prompts(self):
+        if not getattr(self,'consent',None):
+            from .popup_permissions import Permissions,Prompts
+            self.consent=Prompts(Permissions(self.owner),self.report_profile)
+        return self.consent
+
+    def open_urls(self,category,urls,description):
+        def launch():
+            def work():
+                import webbrowser
+                opened=True
+                for url in urls:
+                    if self.popup_prompts().permissions.mode(category)=='deny':opened=False;break
+                    try:opened=bool(webbrowser.open_new_tab(url)) and opened
+                    except Exception:opened=False
+                self.events.put(dict(type='local_profile_notice',text='Profile opened.' if opened else 'Browser could not open the profile; check your browser locally.'))
+            threading.Thread(target=work,daemon=True).start()
+            return False
+        self.popup_prompts().request(category,description,launch)
+        active=self.popup_prompts().activate()
+        if active:self.status=active[1]+' [y/N]'
+
+    def click(self,x,y):
+        if self.pending_profile_decision or getattr(getattr(self,'consent',None),'active',None):return False
+        for row,left,right,members in self.hits:
+            if row==y and left<=x<right:
+                self.focus_location=seat(members[0])
+                self.status='Selected '+', '.join(str(next((n for n,p,_ in roster(self.players) if p.get('name')==player.get('name') and seat(p)==seat(player)),'?'))+' = '+player.get('name','') for player in members)+' at c%dr%ds%d'%self.focus_location
+                return True
+        return False
+
     def command(self,text):
         text=text.strip()
-        if self.pending_track is not None:
-            selected=self.pending_track;self.pending_track=None
-            if text.lower() in ('y','yes'):
-                current={(player.get('name','').lower(),seat(player)) for player in self.players}
-                if any(item not in current for item in selected):
-                    self.status='Campus seats changed. Refresh and select again; nobody was added.'
-                else:
-                    try:
-                        from .tracking import Tracker
-                        tracker=Tracker(self.owner)
-                        tracker.change([name for name,_ in selected])
-                        self.tracker_data=tracker.data
-                        self.status='Added to tracking: '+', '.join(name for name,_ in selected)
-                    except (OSError,ValueError) as error:self.status=str(error)[:180]
-                return True
-            if text.lower() in ('','n','no'):
-                self.status='Tracking cancelled.';return True
+        if getattr(self,'confirmation_truncated',False) and text.lower() in ('y','yes'):
+            self.status='Confirmation does not fit. Resize the terminal or cancel and select fewer people.'
+            return True
+        if self.pending_profile_decision:
+            _,accept,decline=self.pending_profile_decision
+            self.pending_profile_decision=None
+            if text.lower() in ('y','yes'):accept();return True
+            decline()
+            if text.lower() in ('','n','no'):return True
+        prompts=getattr(self,'consent',None)
+        if prompts and prompts.active:
+            prompts.answer(text)
+            active=prompts.activate()
+            if active:self.status=active[1]+' [y/N]'
+            return True
+        if text.isdecimal():text='/profile '+text
+        if self.profile_command(text):return True
         if text in ('/quit','q'):return False
         if text in ('','r','/refresh'):
             self.refresh();return True
@@ -213,17 +266,21 @@ class ClusterViewer:
             numbers=text.split()[1:]
             if not numbers or any(not number.isdecimal() for number in numbers):
                 self.status='Use /track NUMBERS here, or /track LOGINS in HQ.';return True
-            shown={number:(player.get('name','').lower(),location) for number,player,location in roster(self.players) if location}
-            selected=[]
-            for value in dict.fromkeys(numbers):
-                item=shown.get(int(value))
-                if not item:
-                    self.status='No campus entry '+value+' in this snapshot. Refresh and check the displayed numbers.';return True
-                selected.append(item)
-            self.pending_track=selected
-            self.status='Track current occupants '+', '.join(f'{name} (c{loc[0]}r{loc[1]}s{loc[2]})' for name,loc in selected)+'? Type y Enter to confirm; Enter cancels.'
+            def track(names):
+                try:
+                    from .tracking import Tracker
+                    tracker=Tracker(self.owner)
+                    tracker.change(names)
+                    self.tracker_data=tracker.data
+                    self.status='Added to tracking: '+', '.join(names)
+                except (OSError,ValueError) as error:self.status=str(error)[:180]
+            self.confirm_occupants(numbers,track)
             return True
         if text.startswith('/locate '):
+            target=text.split(maxsplit=1)[1].strip()
+            if target.isdecimal():
+                self.confirm_occupants([target],lambda names:self.command('/locate '+names[0]))
+                return True
             login=text.split(maxsplit=1)[1].strip().lower()
             if not re.fullmatch(r'[A-Za-z0-9_.-]{1,32}',login):
                 self.status='Use /locate LOGIN.';return True
@@ -234,13 +291,17 @@ class ClusterViewer:
                 self.status=f'{login} is at c{location[0]}r{location[1]}s{location[2]} · snapshot {age_label(self.stamp)}.'
             else:self.status='Login absent from this snapshot. Press r to refresh.'
             return True
-        self.status='Use /clusters [1|2], /c1, /c2, r, /map, /roster, /next, /prev, /locate LOGIN, /track NUMBERS or /quit.'
+        self.status='Use /clusters [1|2], /c1, /c2, r, /map, /roster, /next, /prev, /locate LOGIN, /track NUMBERS, /profile LOGIN|NUMBER or /quit.'
         return True
 
     def run(self,screen):
         from .cohort_display import cohort_index
         self.cohorts=cohort_index()
         screen.timeout(250)
+        try:
+            curses.mousemask(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED)
+            curses.mouseinterval(150)
+        except curses.error:pass
         colors=False
         if curses.has_colors():
             curses.start_color()
@@ -264,22 +325,42 @@ class ClusterViewer:
                 if y<height:screen.addnstr(y,0,value,max(1,width-1))
             line(0,self.heading())
             line(1,'r/Enter refresh from host · /clusters both · /c1 /c2 · Tab map/roster · PgUp/PgDn · q quit')
-            line(2,self.status)
+            decision=self.pending_profile_decision
+            active=getattr(getattr(self,'consent',None),'active',None)
+            description=decision[0] if decision else active[1]+' [y/N]' if active else self.status
+            wrapped=textwrap.wrap(description,max(1,width-1)) if decision or active else [description]
+            self.confirmation_truncated=len(wrapped)>max(1,height-6)
+            for y,value in enumerate(wrapped[:max(1,height-6)],2):line(y,value)
+            content_start=2+min(len(wrapped),max(1,height-6))
+            if self.confirmation_truncated:line(content_start-1,'Resize or cancel and select fewer occupants; confirmation disabled.')
             content=self.segments() if self.stamp else [[('Waiting for the first campus snapshot…',0)]]
-            capacity=max(1,height-5)
+            capacity=max(1,height-content_start-2)
             pages=max(1,(len(content)+capacity-1)//capacity)
             self.page=min(self.page,pages-1)
-            for index,segments in enumerate(content[self.page*capacity:(self.page+1)*capacity],3):
+            from .lobby_view import occupant_hits
+            start=self.page*capacity
+            self.hits=[(row-start+content_start,left,right,members) for row,left,right,members in occupant_hits(self.players,self.view,self.cluster)
+                       if start<=row<start+capacity]
+            for index,segments in enumerate(content[start:start+capacity],content_start):
                 x=0
                 for value,style in segments:
                     if x>=width-1:break
-                    try:screen.addnstr(index,x,value,width-1-x,curses.color_pair(style) if colors and style else 0)
+                    attr=curses.color_pair(style) if colors and style else 0
+                    if any(row==index and left<x+len(value) and x<right and any(seat(player)==self.focus_location for player in members)
+                           for row,left,right,members in self.hits):attr|=curses.A_REVERSE|curses.A_BOLD
+                    try:screen.addnstr(index,x,value,width-1-x,attr)
                     except curses.error:pass
                     x+=len(value)
             line(height-2,f'{self.view} · page {self.page+1}/{pages} · {self.source.label} · {age_label(self.stamp)}')
             line(height-1,'> '+self.input)
             screen.refresh()
             key=screen.getch()
+            if key==curses.KEY_MOUSE:
+                try:
+                    _,x,y,_,buttons=curses.getmouse()
+                    if buttons&(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED):self.click(x,y)
+                except curses.error:pass
+                continue
             if key in (3,4):return
             if key==ord('q') and not self.input:return
             if key==ord('r') and not self.input:self.refresh();continue

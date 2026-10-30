@@ -5,13 +5,16 @@ from .login_whitelist import SG_SELECTORS,validate_logins
 from .intake_selectors import intake_number
 
 
-def resolve(arguments):
+def resolve(arguments, literal_logins=()):
     arguments=list(arguments);bulk='--open-many' in arguments
     arguments=[a for a in arguments if a!='--open-many']
     if not arguments:raise ValueError('Use /profile LOGIN...')
+    if any(argument.isdecimal() for argument in arguments):
+        raise ValueError('Numbers select campus occupants; confirm the Intra login in LAN42 before opening a profile.')
     names=[]
     for argument in arguments:
-        if argument.lower() in SG_SELECTORS or intake_number(argument) is not None:
+        if argument in literal_logins:names.append(argument)
+        elif argument.lower() in SG_SELECTORS or intake_number(argument) is not None:
             data=load()
             if not data:raise ValueError('Campus cache unavailable on this computer.')
             cohort=None if argument.lower() in SG_SELECTORS else intake_number(argument)

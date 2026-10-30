@@ -65,7 +65,7 @@ class ClusterViewerTests(unittest.TestCase):
         self.assertIs(local.refresh(0),False)
 
     def test_numeric_tracking_requires_confirmation_of_captured_occupants(self):
-        viewer,_=self.viewer();viewer.owner='fixture-owner'
+        viewer,_=self.viewer();viewer.owner='fixture-owner';viewer.stamp=100
         viewer.players=[dict(name='fixture',seat='c1r1s1')]
         viewer.command('/track 1')
         self.assertIn('fixture (c1r1s1)',viewer.status)

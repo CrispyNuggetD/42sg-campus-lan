@@ -119,16 +119,18 @@ class Tracking(unittest.TestCase):
     def test_numeric_tracking_confirms_occupants_and_rejects_changed_seats(self):
         c=Client.__new__(Client);c.role='lobby';c.lines=collections.deque();c.tracker=Mock()
         c.popup_prompts=Mock();c.cluster_source=True
-        c.campus_selection={2:('dthoo',(1,2,3)),4:('thtay',(2,3,4))}
+        c.tracker.resolve.side_effect=lambda values:[value.removeprefix('login:') for value in values]
+        c.state={'players':[]};c.tracking_update=Mock()
+        c.campus_selection={1:('dthoo',(1,2,3)),2:('thtay',(2,3,4))}
         c.cluster_players=[dict(name='dthoo',seat='c1r2s3'),dict(name='thtay',seat='c2r3s4')]
-        c.tracking_command('/track 2 4')
+        c.tracking_command('/track 1 2')
         c.tracker.change.assert_not_called()
         confirm=c.popup_prompts.return_value.confirm
         self.assertIn('dthoo (c1r2s3)',confirm.call_args.args[0])
         confirm.call_args.args[1]()
         c.tracker.change.assert_called_once_with(['dthoo','thtay'])
         c.tracker.change.reset_mock()
-        c.tracking_command('/track 2 4');c.cluster_players=[]
+        c.tracking_command('/track 1 2');c.cluster_players=[]
         confirm.call_args.args[1]();c.tracker.change.assert_not_called()
         c.popup_prompts.reset_mock();c.tracking_command('/track 999')
         c.popup_prompts.assert_not_called();c.tracker.change.assert_not_called()
