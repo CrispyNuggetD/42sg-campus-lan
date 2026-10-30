@@ -210,8 +210,10 @@ level. Game windows do not change it. Use `off` to stop this startup adjustment.
 Press **F3** in HQ to open or focus the separate campus-clusters tmux window, using the same sign-in and local-operator checks as `/clusters`. In that window, `r` or Enter refreshes from the host; `/c1` and `/c2` select one cluster. The snapshot age remains visible while you browse.
 `/settings clusters-auto-open on|off` separately controls whether HQ opens that
 window at launch. Enabling it explicitly approves this one startup window; it
-does not grant general game or tool terminal permission. The choice is local to
-each computer and account.
+does not grant general game or tool terminal permission, and explicit terminal
+denial still applies. HQ waits for sign-in/operator access and retries failed
+launches. The account-scoped choice follows a linked portable preferences folder;
+separate unlinked installations keep their own saved copies.
 
 Local uwu toasts have their own `/notify uwu on|off` channel (default on), separate
 from received pokes. Automatic uwu stays account-scoped across HQ/game windows;

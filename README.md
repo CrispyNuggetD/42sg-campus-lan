@@ -85,6 +85,12 @@ and provide a downloadable local report. Photos persist until manually refreshed
 Keep student directories and reports out
 of public Git.
 
+Saved startup choices: `/uwu auto` stays enabled across HQ/game windows; HQ
+alone gives one opted-in startup chirp and schedules calls, with local desktop
+toasts (`/notify uwu off` disables those). `/settings clusters-auto-open on`
+opens the clusters miniapp when access is ready and retries launch failures.
+All notification, mute, quiet-hour and sound-consent controls still apply.
+
 ## Games
 
 All four launch from HQ with `/game NAME`; friends use `/join ROOM_NUMBER`.
@@ -95,6 +101,14 @@ All four launch from HQ with `/game NAME`; friends use `/join ROOM_NUMBER`.
 | **Bluff / Who Said That?** | Write anonymous answers, then guess who wrote each one. | `/game bluff free` |
 | **Hex Wars** | Program a C army and battle on a hex board. | `/game hexwars` |
 | **FORKNITE** | A multiplayer browser visualiser/game powered by the host’s real legacy C Philosophers executable. Survive dinner. | `/game forknite` |
+
+FORKNITE’s round table starts at **100%**, with the last diner beside seat 1.
+Large tables extend the browser page; scroll/zoom or choose the optional grid.
+`/sabo c1r3:4s1:2` selects seats 1–2 in each of rows 3–4 in Cluster 1;
+`/sabo c1:2` selects both clusters. `I4`, `i4`, `intake4` and `cohort4` all mean
+Intake 4. Online campus selection differs from `/sabo verified` LAN42 sign-ins.
+Known SG names and pictures are reused first; only selected missing pictures
+request the photo tool. [Selector examples →](docs/campus-guide.md#select-campus-online-people-for-forknite)
 
 [Controls, rules, requirements and all four games →](docs/minigames.md)
 

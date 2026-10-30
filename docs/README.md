@@ -13,9 +13,9 @@ the [command reference](quick-guide.html).
 | --- | --- |
 | [Remote guest approval](remote-access.md) | Mac-only, per-connection host approval; green status, genuine sign-in and campus presence stay separate. |
 | [Getting started](getting-started.md) | Install, launch, tmux, shell helpers, dailylogin and guest/sign-in basics. |
-| [Campus and social features](campus-guide.md) | Peer discovery, rosters, F3 clusters and aliases, chat, profiles, tracking and arrival rules. |
-| [Minigames](minigames.md) | Tetris, Bluff, Hex Wars and FORKNITE, together with controls and requirements. |
-| [KoelDrop and the uwu bird](file-sharing.md) | Add-only 42SG flock, sender/version names, upload limits, daily folders, dock/Files shortcuts and the uwu bird. |
+| [Campus and social features](campus-guide.md) | Campus presence, inclusive seat ranges, C/I selectors, saved clusters startup, profiles, tracking and arrival rules. |
+| [Minigames](minigames.md) | Four games, FORKNITE’s circular table/grid, cached stand-ins and selector examples. |
+| [KoelDrop and the uwu bird](file-sharing.md) | Add-only 42SG flock, sender/version names, upload limits, daily folders, dock/Files shortcuts, saved uwu startup and local/received toasts. |
 | [Personal preferences](preferences.md) | Clickable controls, keyboard shortcuts, notification channels, popup consent, auto-login, local history and output volume. |
 
 [Web search and the impact counter](web-search.md) covers engine choices, the

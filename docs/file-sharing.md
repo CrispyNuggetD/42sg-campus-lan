@@ -117,18 +117,28 @@ Always uwu? Are you SURE? ಠ_ಠ [y/N]
 ```
 
 You can also use `/settings koel-sound on|off|always`. `off` clears any saved
-always-on choice. Enabling sound never enables file sharing. D-Bus sound hints
-respect desktop support and sound settings; no separate player is started.
+always-on choice. Enabling sound never enables file sharing. Local calls use the bundled clip
+through the native audio player; desktop toasts do not play a second copy.
+Sound consent, F4 mute, exam/manual quiet and volume permissions still apply.
 
 ## Sound tests and private pokes
 
 `/uwu auto` (or `/uwu on`) saves a local choice for calls at a fresh random
 interval of 10–15 minutes. It asks for sound permission if needed. `/uwu off`
-turns off the saved choice. The timer resumes in new HQ windows when koel sound
-is enabled; disabling sound pauses calls until sound is enabled again. For sound
+turns off the saved choice. HQ gives one startup call after connection and sound
+consent, then runs the timer. Game windows show the same saved on/off choice
+without scheduling duplicate calls. Muted/quiet startup calls are skipped, not
+replayed when quiet ends. Disabling sound pauses calls without saving auto as off.
+For sound
 permission across sessions, use `/settings koel-sound always` and confirm it.
 Automatic calls never poke other students. Repeating the command does not reset
 an active timer.
+
+Manual `/uwu`, scheduled calls and the startup call also request a two-second
+local desktop toast. `/notify uwu off` disables these toasts; `/notify pokes`
+separately controls received pokes. Notification denial, `/notify off`,
+`/notify all off` and `--no-notify` suppress local toasts. Sound consent remains
+separate. The local bird does not contact another student.
 
 `/uwu` introduces the **koel**, the familiar “uwu” bird and KoelDrop’s Singapore
 take on a carrier pigeon: this bird delivers your files. Once per window, it

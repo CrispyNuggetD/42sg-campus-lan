@@ -112,8 +112,19 @@ See [the game README](../minigames/forknite/README.md) for developer pipe mode a
 FORKNITE renders only joined players and explicitly requested `/sabo` stand-ins.
 At match start, the native philosopher count is the seated-player count; no
 synthetic diners are added. tmux game windows use `GAME-ROOM`, such as `forknite-1`.
-Profile URLs come from 42; if its image CDN denies a fetch, the card explicitly
-shows “42 photo unavailable” and keeps the silly fallback face.
+Known SG directory entries and existing pictures are reused locally. Diners are
+seated first; only selected missing pictures request the host’s photo tool, with
+its normal tool/photo permissions. Pictures persist until manually refreshed.
+A missing or unavailable picture keeps the fallback face while imports complete.
+
+### A table, not a clipped canvas
+
+**Round table** starts at 100%, with diners around a circular tabletop and a
+shared fork between each adjacent pair, including the last seat and seat 1.
+Every card lists its two fork neighbors. Large dinners intentionally extend
+the browser page: scroll normally in both directions or use **Table zoom**
+(10–150%) / browser zoom. There is no inner scrolling frame or automatic shrink
+to fit. **Layout → Readable grid** is a compact alternative with the same seats.
 
 FORKNITE can use `minigames/forknite/philo`, a machine-local executable or symlink
 (ignored by Git), as its default native binary. `LAN42_PHILO_BINARY` overrides it;
@@ -162,13 +173,26 @@ already seated people, use alphabetical order up to the free 50-seat capacity,
 and retain whitelist, membership and API-budget checks. Stand-ins are not
 contacted. See [campus selectors](campus-guide.md#select-campus-online-people-for-forknite).
 
-`/sabo online cluster 1` and `/sabo online cluster 2` filter the cached campus
-seats. Add a separate count, for example `/sabo online 5 c1`. Cluster filters
-apply to `online`, not `verified` sign-ins.
+`/sabo c1` and `/sabo c2` are shorthand for campus-online cluster selection.
+`/sabo online cluster 1` still works. A separate count, such as `/sabo c1 5`,
+limits the result. `:` means **through, inclusive**, independently per axis:
+
+| Command | Selection |
+| --- | --- |
+| `/sabo c1r3:6` | Cluster 1, all seats in rows 3–6 |
+| `/sabo c1r3s1` | Cluster 1, row 3, seat 1 |
+| `/sabo c1:2` | Both clusters |
+| `/sabo c1r3:4s1:2` | Rows 3–4, seats 1–2 in each row, Cluster 1 |
+| `/sabo c1r3s1:4` | Row 3, seats 1–4, Cluster 1 |
+
+Omitted rows/seats mean all. Selectors are case-insensitive; reversed/zero ranges
+are rejected. These filters use the existing seat snapshot, never probe desks,
+and apply to campus-online selection, not `verified` sign-ins.
 
 `/sabo all` (also `sg` or `42sg`) randomly selects unseated people from the
-private Singapore student cache, up to the 50-seat table limit. `/sabo cohort1`
-selects a single cohort; `cohort 1` is invalid. These academic selectors require
+private Singapore student cache, up to the 50-seat table limit. `/sabo I4`,
+`/sabo i4`, `/sabo intake4` and `/sabo cohort4` select the same intake. **C means
+cluster; I means intake.** Keep the number in the same word. These academic selectors require
 an approved API operator. They do not expand an ordinary chat message.
 
 The terminal and FORKNITE browser headers show campus totals and C1/C2 counts

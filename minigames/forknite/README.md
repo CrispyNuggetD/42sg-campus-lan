@@ -86,8 +86,8 @@ Cached photos persist without expiry until manually refreshed or replaced.
 Automatic public-CDN acquisition for missing photos is best effort, with
 one photo acquisition at a time across local processes, one-second spacing,
 a shared 600-download/hour budget and a persistent 15-minute failure
-backoff. A failed refresh retains the previous image. Imports appear immediately
-when the player clicks Reload cached photo. Empty caches show a silly face and
+backoff. A failed refresh retains the previous image. Imported pictures appear
+on roster refresh; **Reload cached photo** retries a displayed card. Empty caches show a silly face and
 an explicit cache-missing message. CDN HTML/error responses are never cached or
 served as images. For terminal import:
 
@@ -264,6 +264,8 @@ Counts are kept out of the public event stream and game log. The private current
 aggregate file used by local operator terminal windows contains no names and is
 outside Git. No per-student presence history is added.
 
+## Table layout and zoom
+
 The default **Round table** places every diner around a real circular tabletop,
 with a shared fork between every neighboring pair. The last seat sits beside the
 first. It starts at **100%** with full-size cards; 50 diners intentionally need a
@@ -272,3 +274,13 @@ Scroll the page in both directions, use **Table zoom** (10–150%), or zoom out
 the browser for an overview. Nothing is automatically shrunk to fit the screen.
 **Layout → Readable grid** remains available as a compact alternate view.
 Both layouts label the two fork neighbors and preserve native seat order.
+
+## Selecting stand-ins from LAN42
+
+The signed-in room host can use `/sabo c1r3:4s1:2` for inclusive campus seat
+ranges, `/sabo c1:2` for both clusters, or `/sabo verified` for active LAN42
+SG sign-ins. Online campus occupants do not need LAN42 open. Operator intake
+selectors are `/sabo I4`, `i4`, `intake4` or `cohort4`. Cached SG names and photos
+are used before any missing-photo acquisition; only selected missing pictures
+are handed to the consent-controlled local photo tool. See the
+[campus selector guide](../../docs/campus-guide.md#select-campus-online-people-for-forknite).

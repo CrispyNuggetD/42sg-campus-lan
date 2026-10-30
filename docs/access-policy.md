@@ -230,6 +230,9 @@ seat snapshot, not a new directory/export endpoint. It neither refreshes that
 snapshot nor falls back to peer presence or the full campus directory. Source
 age is shown. `/sabo verified` uses only active SG sessions connected to that host,
 with canonical broker logins and live identity checks, never nickname/role flags.
+Compact selectors such as `c1r3:4s1:2` and `c1:2` filter that same cached seat
+snapshot with inclusive ranges; they never discover hosts or initiate API crawls.
+They retain the same authenticated room-host gate.
 Both exclude existing seats and retain the 50-seat cap, 10-profile lookup batches,
 SG membership evidence from the approved local directory (or a live scoped
 check for unknown names), local whitelist and API budgets. No new durable presence

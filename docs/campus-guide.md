@@ -156,9 +156,10 @@ than a guarantee of physical attendance or instantaneous updates.
 `/settings clusters-auto-open on` saves a local choice to open this miniapp when
 HQ connects. It is off by default. This explicit setting permits the clusters
 terminal at startup; manual openings still use the terminal permission prompt.
-If sign-in is needed, the miniapp opens after the new signed-in HQ connects.
-Use `/settings clusters-auto-open off` to stop automatic opening. Mac and 42
-computers keep separate local choices.
+HQ waits for sign-in or local operator access and retries failed launches.
+Explicit terminal denial still applies. Use `/settings clusters-auto-open off`
+to stop automatic opening. The account-scoped choice follows your linked portable
+preferences; separate unlinked installations keep separate copies.
 
 Your client asks the configured approved API host (currently hnah’s), not 42
 directly. That server process shares one snapshot across `/clusters` and campus
