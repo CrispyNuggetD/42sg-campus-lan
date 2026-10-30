@@ -168,7 +168,7 @@ class ClusterViewer:
                     self.status='Host connection closed. Last snapshot remains visible; reopen from HQ to refresh.'
 
     def segments(self):
-        players=relationship_overlay(overlay_campus(self.players,[]),self.tracker_data,self.owner)
+        players=relationship_overlay(overlay_campus(self.players,[]),self.tracker_data,self.owner,getattr(self,'cohorts',{}))
         return lobby_lines(players,self.view,self.cluster)
 
     def rows(self):
@@ -238,6 +238,8 @@ class ClusterViewer:
         return True
 
     def run(self,screen):
+        from .cohort_display import cohort_index
+        self.cohorts=cohort_index()
         screen.timeout(250)
         colors=False
         if curses.has_colors():

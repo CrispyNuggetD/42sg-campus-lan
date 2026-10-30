@@ -538,3 +538,23 @@ its running state and laps. No test starts a real alarm or plays audio.
 Alarms always appear inside HQ. Desktop delivery respects `--no-notify`, saved
 popup denial and `/notify all off`; `/notify alarms on|off` controls that channel.
 Clock tools never raise system volume or enable sound permissions automatically.
+
+
+## Cohorts alongside friends and lists
+
+Cluster maps and rosters decorate each existing person **once**. The color
+priority is **You → friend → named list → cohort → sign-in/API status**. The
+cohort stays visible as a separate text/pattern marker, so a friend in your own
+cohort is `friend / C4~` and a friend in cohort 5 is `friend / C5~`; neither gets
+a duplicate seat or roster entry. A map token such as `4:09` means **cohort 4,
+roster number 9**. Shared seats keep `[++]`, with each occupant listed below.
+Cohorts with two-digit numbers retain the usual numbered map token and appear
+in the roster badge.
+
+`~` means the cohort comes from the existing local Singapore cache's inferred
+intake numbering, not official membership metadata. Missing or conflicting
+cohort data stays unknown. No extra API requests or private directory broadcasts
+are added; only the minimal login-to-cohort mapping is used locally. A computer
+without that private cache still shows friend/list/self markers and ordinary
+presence, but cannot guess a cohort. Refresh the private cache through the
+existing operator workflow and reopen the window to update cohort decoration.

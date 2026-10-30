@@ -37,15 +37,25 @@ GUEST_STYLE=3   # yellow
 API_STYLE=5     # blue
 CLUSTER_STYLES={1:8,2:9}  # cool cyan / warm amber
 SELF_STYLE=10             # high-contrast personal badge
+COHORT_STYLES={n:11+(n-1)%8 for n in range(1,100)}
 
 
 def init_cluster_colors(curses):
     curses.init_pair(8,curses.COLOR_CYAN,curses.COLOR_BLACK)
     curses.init_pair(9,curses.COLOR_YELLOW,curses.COLOR_BLACK)
     curses.init_pair(10,curses.COLOR_BLACK,curses.COLOR_WHITE)
+    for pair,(fg,bg) in enumerate(((curses.COLOR_GREEN,curses.COLOR_BLACK),
+                                  (curses.COLOR_CYAN,curses.COLOR_BLACK),
+                                  (curses.COLOR_YELLOW,curses.COLOR_BLACK),
+                                  (curses.COLOR_WHITE,curses.COLOR_BLUE),
+                                  (curses.COLOR_BLACK,curses.COLOR_CYAN),
+                                  (curses.COLOR_MAGENTA,curses.COLOR_BLACK),
+                                  (curses.COLOR_BLUE,curses.COLOR_WHITE),
+                                  (curses.COLOR_RED,curses.COLOR_BLACK)),11):
+        curses.init_pair(pair,fg,bg)
 
 
-def relationship_overlay(players, data, owner=None):
+def relationship_overlay(players, data, owner=None, cohorts=None):
     """Local display decoration only; never send relationship/list data to peers."""
     people=data.get('people',{})
     listed={name for members in data.get('lists',{}).values() for name in members}
@@ -55,7 +65,9 @@ def relationship_overlay(players, data, owner=None):
         trusted=player.get('verified') or player.get('api_presence')
         friendly=people.get(name,{}).get('relationship') in {'friends','mutuals','oomf'}
         kind='friend' if trusted and friendly else 'list' if trusted and name in listed else None
-        result.append(dict(player,local_relationship=kind,local_self=bool(trusted and owner and name==owner.lower())))
+        number=(cohorts or {}).get(name)
+        if type(number) is not int or not 1<=number<=99:number=None
+        result.append(dict(player,local_relationship=kind,local_self=bool(trusted and owner and name==owner.lower()),local_cohort=number if trusted else None))
     return result
 
 
@@ -63,13 +75,14 @@ def player_style(player):
     if player.get('local_self'):return SELF_STYLE
     if player.get('local_relationship')=='friend':return FRIEND_STYLE
     if player.get('local_relationship')=='list':return LIST_STYLE
+    if player.get('local_cohort') in COHORT_STYLES:return COHORT_STYLES[player['local_cohort']]
     if player.get('api_presence') and not player.get('lan42_peer'):return API_STYLE
     return SIGNED_STYLE if player.get('verified') or player.get('remote_approved') else GUEST_STYLE
 
 
 def map_legend():
     return [('You ',SELF_STYLE),('Friend ',FRIEND_STYLE),('List ',LIST_STYLE),('Signed/approved ',SIGNED_STYLE),
-            ('Guest ',GUEST_STYLE),('API only ',API_STYLE),('Empty* ',0),('[++]: shared',0)]
+            ('Guest ',GUEST_STYLE),('API only ',API_STYLE),('Empty* ',0),('[++]: shared · C:N = cohort:roster',0)]
 
 
 def overlay_campus(players, peers):
@@ -91,6 +104,7 @@ def player_line(number, player, location):
     relation=player.get('local_relationship')
     if relation:status+=' / '+relation
     if player.get('local_self'):status+=' / you'
+    if player.get('local_cohort'):status+=' / C'+str(player['local_cohort'])+'~'
     return [(f'{number:>3}. {name:<24}', player_style(player)),(f' {label:<22} {status}',CLUSTER_STYLES.get(location[0],0) if location else 0)]
 
 
@@ -132,6 +146,8 @@ def lobby_lines(players, view='roster', cluster=1):
                     priority={'friend':0,'list':1}
                     n,p = min(members,key=lambda item:(-1 if item[1].get('local_self') else priority.get(item[1].get('local_relationship'),2 if item[1].get('verified') else 3 if item[1].get('lan42_peer') else 4)))
                     token = '[++]' if len(members)>1 else (f'[#{n}]' if n<10 else f'[{n:02}]' if n<100 else '[**]')
+                    cohort=p.get('local_cohort')
+                    if len(members)==1 and cohort and cohort<10 and n<100:token=f'{cohort}:{n:02}'
                     style = player_style(p)
                 line.append((token,style))
             lines.append(line)
@@ -141,5 +157,5 @@ def lobby_lines(players, view='roster', cluster=1):
         lines.append(plain('Waiting for presence from your node...'))
     if any(s and s[0]==cluster and not 1<=s[2]<=LAYOUT[cluster].get(s[1],0) for _,_,s in entries):
         lines.append(plain('Some reported seats are outside this layout; see the roster.'))
-    lines.append(plain('Unmarked desks mean no LAN42 peer reported; not necessarily vacant.'))
+    lines.append(plain('Unmarked desks mean no LAN42 peer reported; not necessarily vacant. Cn~ = locally inferred cohort.'))
     return lines

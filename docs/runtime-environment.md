@@ -198,3 +198,8 @@ Final validation: the 290-test expanded selection passed. The final timezone
 view/alias refinements also passed all nine clock tests and the website build.
 Timestamp display supports arbitrary explicit offsets, including decimal hours;
 UTC storage is independent of the default GMT+8 presentation.
+
+Completion validation: all 293 selected LAN42 checks passed, including combined
+friend/cohort patterns and conflicting-cache handling. Cohort decoration uses
+only local cache data, with no additional API request or network payload field.
+The current local cache supplies the owner's inferred cohort for live rendering.

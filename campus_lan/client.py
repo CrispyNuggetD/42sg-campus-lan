@@ -951,7 +951,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         if campus:players=overlay_campus(getattr(self,'cluster_players',[]),players)
         from .lobby_view import relationship_overlay
         tracker=getattr(self,'tracker',None)
-        players=relationship_overlay(players,getattr(tracker,'data',{}),self.name if getattr(self,'signed_in',False) else None)
+        players=relationship_overlay(players,getattr(tracker,'data',{}),self.name if getattr(self,'signed_in',False) else None,getattr(self,'cohorts',{}))
         content = lobby_lines(players,getattr(self,'lobby_view','roster'),getattr(self,'cluster',1))
         if campus:
             content[-1]=[('API seat snapshot; unmarked desks have no active reported login. /clusters refreshes.',0)]
@@ -1439,6 +1439,8 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
     def run(self,screen):
         history=History()
         installed_generation = generation()
+        from .cohort_display import cohort_index
+        self.cohorts=cohort_index()
         screen.timeout(80)
         try:
             curses.mousemask(curses.BUTTON1_CLICKED|curses.BUTTON1_RELEASED)

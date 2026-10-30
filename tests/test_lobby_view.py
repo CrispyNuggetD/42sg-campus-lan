@@ -72,6 +72,26 @@ class LobbyView(unittest.TestCase):
         self.assertIn('/ you',''.join(text for row in rows for text,_ in row))
         self.assertNotIn('local_self',people[0])
 
+    def test_friends_and_cohorts_combine_once_with_self_priority(self):
+        from campus_lan.lobby_view import SELF_STYLE,FRIEND_STYLE,COHORT_STYLES
+        people=[dict(player('hnah','c1r1s1'),api_presence=True),
+                dict(player('friend4','c1r1s2'),api_presence=True),
+                dict(player('friend5','c1r1s3'),api_presence=True),
+                dict(player('other5','c1r1s4'),api_presence=True),player('spoof','c1r1s5')]
+        data={'people':{n:{'relationship':'friends'} for n in ('hnah','friend4','friend5')}}
+        decorated=relationship_overlay(people,data,'hnah',{'hnah':4,'friend4':4,'friend5':5,'other5':5,'spoof':4})
+        self.assertEqual(len(decorated),len(people))
+        self.assertEqual([player_style(p) for p in decorated],[SELF_STYLE,FRIEND_STYLE,FRIEND_STYLE,COHORT_STYLES[5],GUEST_STYLE])
+        rows=lobby_lines(decorated,'roster',0)
+        text='\n'.join(''.join(s for s,_ in row) for row in rows)
+        self.assertEqual(text.count('friend4'),1)
+        self.assertIn('friend / C4~',text)
+        self.assertIn('friend / C5~',text)
+        mapped=lobby_lines(decorated,'map',1)
+        self.assertTrue(any(token=='4:02' and style==FRIEND_STYLE for row in mapped for token,style in row))
+        self.assertTrue(any(token=='5:03' and style==FRIEND_STYLE for row in mapped for token,style in row))
+        self.assertIsNone(decorated[-1]['local_cohort'])
+
     def test_guest_name_cannot_claim_friend_or_list_color(self):
         decorated=relationship_overlay([player('friend')],dict(people={'friend':dict(relationship='friends')},lists={'lunch':['friend']}))
         self.assertEqual(player_style(decorated[0]),GUEST_STYLE)
