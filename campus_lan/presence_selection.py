@@ -1,11 +1,15 @@
 """Parse host-resolved presence selectors, separate from counts and academic filters."""
 
+import re
+from .intake_selectors import cluster_selector
 
 def parse_presence(bits):
     words=[b.lower() for b in bits]
     sources=[b for b in words if b in ('online','verified')]
-    if not sources:return None
-    usage='Use /sabo online [COUNT] [cluster 1|2] or /sabo verified [COUNT].'
+    if not sources:
+        if any(cluster_selector(word) or word=='cluster' for word in words):sources=['online']
+        else:return None
+    usage='Use /sabo c1|c2 [COUNT], /sabo online [COUNT] [cluster 1|2], or /sabo verified [COUNT].'
     if len(sources)!=1:raise ValueError(usage)
     source=sources[0];requested=None;cluster=None;i=0
     while i<len(words):
@@ -14,7 +18,9 @@ def parse_presence(bits):
         if word=='cluster':
             if i>=len(words) or words[i] not in ('1','2'):raise ValueError(usage)
             location=int(words[i]);i+=1
-        elif word in ('c1','c2','cluster1','cluster2'):location=int(word[-1])
+        elif cluster_selector(word):
+            location=int(re.search(r'\d+$',word).group())
+            if location not in (1,2):raise ValueError('Only clusters C1 and C2 are supported; use I4 or intake4 for intake 4.')
         elif word.isdecimal():
             if requested is not None:raise ValueError(usage)
             requested=int(word)

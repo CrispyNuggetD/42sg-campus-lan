@@ -174,3 +174,31 @@ class PresenceSelection(unittest.IsolatedAsyncioTestCase):
         self.lobby.send.assert_awaited_once()
         self.assertIs(self.lobby.send.call_args.args[0],self.lobby.clients['host'])
         self.assertEqual(self.lobby.send.call_args.args[1]['status']['total'],17)
+
+    async def test_bare_cluster_aliases_select_online_seats_case_insensitively(self):
+        records=[dict(name='fixture-01',seat='c1r1s1'),dict(name='fixture-02',seat='c2r1s1')]
+        for selector,wanted in [('c1','fixture-01'),('C2','fixture-02'),('cluster1','fixture-01')]:
+            with self.subTest(selector=selector),patch.object(clusters,'cached_snapshot',return_value=(records,1)):
+                self.lobby.profile_lookup.lookup_many.reset_mock()
+                await self.lobby.command('host','/sabo '+selector)
+                self.lobby.profile_lookup.lookup_many.assert_awaited_once_with([wanted])
+        for selector in ('c4','cluster4','c1 I4'):
+            with self.subTest(selector=selector),patch.object(clusters,'cached_snapshot') as snapshot:
+                with self.assertRaises(ValueError):await self.lobby.command('host','/sabo '+selector)
+                snapshot.assert_not_called()
+        client=Client.__new__(Client)
+        for command in ('/sabo c1','/sabo C2 10','/sabo I4','/sabo intake4','/sabo cohort4'):
+            self.assertFalse(client.group_command(command))
+        self.assertEqual(complete('/sabo c')[1],['c1','c2','cohort1','cohort2','cohort3','cohort4','cohort5','cohort6','cohort7','cohort8','cohort9'])
+        self.assertIn('I4',complete('/sabo i')[1])
+
+    async def test_intake_aliases_keep_operator_only_cached_selection(self):
+        profiles=[dict(login='fixture-01',avatar=None)]
+        with patch.object(self.lobby,'api_identity',return_value={'uid':1}),patch('campus_lan.access.Policy') as policy,patch('campus_lan.campus_info.load',return_value={'students':profiles}),patch('campus_lan.campus_info.random_profiles',return_value=profiles) as select:
+            policy.return_value.data={'api_operators':[1]}
+            for selector in ('I4','intake4','cohort4','i12'):
+                await self.lobby.command('host','/sabo '+selector)
+                select.assert_called_with(None,['fixture-host'],[12 if selector=='i12' else 4],[])
+            self.lobby.profile_lookup.lookup_many.assert_not_called()
+            policy.return_value.data={'api_operators':[]}
+            with self.assertRaises(AuthError):await self.lobby.command('host','/sabo I4')

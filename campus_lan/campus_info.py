@@ -36,9 +36,9 @@ def load():
 def matches_filters(student, filters):
     # Whitelisted comparisons only: no SQL execution, eval, joins or file access.
     for expression in filters:
-        match=re.fullmatch(r'(cohort|level|status|active|login)(>=|<=|!=|=|>|<)([A-Za-z0-9_.-]{1,32})',expression,re.I)
+        match=re.fullmatch(r'(cohort|intake|level|status|active|login)(>=|<=|!=|=|>|<)([A-Za-z0-9_.-]{1,32})',expression,re.I)
         if not match:raise ValueError('Filters: cohort=4 level>=2 status=ALUMNI active=true login=hnah; combine with AND.')
-        field,op,value=match.groups();field=field.lower();actual=student.get(field)
+        field,op,value=match.groups();field=field.lower();field='cohort' if field=='intake' else field;actual=student.get(field)
         if field in ('cohort','level'):
             try:value=float(value);actual=float(actual)
             except (ValueError,TypeError):return False
@@ -281,12 +281,14 @@ def info_lines(query=''):
     parts=query.split();page=1
     if parts and parts[-1].isdigit():page=max(1,int(parts.pop()))
     search=' '.join(parts).lower()
-    rows=[s for s in data['students'] if not search or search in (s['login']+' '+s['intake']+' '+s['status']+' cohort'+str(s.get('cohort'))).lower()]
+    from .intake_selectors import intake_number
+    selected_intake=intake_number(search)
+    rows=[s for s in data['students'] if (s.get('cohort')==selected_intake if selected_intake is not None else not search or search in (s['login']+' '+s['intake']+' '+s['status']+' cohort'+str(s.get('cohort'))).lower())]
     lines=[data['campus']['name']+' · '+str(len(data['students']))+' cached 42cursus students · '+data['generated_at'],
            'Cohort numbers inferred from shared start dates; other starts unassigned. BLACKHOLED/FREEZE unavailable.',
            'Account active? '+str(data.get('account_activity_counts',{}))+' (not enrollment status)',
            'Statuses: '+', '.join(k+' '+str(v) for k,v in data['status_counts'].items()),
-           '/info [login / cohort4 / intake-date / status] [PAGE] · 12 rows/page']
+           '/info [login / I4 / intake4 / cohort4 / intake-date / status] [PAGE] · 12 rows/page']
     if not search:
         lines+=['Cohort '+str(c['cohort'])+' (inferred) · '+c['intake']+': '+str(c['count'])+' students · '+', '.join(k+' '+str(v) for k,v in c['statuses'].items()) for c in data['cohorts']]
     lines+=['LOGIN          COHORT INTAKE       STATUS         ACTIVE? LEVEL  BLACKHOLE DEADLINE']

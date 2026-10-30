@@ -63,7 +63,7 @@ def complete(text):
         elif command=='/sabo' and parts[1:2]==['online'] and len(parts)<=3:
             choices=('cluster','c1','c2')
         elif command=='/sabo' and len(parts)<=2:
-            choices=('online','verified','random','history','friends','tracked','alltracked','mutuals','moots','oomf')
+            choices=('c1','c2','online','verified','random','history','friends','tracked','alltracked','mutuals','moots','oomf','all')+tuple(prefix+str(n) for prefix in ('I','intake','cohort') for n in range(1,10))
         elif command in ('/dm','/alert') and len(parts)<=2:
             choices=('friends','tracked','alltracked','mutuals','moots','oomf')
         elif command in ('/settings','/profile') and parts[1:2]==['notifications'] and len(parts)<=3:
@@ -84,7 +84,7 @@ def complete(text):
             return text, []
         prefix = '' if text.endswith(' ') else parts[-1]
         lead = text if text.endswith(' ') else text[:len(text)-len(prefix)]
-    matches = [word for word in choices if word.startswith(prefix)]
+    matches = [word for word in choices if word.lower().startswith(prefix.lower())]
     if not matches:
         return text, []
     value = matches[0] + ' ' if len(matches) == 1 else os.path.commonprefix(matches)

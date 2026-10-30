@@ -395,6 +395,13 @@ checks and API budgets still apply. These are stand-ins: nobody is contacted or
 actually joins your game. Use `login:online` or `login:verified` if you explicitly
 mean a whitelisted literal login that collides with a selector.
 
+`/sabo c1` and `/sabo c2` select campus-online people in that cluster;
+`/sabo c1 10` limits the selection to ten. **C means cluster**, never intake.
+**I means intake**: `/sabo I4`, `/sabo intake4`, and `/sabo cohort4` are equivalent
+(case-insensitive). Intake selectors also work in photo tools, profiles, tracking
+and `/info`. Existing `cohortN` choices remain compatible. C4 means Cluster 4,
+which this campus layout does not support; it never selects Intake 4.
+
 `cluster 1` / `cluster 2` (also `c1`, `c2`, `cluster1`, `cluster2`) filter only
 `online` by the API seat location; the cluster number is not a requested count.
 `/sabo online 5 cluster 1` selects up to five unseated people in Cluster 1.
@@ -551,7 +558,7 @@ Clock tools never raise system volume or enable sound permissions automatically.
 Cluster maps and rosters decorate each existing person **once**. The color
 priority is **You → friend → named list → cohort → sign-in/API status**. The
 cohort stays visible as a separate text/pattern marker, so a friend in your own
-cohort is `friend / C4~` and a friend in cohort 5 is `friend / C5~`; neither gets
+cohort is `friend / I4~` and a friend in cohort 5 is `friend / I5~`; neither gets
 a duplicate seat or roster entry. A map token such as `4:09` means **cohort 4,
 roster number 9**. Shared seats keep `[++]`, with each occupant listed below.
 Cohorts with two-digit numbers retain the usual numbered map token and appear

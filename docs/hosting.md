@@ -210,13 +210,13 @@ skipped, failed and successful count. Use **Download batch log** to save the
 report locally. LAN42 permits 600 uncached profile lookups and 600 direct photo
 download attempts per rolling hour per process/cache; upstream API limits still apply.
 
-`/tool LOGIN...` accepts explicit logins. `/tool cohort1` selects cohort 1 from
+`/tool LOGIN...` accepts explicit logins. `/tool I1`, `/tool intake1` and `/tool cohort1` select intake 1 from
 the local private Singapore student cache; `/tool all`, `/tool sg` and
 `/tool 42sg` select everyone in that cache. The permission prompt shows the
 expanded count before the batch starts. `cohort 1` is not a selector: keep the
 cohort number in the same word. A bare `1` is never treated as a cohort or seat
-selector by this tool. `c1` keeps its existing Cluster 1 meaning; use `cohort1`
-for the cohort. Ordinary chat text is never expanded. For a long list, open `/tool` without arguments and paste
+selector by this tool. `c1` keeps its existing Cluster 1 meaning; use `I1` or `intake1`
+for the intake (`cohort1` still works). Ordinary chat text is never expanded. For a long list, open `/tool` without arguments and paste
 whitespace-separated logins or these one-word selectors into the panel, then choose **Cache all logins**.
 Do not include the `/tool` prefix in that input. This avoids the terminal's
 400-character input limit. Existing cached photos count as successful results.

@@ -82,7 +82,7 @@ def player_style(player):
 
 def map_legend():
     return [('You ',SELF_STYLE),('Friend ',FRIEND_STYLE),('List ',LIST_STYLE),('Signed/approved ',SIGNED_STYLE),
-            ('Guest ',GUEST_STYLE),('API only ',API_STYLE),('Empty* ',0),('[++]: shared · C:N = cohort:roster',0)]
+            ('Guest ',GUEST_STYLE),('API only ',API_STYLE),('Empty* ',0),('[++]: shared · intake:roster',0)]
 
 
 def overlay_campus(players, peers):
@@ -104,7 +104,7 @@ def player_line(number, player, location):
     relation=player.get('local_relationship')
     if relation:status+=' / '+relation
     if player.get('local_self'):status+=' / you'
-    if player.get('local_cohort'):status+=' / C'+str(player['local_cohort'])+'~'
+    if player.get('local_cohort'):status+=' / I'+str(player['local_cohort'])+'~'
     return [(f'{number:>3}. {name:<24}', player_style(player)),(f' {label:<22} {status}',CLUSTER_STYLES.get(location[0],0) if location else 0)]
 
 
@@ -157,5 +157,5 @@ def lobby_lines(players, view='roster', cluster=1):
         lines.append(plain('Waiting for presence from your node...'))
     if any(s and s[0]==cluster and not 1<=s[2]<=LAYOUT[cluster].get(s[1],0) for _,_,s in entries):
         lines.append(plain('Some reported seats are outside this layout; see the roster.'))
-    lines.append(plain('Unmarked desks mean no LAN42 peer reported; not necessarily vacant. Cn~ = locally inferred cohort.'))
+    lines.append(plain('Unmarked desks mean no LAN42 peer reported; not necessarily vacant. In~ = locally inferred intake.'))
     return lines

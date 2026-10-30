@@ -360,13 +360,14 @@ class Lobby:
                 await self.event('SABO this room: '+', '.join(room.get('sabo_history',[])),{pid})
                 return
             bits=arg.split()
-            if any(bit.lower()=='cohort' for bit in bits):
+            from .intake_selectors import intake_number
+            if any(bit.lower() in ('cohort','intake') for bit in bits):
                 raise ValueError('Use cohort1 as one word; "cohort 1" is not a game selector.')
             cohorts=[];counts=[];filters=[];random_selection=False
             from .login_whitelist import SG_SELECTORS
             all_selection=any(bit.lower() in SG_SELECTORS for bit in bits)
             for bit in bits:
-                if bit.lower().startswith('cohort') and bit[6:].isdecimal():cohorts.append(int(bit[6:]))
+                if intake_number(bit) is not None:cohorts.append(intake_number(bit))
                 elif bit.lower()=='random':random_selection=True
                 elif bit.isdecimal():counts.append(int(bit))
                 elif any(op in bit for op in ('=','>','<')):filters.append(bit)
@@ -406,8 +407,8 @@ class Lobby:
                     profiles.extend(batch);errors.extend(failed)
             elif cohorts or random_selection or filters or all_selection:
                 if all_selection and cohorts:raise ValueError('Choose all/sg/42sg or cohortN, not both.')
-                if len(counts)>1 or any(not (x.lower() in SG_SELECTORS or x.lower() in ('random','where','and') or x in filters or x.isdecimal() or (x.lower().startswith('cohort') and x[6:].isdecimal())) for x in bits):
-                    raise ValueError('Use /sabo [COUNT] random [cohort4 cohort5] or /sabo cohort4 cohort5.')
+                if len(counts)>1 or any(not (x.lower() in SG_SELECTORS or x.lower() in ('random','where','and') or x in filters or x.isdecimal() or intake_number(x) is not None) for x in bits):
+                    raise ValueError('Use /sabo [COUNT] random [I4 I5] or /sabo intake4; cohort4 still works.')
                 if cohorts or filters or all_selection:
                     from .access import Policy
                     if self.api_identity(c)["uid"] not in Policy().data["api_operators"]:raise AuthError("Academic game filters are restricted to API operators.")

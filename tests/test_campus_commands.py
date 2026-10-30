@@ -21,6 +21,7 @@ class Commands(unittest.TestCase):
             self.assertEqual({p['login'] for p in random_profiles(None,[],[4,5])},{'a','b'})
             self.assertEqual(random_profiles(1,[],[4,5],['level>=2']),[dict(login='a',avatar=None)])
             with self.assertRaises(ValueError):random_profiles(2,['A'],[4,5])
+        self.assertTrue(matches_filters({'cohort':4},['intake=4']))
         with self.assertRaises(ValueError):matches_filters({'login':'a'},["login=a;DROP"])
 
     def test_profile_validation_dedup_and_bulk_guard(self):
@@ -28,7 +29,8 @@ class Commands(unittest.TestCase):
         with self.assertRaises(ValueError):resolve(['../../private'])
         data={'students':[dict(login='u'+str(i),cohort=4) for i in range(12)]}
         with patch('campus_lan.profile_browser.load',return_value=data):
-            with self.assertRaisesRegex(ValueError,'12 tabs'):resolve(['cohort4'])
+            for selector in ('cohort4','intake4','I4'):
+                with self.assertRaisesRegex(ValueError,'12 tabs'):resolve([selector])
             self.assertEqual(len(resolve(['--open-many','all'])),12)
 
     def test_active_location_whitelist_and_dedup(self):

@@ -6,6 +6,7 @@ import re
 from .auth import config_dir,private_read,private_write
 from .preferences import settings_path
 from .login_whitelist import SG_SELECTORS,validate_logins
+from .intake_selectors import intake_number,cluster_selector
 
 INTERVAL=300
 RELATIONSHIPS={'tracked','friends','mutuals','oomf'}
@@ -93,7 +94,7 @@ class Tracker:
 
     def list_name(self,name):
         name=login(name.lstrip('@'))
-        if name in VARIABLES or name=='all' or re.fullmatch(r'cohort\d+',name):raise ValueError('That list name is reserved; choose another name.')
+        if name in VARIABLES or name=='all' or intake_number(name) is not None or cluster_selector(name):raise ValueError('That list name is reserved; choose another name.')
         return name
 
     def change_list(self,name,members=(),remove=False,delete=False):
@@ -123,12 +124,13 @@ class Tracker:
                 key=value.lstrip('@')
                 if key not in self.data['lists']:raise ValueError('Unknown local list: '+key)
                 names=self.data['lists'][key]
-            elif value in SG_SELECTORS or re.fullmatch(r'cohort\d+',value):
+            elif value in SG_SELECTORS or intake_number(value) is not None:
                 from .campus_info import load
                 data=load()
                 if not data:raise ValueError('Cohort/all selectors need the local private campus cache.')
-                cohort=None if value in SG_SELECTORS else int(value[6:])
+                cohort=None if value in SG_SELECTORS else intake_number(value)
                 names=[login(s['login']) for s in data['students'] if cohort is None or s.get('cohort')==cohort]
+            elif cluster_selector(value):raise ValueError('C1/C2 mean clusters; use /sabo c1 or I4/intake4 for an intake.')
             else:names=[login(value)]
             result.extend(names)
         result=list(dict.fromkeys(result))

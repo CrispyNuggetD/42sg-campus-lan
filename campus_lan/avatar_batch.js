@@ -1,5 +1,5 @@
 // Batch UI logic: retain unattempted logins when a shared service fails.
-function unsupportedAvatarSelector(name){return /^(all|sg|42sg|cohort\d*)$/i.test(name);}
+function unsupportedAvatarSelector(name){return /^(all|sg|42sg|(?:cohort|intake|i)\d*)$/i.test(name);}
 async function runAvatarBatch(names,{call,log,progress=()=>{},wait=ms=>new Promise(r=>setTimeout(r,ms)),polls=240}){
  const counts={requested:names.length,skipped:0,failed:0,success:0};
  const seen=new Set();let opened=false;

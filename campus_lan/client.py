@@ -56,7 +56,7 @@ HELP = [
     '/alarm [30m|8pm|162532|daily 8pm|weekly mon,wed 08:00] | /timer 5m | /stopwatch | /clock: GMT+8 clock tools',
     '/settings storage [FOLDER] | /settings export FOLDER | /settings import FOLDER: portable friends, lists and preferences',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
-    '/sabo online [COUNT] [cluster 1|2]: campus snapshot | /sabo verified [COUNT]: SG sign-ins | /sabo all: local SG cache, 50 seats max',
+    '/sabo c1|c2 [COUNT]: campus-online cluster | /sabo I4 or intake4 (cohort4 also works): intake | /sabo verified [COUNT]: SG sign-ins',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit (miniapps close their tmux window)',
@@ -575,11 +575,12 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 message=' '.join(shlex.split(body)) if body.lstrip().startswith(('\"',"'")) else body.strip()
                 parts=[command,selector,message] if separator else [command,selector]
             if len(parts)<2:return False
-            if command=='/sabo' and any(p.lower() in ('online','verified') for p in parts[1:]):return False
+            from .intake_selectors import intake_number,cluster_selector
+            if command=='/sabo' and any(p.lower() in ('online','verified','cluster') or cluster_selector(p) for p in parts[1:]):return False
             if command=='/sabo':
                 from .login_whitelist import SG_SELECTORS
                 if len(parts)==2 and parts[1].lower()=='history':return False
-                if any(p.lower() in SG_SELECTORS or p.lower()=='random' or re.fullmatch(r'cohort\d+',p,re.I) or any(op in p for op in ('=','>','<')) for p in parts[1:]):return False
+                if any(p.lower() in SG_SELECTORS or p.lower()=='random' or intake_number(p) is not None or any(op in p for op in ('=','>','<')) for p in parts[1:]):return False
             # Re-read local settings so the game window sees HQ relationship edits.
             from .tracking import Tracker
             tracker=Tracker(self.name)

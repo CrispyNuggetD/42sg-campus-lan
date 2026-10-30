@@ -36,7 +36,8 @@ class Whitelist(unittest.TestCase):
     def test_photo_cohort_selector_is_one_word_and_a_bare_number_is_literal(self):
         from campus_lan.login_whitelist import expand_photo_targets
         with patch('campus_lan.campus_info.load',return_value={'students':self.students}):
-            self.assertEqual(expand_photo_targets(['cohort1']),['fixture-one','friends'])
+            for selector in ('cohort1','intake1','I1','i1'):
+                self.assertEqual(expand_photo_targets([selector]),['fixture-one','friends'])
             for selector in ('all','sg','42sg'):
                 self.assertEqual(expand_photo_targets([selector]),['fixture-one','fixture-two','friends'])
         self.assertEqual(expand_photo_targets(['1']),['1'])
@@ -72,7 +73,8 @@ class Whitelist(unittest.TestCase):
         self.assertEqual(set(t.resolve(['friends'])),{'fixture-one','fixture-two'})
         self.assertEqual(t.resolve(['login:friends']),['friends'])
         with patch('campus_lan.campus_info.load',return_value={'students':self.students}):
-            self.assertEqual(set(t.resolve(['cohort1'])),{'fixture-one','friends'})
+            for selector in ('cohort1','intake1','I1','i1'):
+                self.assertEqual(set(t.resolve([selector])),{'fixture-one','friends'})
             self.assertEqual(set(t.resolve(['all'])),{'fixture-one','fixture-two','friends'})
             self.assertEqual(t.resolve(['sg']),t.resolve(['all']))
             self.assertEqual(t.resolve(['42sg']),t.resolve(['all']))
