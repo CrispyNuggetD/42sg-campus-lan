@@ -1,8 +1,16 @@
 {
-  "version": "2.24.0-beta.1",
-  "date": "2026-10-30T16:59:26+08:00",
-  "source": "29f55d823c388cbc4085309eeb17360cf6664619",
+  "version": "2.25.0-beta.1",
+  "date": "2026-10-30T17:12:13+08:00",
+  "source": "3956ff4d5c48d11ffa03859320e8c030d7fd974b",
   "history": [
+    {
+      "version": "2.25.0-beta.1",
+      "date": "2026-10-30T17:12:13+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: confirm numbered campus occupants and restore cluster selection"
+      ]
+    },
     {
       "version": "2.24.0-beta.1",
       "date": "2026-10-30T16:59:26+08:00",
@@ -566,5 +574,5 @@
       ]
     }
   ],
-  "runtime_sha256": "51a3848113312d6cf06166705fdf301ce3880c4b3269ff5f1fb04e379f4a887e"
+  "runtime_sha256": "7ca78088ca82964c7cccdec4d46a8d73ef2df6796fed196dcf28659b140f7ff8"
 }
