@@ -395,6 +395,23 @@ checks and API budgets still apply. These are stand-ins: nobody is contacted or
 actually joins your game. Use `login:online` or `login:verified` if you explicitly
 mean a whitelisted literal login that collides with a selector.
 
+Seat selectors accept inclusive **from:to** ranges independently for clusters,
+rows and seats (case-insensitive):
+
+| Selector | Campus-online selection |
+| --- | --- |
+| `/sabo c1r3:6` | Cluster 1, every seat in rows 3 through 6 |
+| `/sabo c1r3s1` | Cluster 1, row 3, seat 1 |
+| `/sabo c1:2` | Both clusters |
+| `/sabo c1r3:4s1:2` | Seats 1 and 2 in each of rows 3 and 4, Cluster 1 |
+| `/sabo c1r3s1:4` | Seats 1 through 4 in Cluster 1, row 3 |
+| `/sabo c1:2r3:4s1:2 10` | The same row/seat range across both clusters, up to ten diners |
+
+Omitted rows or seats mean all of them. Reversed, zero and unsupported cluster
+ranges are rejected. These filter the saved online-seat snapshot; they do not
+connect to desks, contact students or refresh the campus API. Existing sign-in,
+whitelist, room-host and 50-diner capacity checks still apply.
+
 `/sabo c1` and `/sabo c2` select campus-online people in that cluster;
 `/sabo c1 10` limits the selection to ten. **C means cluster**, never intake.
 **I means intake**: `/sabo I4`, `/sabo intake4`, and `/sabo cohort4` are equivalent
@@ -571,3 +588,21 @@ are added; only the minimal login-to-cohort mapping is used locally. A computer
 without that private cache still shows friend/list/self markers and ordinary
 presence, but cannot guess a cohort. Refresh the private cache through the
 existing operator workflow and reopen the window to update cohort decoration.
+
+### Saved startup choices and local uwu notices
+
+Automatic uwu stays saved for the account and is shown consistently in HQ and
+game windows. Only HQ runs its timer. With automatic uwu on, HQ gives one startup
+call after connection and sound consent, then continues every 10–15 minutes.
+Quiet or muted startup sounds are skipped, not replayed later. `/uwu off` saves
+an explicit off choice; changing windows or signing in does not overwrite it.
+
+`/uwu` and each automatic/startup call also request a two-second local desktop
+toast. `/notify uwu off` disables these local toasts; `/notify pokes` remains
+separate for other people's uwus. Global notification off/denial and sound/quiet/
+volume rules still apply. Toasts do not play an additional copy of the sound.
+
+`/settings clusters-auto-open on` saves the automatic clusters-window choice.
+HQ waits for sign-in or local operator access, honors terminal-popup denial,
+and retries a failed launch rather than consuming the startup request. Use
+`off` to disable it. No other user's default is changed.

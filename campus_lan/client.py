@@ -56,7 +56,7 @@ HELP = [
     '/alarm [30m|8pm|162532|daily 8pm|weekly mon,wed 08:00] | /timer 5m | /stopwatch | /clock: GMT+8 clock tools',
     '/settings storage [FOLDER] | /settings export FOLDER | /settings import FOLDER: portable friends, lists and preferences',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
-    '/sabo c1|c2 [COUNT]: campus-online cluster | /sabo I4 or intake4 (cohort4 also works): intake | /sabo verified [COUNT]: SG sign-ins',
+    '/sabo c1|c2 [COUNT]: campus-online cluster | c1r3:4s1:2: inclusive seat ranges | /sabo I4 or intake4 (cohort4 also works): intake | /sabo verified [COUNT]: SG sign-ins',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit (miniapps close their tmux window)',
@@ -102,6 +102,9 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
+_uwu_startup_owners=set()
+
+
 class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
@@ -120,7 +123,10 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         self.sock, self.name = sock, name
         self.role, self.initial_command = role, initial_command
         from .koel_sound import AutoChoice
-        self.uwu_auto_enabled=AutoChoice(name).read() if role=='lobby' else False
+        self.uwu_auto_enabled=AutoChoice(name).read()
+        self.uwu_auto_owner=name
+        self.uwu_auto_pref_next=0
+        self.uwu_auto_startup_pending=role=='lobby' and self.uwu_auto_enabled
         self.uwu_auto_due=None
         self.requested_game=initial_command.split()[1] if initial_command and initial_command.startswith(('/host ','/game ')) else None
         self.inbox = queue.Queue(maxsize=256)
@@ -170,10 +176,56 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         enabled_before=choice.read()['enabled']
         self.popup_prompts().session_question('Always uwu? Are you SURE? ಠ_ಠ [y/N]',accept,lambda:choice.choose(enabled_before))
 
+    def sync_uwu_auto_choice(self,force=False):
+        if not hasattr(self,'uwu_auto_owner'):return
+        now=time.monotonic()
+        changed_owner=self.uwu_auto_owner!=self.name
+        if not force and not changed_owner and now<getattr(self,'uwu_auto_pref_next',0):return
+        from .koel_sound import AutoChoice
+        enabled=AutoChoice(self.name).read()
+        self.uwu_auto_pref_next=now+2
+        if changed_owner or enabled!=self.uwu_auto_enabled:
+            self.uwu_auto_due=None;self.uwu_auto_failed=False
+            if changed_owner:self.uwu_auto_startup_pending=getattr(self,'role','lobby')=='lobby' and enabled
+        if not enabled:self.uwu_auto_startup_pending=False
+        self.uwu_auto_enabled=enabled;self.uwu_auto_owner=self.name
+
+    def local_uwu_notice(self,automatic=False,startup=False):
+        if not self.notification_allowed('uwu'):return
+        expires=time.monotonic()+30
+        def show():
+            from .popup_permissions import Permissions
+            if (time.monotonic()>=expires or not self.notification_allowed('uwu')
+                    or Permissions(self.name).persistent_mode('notifications')=='deny'):return False
+            if automatic and not getattr(self,'uwu_auto_enabled',False):return False
+            if not getattr(self,'tracking_notifier',None):
+                from .desktop_notifications import Notifications
+                self.tracking_notifier=Notifications(self.inbox)
+            title='uwu! · HQ started' if startup else 'uwu! · automatic call' if automatic else 'uwu!'
+            self.tracking_notifier.poke(title,'Your local koel says hello.',self.name,koel_sound=False)
+            return True
+        self.request_popup('notifications','Show the local uwu desktop notification?',show)
+
+    def automatic_uwu(self,startup=False):
+        from .koel_sound import SoundChoice,play
+        self.local_uwu_notice(automatic=True,startup=startup)
+        self.with_audio_volume(lambda:play() if getattr(self,'uwu_auto_enabled',False)
+                               and SoundChoice(self.name).read()['enabled'] else None)
+
     def uwu_auto_tick(self):
+        self.sync_uwu_auto_choice()
+        if getattr(self,'role','lobby')!='lobby':return
         if not getattr(self,'uwu_auto_enabled',False) or getattr(self,'uwu_auto_failed',False):return
         due=getattr(self,'uwu_auto_due',None)
-        from .koel_sound import SoundChoice,play
+        from .koel_sound import SoundChoice
+        if (getattr(self,'uwu_auto_startup_pending',False) and getattr(self,'id',None)
+                and getattr(self,'connected',False) and SoundChoice(self.name).read()['enabled']):
+            self.uwu_auto_startup_pending=False
+            owner=self.name.lower()
+            if owner not in _uwu_startup_owners:
+                _uwu_startup_owners.add(owner)
+                try:self.automatic_uwu(startup=True)
+                except OSError as error:self.lines.append('Startup uwu unavailable: '+str(error))
         if due is None:
             now=time.monotonic()
             if now<getattr(self,'uwu_auto_next_check',0):return
@@ -187,7 +239,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
             self.lines.append('Automatic uwu paused: koel sound is off.')
             return
         self.uwu_auto_due=time.monotonic()+random.uniform(600,900)
-        try:self.with_audio_volume(lambda:play() if SoundChoice(self.name).read()['enabled'] else None)
+        try:self.automatic_uwu()
         except OSError as error:
             self.uwu_auto_due=None
             self.uwu_auto_failed=True
@@ -198,6 +250,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
             from .koel_sound import AutoChoice
             if text.strip()=='/uwu off':
                 self.uwu_auto_enabled=False
+                self.uwu_auto_startup_pending=False
                 self.uwu_auto_due=None
                 try:AutoChoice(self.name).set(False)
                 except (OSError,ValueError) as error:self.lines.append('Could not save automatic uwu preference: '+str(error))
@@ -238,6 +291,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 'File sharing needs a signed-in campus group and separate approval; this sound test sends no files.',
             ])
             self.uwu_courier_introduced=True
+        self.local_uwu_notice()
         from .koel_sound import SoundChoice,play
         choice=SoundChoice(self.name)
         def chirp():
@@ -460,6 +514,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         normalized=normalize_cluster_command(text)
         command,_,argument=normalized.partition(' ')
         if command!='/clusters':return False
+        self.clusters_launch_ok=False
         if argument not in ('','1','2'):
             self.lines.append('Use /clusters [1|2].');return True
         if getattr(self,'role','lobby')!='lobby':
@@ -477,6 +532,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         try:
             result=subprocess.run([sys.executable,str(opener),*args],capture_output=True,text=True,timeout=10)
             if result.returncode:raise RuntimeError(result.stderr.strip() or result.stdout.strip())
+            self.clusters_launch_ok=True
             self.lines.append('Clusters window ready. Press r or Enter there to refresh from the host; its header shows snapshot age.')
         except (OSError,RuntimeError,subprocess.TimeoutExpired) as error:
             self.lines.append('Could not open clusters window: '+str(error))
@@ -484,12 +540,25 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
         return True
 
     def clusters_auto_open_tick(self):
-        if (getattr(self,'role','lobby')!='lobby' or getattr(self,'clusters_auto_open_checked',False)
-                or not getattr(self,'id',None) or not getattr(self,'connected',False)):
+        if (getattr(self,'role','lobby')!='lobby' or not getattr(self,'id',None)
+                or not getattr(self,'connected',False)):
             return
-        self.clusters_auto_open_checked=True
+        if (getattr(self,'clusters_auto_open_checked',False)
+                and getattr(self,'clusters_auto_open_owner',self.name)==self.name):return
+        now=time.monotonic()
+        if now<getattr(self,'clusters_auto_open_next',0):return
+        self.clusters_auto_open_next=now+5
         from .cluster_settings import ClusterSettings
-        if ClusterSettings(self.name).read():self.open_clusters('/clusters',approved=True)
+        if not ClusterSettings(self.name).read():return
+        if not getattr(self,'signed_in',False):
+            from .access import Policy
+            try:Policy().local_operator()
+            except (OSError,ValueError):return
+        from .popup_permissions import Permissions
+        if Permissions(self.name).persistent_mode('terminals')=='deny':return
+        self.open_clusters('/clusters',approved=True)
+        self.clusters_auto_open_checked=getattr(self,'clusters_launch_ok',True)
+        self.clusters_auto_open_owner=self.name
 
     def occupancy_tick(self):
         if getattr(self,'secure',False) or time.monotonic()<getattr(self,'occupancy_due',0):return
@@ -802,6 +871,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                     if self.signed_in:
                         from .local_console import use_account
                         use_account(self.name)
+                    self.sync_uwu_auto_choice(force=True)
                 if getattr(self,'initial_command',None):
                     self.send(dict(type='command',text=self.initial_command))
                     self.initial_command = None
@@ -1198,6 +1268,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 if len(parts)>2:
                     if len(parts)!=3 or parts[2] not in ('on','off'):raise ValueError('Use /settings clusters-auto-open on|off')
                     choice.set(parts[2]=='on')
+                    self.clusters_auto_open_checked=False;self.clusters_auto_open_next=0
                 self.lines.append('Open clusters with HQ: '+('on' if choice.read() else 'off')+'.')
             except (OSError,ValueError) as error:self.lines.append(str(error))
         elif parts[0]=='/settings' and parts[1] in ('experimental','files','koel','koeldrop'):

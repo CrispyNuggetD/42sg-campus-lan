@@ -202,3 +202,22 @@ class PresenceSelection(unittest.IsolatedAsyncioTestCase):
             self.lobby.profile_lookup.lookup_many.assert_not_called()
             policy.return_value.data={'api_operators':[]}
             with self.assertRaises(AuthError):await self.lobby.command('host','/sabo I4')
+
+    async def test_inclusive_cluster_row_and_seat_ranges(self):
+        locations=['c1r2s1','c1r3s1','c1r3s2','c1r3s4','c1r4s1','c1r4s2','c1r6s1','c1r7s1','c2r3s1']
+        records=[dict(name=f'fixture-{i:02}',seat=value) for i,value in enumerate(locations)]
+        cases={'c1r3:6':[1,2,3,4,5,6],'c1r3s1':[1],'c1:2':list(range(9)),
+               'c1r3:4s1:2':[1,2,4,5],'c1r3s1:4':[1,2,3],'C1:2R3:4S1:2':[1,2,4,5,8],'online cluster 1:2':list(range(9))}
+        for selector,indices in cases.items():
+            with self.subTest(selector=selector),patch.object(clusters,'cached_snapshot',return_value=(records,1)):
+                self.lobby.profile_lookup.lookup_many.reset_mock()
+                await self.lobby.command('host','/sabo '+selector)
+                self.lobby.profile_lookup.lookup_many.assert_awaited_once_with([f'fixture-{i:02}' for i in indices])
+                self.assertFalse(Client.__new__(Client).group_command('/sabo '+selector))
+
+    async def test_bad_location_ranges_fail_before_roster_reads(self):
+        with patch.object(clusters,'cached_snapshot') as snapshot:
+            for selector in ('c2:1','c0:2','c1:3','c1r6:3','c1r3s4:1','c1r0','c1r3:','c1r3s1:999','c1r3:4s1:2:3','verified c1r3'):
+                with self.subTest(selector=selector),self.assertRaises(ValueError):
+                    await self.lobby.command('host','/sabo '+selector)
+            snapshot.assert_not_called()

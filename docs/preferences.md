@@ -212,3 +212,8 @@ Press **F3** in HQ to open or focus the separate campus-clusters tmux window, us
 window at launch. Enabling it explicitly approves this one startup window; it
 does not grant general game or tool terminal permission. The choice is local to
 each computer and account.
+
+Local uwu toasts have their own `/notify uwu on|off` channel (default on), separate
+from received pokes. Automatic uwu stays account-scoped across HQ/game windows;
+HQ alone schedules calls and gives one consent-controlled startup chirp. The
+saved clusters auto-open choice waits for access and retries failed launches.

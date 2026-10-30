@@ -382,8 +382,8 @@ class Lobby:
                     candidates=set()
                     for player in present:
                         location=seat(player)
-                        if cluster is None or (location and location[0]==cluster):candidates.add(player['name'].lower())
-                    source='Host campus API snapshot ('+str(max(0,int(time.time()-stamp)))+'s old)'+(' · cluster '+str(cluster) if cluster else '')
+                        if cluster is None or cluster.matches(location):candidates.add(player['name'].lower())
+                    source='Host campus API snapshot ('+str(max(0,int(time.time()-stamp)))+'s old)'+(' · '+str(cluster) if cluster else '')
                 else:
                     candidates=set()
                     for peer in list(self.clients.values()):

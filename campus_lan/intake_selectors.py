@@ -11,4 +11,4 @@ def intake_number(value):
 
 
 def cluster_selector(value):
-    return bool(re.fullmatch(r'(?:c|cluster)\d+',value,re.I))
+    return bool(re.match(r'(?:c|cluster)\d',value,re.I))

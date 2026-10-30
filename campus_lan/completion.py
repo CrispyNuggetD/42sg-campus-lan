@@ -67,13 +67,13 @@ def complete(text):
         elif command in ('/dm','/alert') and len(parts)<=2:
             choices=('friends','tracked','alltracked','mutuals','moots','oomf')
         elif command in ('/settings','/profile') and parts[1:2]==['notifications'] and len(parts)<=3:
-            choices = ('on','off','all','host','announcements','releases','warnings','tracking','flock','files','chat','dms','pokes')
+            choices = ('on','off','all','host','announcements','releases','warnings','tracking','flock','files','chat','dms','pokes','alarms','uwu')
         elif command == '/storm' and (len(parts)==1 or (len(parts)==2 and not text.endswith(' '))):
             choices = ('on','off','step','pause')
         elif command == '/preset' and len(parts)<=2:
             choices = ('chill','chaos')
         elif command == '/notify' and len(parts) <= 2:
-            choices = ('on','off','all','host','announcements','releases','warnings','tracking','flock','files','chat','dms','pokes')
+            choices = ('on','off','all','host','announcements','releases','warnings','tracking','flock','files','chat','dms','pokes','alarms','uwu')
         elif command == '/notify' and len(parts)<=3:
             choices=('on','off')
         elif command in ('/settings','/profile') and parts[1:2]==['notifications'] and len(parts)<=4:

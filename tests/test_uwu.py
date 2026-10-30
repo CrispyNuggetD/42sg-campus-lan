@@ -1,4 +1,5 @@
 import collections
+import os
 import tempfile
 import queue
 import unittest
@@ -14,6 +15,8 @@ from campus_lan.desktop_notifications import Notifications
 class Uwu(unittest.TestCase):
     def setUp(self):
         temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)
+        env=patch.dict(os.environ,{'XDG_CONFIG_HOME':temporary.name});env.start();self.addCleanup(env.stop)
+        startup=patch('campus_lan.client._uwu_startup_owners',set());startup.start();self.addCleanup(startup.stop)
         config=patch('campus_lan.koel_sound.config_dir',return_value=Path(temporary.name))
         config.start();self.addCleanup(config.stop)
         quiet=patch('campus_lan.audio_quiet.active',return_value=False);quiet.start();self.addCleanup(quiet.stop)
@@ -25,6 +28,7 @@ class Uwu(unittest.TestCase):
     def client(self):
         client=Client.__new__(Client);client.name='recipient';client.lines=collections.deque()
         client.notify_enabled=True;client.inbox=queue.Queue();client.send=Mock()
+        client.request_popup=Mock();client.tracking_notifier=Mock()
         return client
 
     def test_auto_defaults_off_reschedules_and_stops_without_sending(self):
@@ -141,6 +145,66 @@ class Uwu(unittest.TestCase):
             self.assertIn('--expire-time=2000',run.call_args_list[0].args[0])
             self.assertIn('org.freedesktop.Notifications.CloseNotification',run.call_args_list[1].args[0])
             sleep.assert_called_once_with(2)
+
+    def test_saved_auto_choice_is_shared_with_games_without_duplicate_playback(self):
+        AutoChoice('recipient').set(True)
+        c=self.client();c.role='game';c.uwu_auto_owner='old-guest';c.uwu_auto_enabled=False
+        c.uwu_auto_due=None
+        with patch('campus_lan.koel_sound.play') as play:
+            c.uwu_auto_tick()
+            self.assertTrue(c.uwu_auto_enabled);self.assertEqual(c.uwu_auto_owner,'recipient')
+            self.assertIsNone(c.uwu_auto_due);play.assert_not_called()
+            AutoChoice('recipient').set(False);c.sync_uwu_auto_choice(force=True)
+            self.assertFalse(c.uwu_auto_enabled)
+
+    def startup_client(self):
+        AutoChoice('recipient').set(True)
+        c=self.client();c.role='lobby';c.id='ready';c.connected=True
+        c.uwu_auto_owner='recipient';c.uwu_auto_enabled=True;c.uwu_auto_due=None
+        c.uwu_auto_startup_pending=True
+        c.request_popup.side_effect=lambda category,description,action:action()
+        return c
+
+    def test_auto_on_chirps_at_hq_start_once_and_preserves_interval(self):
+        with patch('campus_lan.koel_sound.SoundChoice') as choice,patch('campus_lan.koel_sound.play') as play, \
+             patch('campus_lan.client.time.monotonic',return_value=100),patch('campus_lan.client.random.uniform',return_value=750):
+            choice.return_value.read.return_value={'enabled':True}
+            c=self.startup_client();c.uwu_auto_tick();c.uwu_auto_tick()
+            play.assert_called_once();self.assertEqual(c.uwu_auto_due,850)
+            c.tracking_notifier.poke.assert_called_once_with('uwu! · HQ started','Your local koel says hello.','recipient',koel_sound=False)
+            reopened=self.startup_client();reopened.uwu_auto_tick()
+            play.assert_called_once();self.assertTrue(AutoChoice('recipient').read())
+
+    def test_quiet_startup_stays_on_without_replaying_a_delayed_chirp(self):
+        with patch('campus_lan.koel_sound.SoundChoice') as choice,patch('campus_lan.koel_sound.play') as play, \
+             patch('campus_lan.audio_quiet.active',return_value=True) as quiet, \
+             patch('campus_lan.client.time.monotonic',return_value=100):
+            choice.return_value.read.return_value={'enabled':True}
+            c=self.startup_client();c.uwu_auto_tick();quiet.return_value=False;c.uwu_auto_tick()
+            play.assert_not_called();self.assertTrue(c.uwu_auto_enabled)
+            self.assertTrue(AutoChoice('recipient').read())
+
+    def test_local_and_automatic_uwu_have_one_silent_desktop_toast_each(self):
+        c=self.client();c.request_popup.side_effect=lambda category,description,action:action()
+        with patch('campus_lan.koel_sound.SoundChoice') as choice,patch('campus_lan.koel_sound.play') as play, \
+             patch('campus_lan.client.time.monotonic',return_value=100):
+            choice.return_value.read.return_value={'enabled':True}
+            c.uwu_command('/uwu');play.assert_called_once()
+            c.tracking_notifier.poke.assert_called_once_with('uwu!','Your local koel says hello.','recipient',koel_sound=False)
+            c.tracking_notifier.reset_mock();play.reset_mock()
+            c.uwu_auto_enabled=True;c.uwu_auto_due=99;c.uwu_auto_tick()
+            play.assert_called_once()
+            c.tracking_notifier.poke.assert_called_once_with('uwu! · automatic call','Your local koel says hello.','recipient',koel_sound=False)
+
+    def test_local_toasts_recheck_channel_and_popup_denial(self):
+        from campus_lan.popup_permissions import Permissions
+        c=self.client()
+        c.local_uwu_notice();action=c.request_popup.call_args.args[2]
+        with patch.object(c,'notification_allowed',return_value=False):
+            self.assertFalse(action())
+        Permissions(c.name).set('notifications','deny')
+        self.assertFalse(action());c.tracking_notifier.poke.assert_not_called()
+
 
 class Routing(unittest.IsolatedAsyncioTestCase):
     async def test_poke_routes_only_to_target_and_has_rate_limit(self):
