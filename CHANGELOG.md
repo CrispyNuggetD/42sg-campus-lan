@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.26.0-beta.1 · 2026-10-30T17:38:14+08:00
+
+- feat: keep cluster prompts at bottom and open profiles on double click
+
 ## 2.25.0-beta.1 · 2026-10-30T17:12:13+08:00
 
 - feat: confirm numbered campus occupants and restore cluster selection
