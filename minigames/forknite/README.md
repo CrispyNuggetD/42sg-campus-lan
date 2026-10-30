@@ -269,3 +269,8 @@ at **100%**. **Table zoom** changes card density and reflows rows; it never scal
 text into tiny labels. Cards keep readable text and pictures at every zoom.
 Additional rows extend the page normally, without a clipped table viewport.
 **Reset to 100%** restores the default card size.
+
+**Connected table** (default) folds the seats into a closed table loop. Consecutive
+seat IDs follow the table; an outside return edge joins the last seat to the
+first. Each card lists both fork neighbors. Switch **Layout** to **Readable grid**
+for the compact seat-order overview. Both preserve readable text at every zoom.
