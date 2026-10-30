@@ -1,8 +1,16 @@
 {
-  "version": "2.19.3-beta.1",
-  "date": "2026-10-30T14:38:27+08:00",
-  "source": "50c8ee81483f57cba9af75b694424910fc441b73",
+  "version": "2.20.0-beta.1",
+  "date": "2026-10-30T14:46:53+08:00",
+  "source": "d5f1954624acf1daa3b676e73e115e702e27d784",
   "history": [
+    {
+      "version": "2.20.0-beta.1",
+      "date": "2026-10-30T14:46:53+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: show closed-loop dinner table with layout toggle"
+      ]
+    },
     {
       "version": "2.19.3-beta.1",
       "date": "2026-10-30T14:38:27+08:00",
@@ -517,5 +525,5 @@
       ]
     }
   ],
-  "runtime_sha256": "adeeef3da53046d4f3c3fa207724bfd90cdecd03c78b5ce2c7e67a0d15eee4f3"
+  "runtime_sha256": "136ba8d086dd3f147a473cfdeb15ce2c2c817f23afc1131b9d564fde9c8737a1"
 }

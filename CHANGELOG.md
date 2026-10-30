@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.20.0-beta.1 · 2026-10-30T14:46:53+08:00
+
+- feat: show closed-loop dinner table with layout toggle
+
 ## 2.19.3-beta.1 · 2026-10-30T14:38:27+08:00
 
 - fix: reflow readable diners at full-size table zoom
