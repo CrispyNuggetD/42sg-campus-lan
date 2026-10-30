@@ -139,4 +139,23 @@ class ClockTools(unittest.TestCase):
         with self.assertRaises(ValueError):self.clock.poll(NOW+3000)
 
 
+class DueClockSound(unittest.TestCase):
+    def test_due_timer_and_alarm_sound_once_without_replaying(self):
+        from campus_lan.client import Client
+        for kind in ('timer','alarm'):
+            with self.subTest(kind=kind),patch('campus_lan.koel_sound.SoundChoice') as choice, \
+                 patch('campus_lan.koel_sound.play') as play, \
+                 patch('campus_lan.audio_quiet.active',return_value=False), \
+                 patch('campus_lan.time_tools.time.monotonic',return_value=100) as now:
+                c=Client.__new__(Client);c.name='fixture';c.role='lobby';c.lines=[]
+                c.important_notification_allowed=Mock(return_value=True)
+                c.tracking_notifier=Mock();c.with_audio_volume=Mock(side_effect=lambda action:action())
+                clock=Mock();clock.poll.side_effect=[[dict(kind=kind,label='Tea',id='fixture')],[]]
+                clock.load.return_value=dict(alarms=[],display_offset=None)
+                c.clocks=Mock(return_value=clock);choice.return_value.read.return_value={'enabled':True}
+                c.time_tick();now.return_value=102;c.time_tick()
+                play.assert_called_once();c.tracking_notifier.announcement.assert_called_once()
+                self.assertTrue(any('Tea' in line for line in c.lines))
+
+
 if __name__=='__main__':unittest.main()

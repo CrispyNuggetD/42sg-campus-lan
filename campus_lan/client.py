@@ -361,6 +361,7 @@ class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickContr
                 self.tracking_notifier=Notifications(self.inbox)
             if important:self.tracking_notifier.announcement(title,body,name)
             else:self.tracking_notifier.show(title,body,name,icon,can_message)
+            if category=='alarms':self.alarm_sound()
         if important:show()
         else:self.request_popup('notifications','Show desktop notification: '+safe(title)+'?',show)
 

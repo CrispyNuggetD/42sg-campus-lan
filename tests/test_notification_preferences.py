@@ -108,3 +108,57 @@ class NotificationChannels(unittest.TestCase):
         self.assertTrue(c.notification_allowed('dms'))
         other.notification_command('/notify all off')
         self.assertFalse(c.important_notification_allowed('host'))
+
+
+class ClockNotificationSounds(unittest.TestCase):
+    setUp=NotificationChannels.setUp
+    def test_clock_notice_uses_uwu_and_existing_volume_handling(self):
+        c=self.c
+        with patch('campus_lan.koel_sound.SoundChoice') as choice, \
+             patch('campus_lan.koel_sound.play') as play, \
+             patch('campus_lan.audio_quiet.active',return_value=False), \
+             patch('campus_lan.volume.Volume') as volume:
+            choice.return_value.read.return_value={'enabled':True}
+            volume.return_value.get.return_value=50
+            c.desktop_notice('Timer finished','Tea','test',category='alarms')
+            c.tracking_notifier.announcement.assert_called_once()
+            play.assert_called_once();volume.return_value.set.assert_not_called()
+            choice.return_value.choose.assert_not_called()
+
+    def test_clock_notice_respects_sound_consent_quiet_and_f4_mute(self):
+        for enabled,quiet,muted in [(False,False,False),(True,True,False),(True,False,True)]:
+            with self.subTest(enabled=enabled,quiet=quiet,muted=muted), \
+                 patch('campus_lan.koel_sound.SoundChoice') as choice, \
+                 patch('campus_lan.koel_sound.play') as play, \
+                 patch('campus_lan.audio_quiet.active',return_value=quiet), \
+                 patch('campus_lan.volume.Volume') as volume:
+                choice.return_value.read.return_value={'enabled':enabled}
+                self.c.shortcut_audio_muted=muted
+                self.c.desktop_notice('Alarm','Break','test',category='alarms')
+                play.assert_not_called();volume.assert_not_called()
+
+    def test_clock_channel_all_off_popup_denial_and_launch_mute_block_sound(self):
+        c=self.c
+        with patch('campus_lan.koel_sound.play') as play,patch.object(c,'alarm_sound') as sound:
+            for mode in ['channel','all','popup','launch']:
+                with self.subTest(mode=mode):
+                    Preferences().set('alarms',True);Preferences().set('all',True)
+                    Permissions(c.name).set('notifications','allow');c.notifications_disabled=False
+                    if mode=='channel':Preferences().set('alarms',False)
+                    elif mode=='all':Preferences().set('all',False)
+                    elif mode=='popup':Permissions(c.name).set('notifications','deny')
+                    else:c.notifications_disabled=True
+                    c.desktop_notice('Alarm','Break','test',category='alarms')
+                    sound.assert_not_called();play.assert_not_called()
+            c.tracking_notifier.announcement.assert_not_called()
+
+    def test_delayed_sound_rechecks_consent_and_never_replays_expired_alarm(self):
+        c=self.c;c.with_audio_volume=Mock()
+        with patch('campus_lan.koel_sound.SoundChoice') as choice, \
+             patch('campus_lan.koel_sound.play') as play, \
+             patch('campus_lan.audio_quiet.active',return_value=False), \
+             patch('campus_lan.time_tools.time.monotonic',return_value=100) as now:
+            choice.return_value.read.return_value={'enabled':True}
+            c.alarm_sound();action=c.with_audio_volume.call_args.args[0]
+            choice.return_value.read.return_value={'enabled':False};action();play.assert_not_called()
+            choice.return_value.read.return_value={'enabled':True};now.return_value=131;action();play.assert_not_called()

@@ -284,6 +284,24 @@ class TimeControls:
         if timer is not None:label+=' · TMR '+elapsed_label(timer-time.time())
         return label
 
+    def alarm_sound(self):
+        """One opted-in uwu for a due clock notice, using existing audio rules."""
+        from .koel_sound import SoundChoice,play
+        from .audio_quiet import active
+        choice=SoundChoice(self.name)
+        expires=time.monotonic()+30
+        def allowed():
+            return (time.monotonic()<expires and self.important_notification_allowed('alarms')
+                    and choice.read()['enabled'] and not active()
+                    and not getattr(self,'shortcut_audio_muted',False))
+        if not allowed():return
+        def sound():
+            if allowed():
+                try:play()
+                except (OSError,ValueError):self.lines.append('Alarm sound unavailable; the clock notification is still shown.')
+        try:self.with_audio_volume(sound)
+        except (OSError,ValueError):self.lines.append('Alarm sound unavailable; the clock notification is still shown.')
+
     def time_tick(self):
         if getattr(self,'role','lobby')!='lobby':return
         now=time.monotonic()

@@ -196,7 +196,7 @@ Only your typed input executes commands; server messages cannot execute them.
 The controls use the same output device as the GNOME/macOS slider (PulseAudio,
 PipeWire or macOS); Bluetooth/device-specific volume remains up to that device.
 
-Sound-enabled `/uwu`, received pokes and automatic calls check system output.
+Sound-enabled `/uwu`, received pokes, due alarms/timers and automatic calls check system output.
 If muted/zero, they ask before raising it to 30 percent. A second confirmation
 can remember permission to do this automatically on this device. This remains
 separate from permission to play the koel sound. Manage it with

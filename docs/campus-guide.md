@@ -510,6 +510,12 @@ The default is **GMT+8**, independent of the computer's timezone. UTC is **Z**
 /stopwatch reset
 ```
 
+Timer completions and due alarms play the uwu clip when koel sound is enabled.
+They respect `/notify alarms off`, `/notify all off`, `--no-notify`, explicit
+notification denial, F4 mute, exam/manual quiet windows, and the existing
+permission before raising muted output. Quiet alarms still appear in-app; sounds
+are not replayed when quiet ends. Clock and stopwatch displays do not chime.
+
 `/alarm` shows schedules and setup examples. `/alarm 8` asks **am or pm**;
 nothing is scheduled until you answer. `162532` is **16:25:32**.
 `162121+4.5` is **16:21:21 at GMT+4:30**, not 16:21:21 GMT+8.
