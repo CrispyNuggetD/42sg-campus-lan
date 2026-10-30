@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.19.0-beta.1 · 2026-10-30T14:15:31+08:00
+
+- feat: offer package-wide reload when restarting LAN42
+
 ## 2.18.1-beta.1 · 2026-10-30T14:13:10+08:00
 
 - fix: retain cached avatars until manually refreshed
