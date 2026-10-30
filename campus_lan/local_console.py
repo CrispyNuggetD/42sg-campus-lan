@@ -4,13 +4,40 @@ import hashlib
 import socket
 import json
 import os
+import pwd
 import subprocess
 from .auth import config_dir,private_read,private_write
 
 
+_account=None
+
+
+def use_account(owner):
+    global _account
+    _account=owner.lower() if isinstance(owner,str) and owner else None
+
+
 def local_path(name):
     machine=hashlib.sha256(socket.gethostname().encode()).hexdigest()[:16]
-    return config_dir()/(name+'-'+machine+'.json')
+    local=config_dir()
+    account_scoped=name in {'notification-channels','audio-volume','web-search'} or name.startswith('flock-')
+    if not account_scoped:return local/(name+'-'+machine+'.json')
+    from .preferences import settings_path
+    if name.startswith('flock-'):
+        # The trusted host fingerprint and verified numeric UID already scope it.
+        path=local/(name+'-account.json')
+    else:
+        owner=_account or pwd.getpwuid(os.getuid()).pw_name.lower()
+        key=hashlib.sha256(owner.encode()).hexdigest()
+        path=settings_path(name+'-account-'+key+'.json',local)
+    if not path.exists():
+        legacy=local/(name+'-'+machine+'.json')
+        candidates=[legacy] if legacy.exists() else list(local.glob(name+'-'+'[a-f0-9]'*16+'.json'))
+        if candidates:
+            # One-time account migration preserves the most recent saved choice.
+            latest=max(candidates,key=lambda item:item.stat().st_mtime_ns)
+            private_write(path,private_read(latest))
+    return path
 
 
 def audio_volume_settings():

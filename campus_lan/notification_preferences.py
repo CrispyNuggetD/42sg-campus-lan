@@ -1,11 +1,11 @@
-"""Private per-computer notification channels; importance is assigned locally."""
+"""Private account-scoped notification channels; importance is assigned locally."""
 import json
 from .auth import private_read, private_write
 from .local_console import local_path
 
 DEFAULTS = dict(host=True, announcements=True, releases=True, warnings=True,
-                tracking=True, flock=True, files=True, chat=False, dms=False, pokes=False)
-IMPORTANT = frozenset(('host', 'announcements', 'releases', 'warnings', 'flock'))
+                tracking=True, flock=True, files=True, alarms=True, chat=False, dms=False, pokes=False)
+IMPORTANT = frozenset(('host', 'announcements', 'releases', 'warnings', 'flock', 'alarms'))
 
 
 class Preferences:

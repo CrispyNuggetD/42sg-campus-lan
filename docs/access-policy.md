@@ -36,6 +36,23 @@ run a separate guest/game server. Clients recognise the official service through
 the existing explicitly pinned TLS certificate, not a self-proclaimed role or
 mesh advertisement. Signing in never automatically trusts another service host.
 
+## Owner's roaming campus account
+
+The owner explicitly authorizes the managed Linux `hnah` account to host from
+any actual campus seat. This is a separate account-scoped grant, not approval of
+each physical computer. The private `campus-owner-host.json` contains
+`{"schema": 1, "uid": 234449, "os_account": "hnah"}`. It is provisioned only by
+explicit local owner instruction; startup and student sign-in never create it.
+
+Hosting requires the real OS account hnah, its existing local numeric operator
+enrollment, hnah remaining an administrator, and a valid campus seat hostname
+whose corresponding address is actually assigned locally. An IP pattern or
+claimed login alone is insufficient. The shared private configuration follows
+the account; existing TLS pins, generation-based old-seat shutdown, and API
+permissions remain unchanged. Removing this grant revokes account-scoped
+hosting; ordinary explicitly approved machines retain their separate permission.
+Off-campus and other accounts still require machine approval.
+
 ## Upgrade / enroll an existing owner machine
 
 For the existing school host, startup now performs a narrow, one-time legacy

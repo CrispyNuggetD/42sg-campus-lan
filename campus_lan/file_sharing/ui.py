@@ -184,6 +184,7 @@ class KoelUI(FlockUI):
         current={(o['path'],o['version']) for o in conflicts}
         seen=getattr(self,'koel_conflicts_seen',set())
         for conflict in conflicts:
+            if type(conflict.get('author_uid')) is int and conflict['author_uid']==getattr(self,'uid',None):continue
             identity=(conflict['path'],conflict['version'])
             if identity in seen:continue
             key=next((key for key,o in self.koel_offers.items() if o['version']==conflict['version']),None)
@@ -195,6 +196,7 @@ class KoelUI(FlockUI):
         self.koel_conflicts_seen=current
         from ..koel_sound import SoundChoice
         for notice in message.get('notices',[]):
+            if type(notice.get('author_uid')) is int and notice['author_uid']==getattr(self,'uid',None):continue
             if (notice['path'],notice['version']) in current:continue
             key=next((key for key,o in self.koel_offers.items() if o['version']==notice['version']),None)
             if key is None:continue

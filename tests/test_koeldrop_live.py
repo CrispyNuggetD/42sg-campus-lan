@@ -78,6 +78,37 @@ class KoelDropLive(unittest.TestCase):
         with self.assertRaises(Denied):bob.remote.manifest(None,gid)
         self.assertTrue((Path(self.tmp.name)/'mirror-dthoo'/'funny_hnah_1.txt').exists())
 
+    def test_reconnect_keeps_own_old_upload_manual_without_self_notifications(self):
+        remote=self.remote('hnah');gid=remote.create()
+        receipt=remote.put(None,gid,'old.txt',b'old own upload')
+        worker=self.courier('hnah')
+        worker._join(gid,'hnah')
+        worker._step()
+        messages=[]
+        while not worker.inbox.empty():messages.append(worker.inbox.get_nowait())
+        self.assertFalse(any(m.get('notices') or m.get('conflicts') for m in messages))
+        self.assertIn(receipt['version'],worker.sync.pending)
+        self.assertFalse((worker.sync.mirror.path/receipt['path']).exists())
+        worker.perform('receive',(receipt['version'],))
+        self.assertEqual((worker.sync.mirror.path/receipt['path']).read_bytes(),b'old own upload')
+
+    def test_notice_filter_uses_numeric_uid_not_display_name(self):
+        from campus_lan.file_sharing.sync import Offer
+        worker=self.courier('hnah')
+        own=Offer('own.txt','a'*32,'b'*64,1,self.uids['hnah'],'hnah',False)
+        other=Offer('other.txt','c'*32,'d'*64,1,self.uids['dthoo'],'hnah',False)
+        worker.sync=Mock(pending={})
+        def step(**kwargs):
+            worker.sync.pending={own.version:own,other.version:other}
+            return dict(uploaded=[],received=[],conflicts=[],limited=[])
+        worker.sync.step.side_effect=step
+        while not worker.inbox.empty():worker.inbox.get_nowait()
+        worker._step()
+        report=worker.inbox.get_nowait()
+        self.assertEqual([o['version'] for o in report['notices']],[other.version])
+        self.assertEqual(len(report['offers']),2)
+        worker.sync=None
+
     def test_stale_write_adds_without_overwrite_and_off_blocks_remote_before_connection(self):
         remote=self.remote('hnah');gid=remote.create()
         one=remote.put(None,gid,'a.txt',b'one')

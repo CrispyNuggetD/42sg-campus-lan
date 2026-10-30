@@ -57,8 +57,28 @@ class Policy:
         return person
 
     def require_host(self):
-        if host_id() not in self.data['approved_hosts']:
+        if host_id() not in self.data['approved_hosts'] and not self.campus_owner_host():
             raise AuthError('This machine is not an approved API host. Use python3 -m campus_lan.access enroll-local on an owner-controlled host.')
+
+    def campus_owner_host(self):
+        """Explicit account-scoped campus hosting; never inferred from client identity."""
+        import os
+        import pwd
+        if platform.system() != 'Linux':return False
+        try:
+            grant=json.loads(private_read(config_dir()/'campus-owner-host.json'))
+        except FileNotFoundError:return False
+        if grant != dict(schema=1, uid=INITIAL_OWNER_UID, os_account='hnah'):
+            return False
+        if pwd.getpwuid(os.getuid()).pw_name != 'hnah':return False
+        if INITIAL_OWNER_UID not in self.data['admins']:return False
+        try:
+            operator=json.loads(private_read(config_dir()/'local-operator.json'))
+            if operator.get('uid') != INITIAL_OWNER_UID:return False
+            from .auth_daily import current_seat
+            current_seat()  # Valid seat hostname AND locally assigned campus IP.
+        except (OSError,ValueError,KeyError):return False
+        return True
 
     def local_operator(self, admin=False):
         self.require_host()

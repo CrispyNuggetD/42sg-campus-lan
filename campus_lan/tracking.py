@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from .auth import config_dir,private_read,private_write
+from .preferences import settings_path
 from .login_whitelist import SG_SELECTORS,validate_logins
 
 INTERVAL=300
@@ -28,7 +29,7 @@ def relationship(value):
 
 class Tracker:
     def __init__(self,owner):
-        self.path=config_dir()/('tracking-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json')
+        self.path=settings_path('tracking-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json',config_dir())
         self.data=dict(schema_version=2,people={},lists={},clusters=dict(enabled=False,include=[],exclude=[],scope='all'))
         self.campus={};self.peers={};self.rules_error=None;self.load_error=None;self.targets={}
         try:

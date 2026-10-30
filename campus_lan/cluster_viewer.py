@@ -47,6 +47,7 @@ class HostSource:
         except (OSError,ValueError,AttributeError):
             self.stream.close();self.sock.close()
             raise
+        self.owner=session.get('login',owner)
         self.sock.settimeout(None)
         threading.Thread(target=self.receive,daemon=True).start()
 
@@ -78,7 +79,8 @@ class LocalSource:
     label='Local approved API'
 
     def __init__(self,events):
-        Policy().local_operator()
+        uid=Policy().local_operator()
+        self.owner='hnah' if uid==234449 else None
         self.events=events
         self.busy=False
 
@@ -166,7 +168,7 @@ class ClusterViewer:
                     self.status='Host connection closed. Last snapshot remains visible; reopen from HQ to refresh.'
 
     def segments(self):
-        players=relationship_overlay(overlay_campus(self.players,[]),self.tracker_data)
+        players=relationship_overlay(overlay_campus(self.players,[]),self.tracker_data,self.owner)
         return lobby_lines(players,self.view,self.cluster)
 
     def rows(self):
@@ -244,6 +246,8 @@ class ClusterViewer:
             for pair,color in enumerate((curses.COLOR_CYAN,curses.COLOR_YELLOW,curses.COLOR_MAGENTA,
                                          curses.COLOR_BLUE,curses.COLOR_RED,curses.COLOR_WHITE),2):
                 curses.init_pair(pair,color,curses.COLOR_BLACK)
+            from .lobby_view import init_cluster_colors
+            init_cluster_colors(curses)
             colors=True
         installed=generation()
         self.refresh()
@@ -292,7 +296,8 @@ def launch(cluster=0):
     events=queue.Queue()
     owner=pwd.getpwuid(os.getuid()).pw_name
     source=source_for(events,owner)
-    viewer=ClusterViewer(source,events,cluster,owner)
+    identity=getattr(source,'owner',None)
+    viewer=ClusterViewer(source,events,cluster,identity if isinstance(identity,str) else owner)
     viewer.refresh_requested=threading.Event()
     signal.signal(signal.SIGUSR1,lambda *_:viewer.refresh_requested.set())
     try:

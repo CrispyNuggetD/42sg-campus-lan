@@ -28,6 +28,7 @@ from .local_console import LocalConsole,History,shell_command
 from .notification_preferences import NotificationControls,IMPORTANT
 from .quiet_ui import QuietUI
 from .web_search import SearchControls
+from .time_tools import TimeControls
 from .quick_controls import QuickControls
 from .permission_setup import PermissionSetup
 from .announcement_ui import AnnouncementUI
@@ -52,6 +53,8 @@ HELP = [
     '/tool LOGIN...|cohort1|all: private photo batch from local SG cache | /info [FILTER] [PAGE]: API-operator campus directory',
     '/clusters: open a separate map window | /c1 /c2: one cluster | in that window r/Enter refreshes and shows snapshot age',
     '/track: grouped relationships/lists | /track friends: view | /track friends LOGIN: label | /track help',
+    '/alarm [30m|8pm|162532|daily 8pm|weekly mon,wed 08:00] | /timer 5m | /stopwatch | /clock: GMT+8 clock tools',
+    '/settings storage [FOLDER] | /settings export FOLDER | /settings import FOLDER: portable friends, lists and preferences',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
     '/sabo online [COUNT] [cluster 1|2]: campus snapshot | /sabo verified [COUNT]: SG sign-ins | /sabo all: local SG cache, 50 seats max',
     '/sabo friends | /dm friends "want lunch?" | /untrack LOGIN...|all | /alert LOGIN MESSAGE',
@@ -99,11 +102,13 @@ class SectionLog(collections.deque):
 
 from .file_sharing.ui import KoelUI
 
-class Client(QuietUI,SearchControls,NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
+class Client(TimeControls,QuietUI,SearchControls,NotificationControls,QuickControls,PermissionSetup,LocalConsole,AnnouncementUI,KoelUI):
     def __init__(self, sock, name, hostname, notify=True, role='lobby', initial_command=None, auth_session=None):
         from .popup_permissions import ensure_session
         ensure_session()
         self.uid = auth_session.get('uid') if auth_session else None
+        from .local_console import use_account
+        use_account(auth_session.get('login',name) if auth_session and auth_session.get('uid') else None)
         self.secure = auth_session is not None
         self.signed_in = bool(auth_session and auth_session.get('uid'))
         self.remote_approved = False
@@ -792,6 +797,9 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 self.id = msg['id']
                 if getattr(self, 'secure', False):
                     self.name = msg['name']
+                    if self.signed_in:
+                        from .local_console import use_account
+                        use_account(self.name)
                 if getattr(self,'initial_command',None):
                     self.send(dict(type='command',text=self.initial_command))
                     self.initial_command = None
@@ -943,7 +951,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         if campus:players=overlay_campus(getattr(self,'cluster_players',[]),players)
         from .lobby_view import relationship_overlay
         tracker=getattr(self,'tracker',None)
-        players=relationship_overlay(players,getattr(tracker,'data',{}))
+        players=relationship_overlay(players,getattr(tracker,'data',{}),self.name if getattr(self,'signed_in',False) else None)
         content = lobby_lines(players,getattr(self,'lobby_view','roster'),getattr(self,'cluster',1))
         if campus:
             content[-1]=[('API seat snapshot; unmarked desks have no active reported login. /clusters refreshes.',0)]
@@ -1038,7 +1046,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         banner = curses.A_BOLD | curses.A_REVERSE
         if getattr(self,'colors',False):
             banner |= curses.color_pair(4 if game_window else 2)
-        label = f" LAN42 | {self.window_label()} | {self.name} [{'42 signed in' if getattr(self,'signed_in',getattr(self,'secure',False)) else 'Guest'}] | "+('ONLINE' if self.connected else 'DISCONNECTED')
+        label = f" LAN42 | {self.window_label()} | {self.name} [{'42 signed in' if getattr(self,'signed_in',getattr(self,'secure',False)) else 'Guest'}] | "+('ONLINE' if self.connected else 'DISCONNECTED')+' | '+self.clock_badge()
         self.line(screen,0,label.ljust(w-1),banner)
         hint = ('GAME CONTROLS: /start /leave /quit | /lobby /game | HQ stays in its other window'
                 if game_window else 'HQ: /join IP [PORT] | /game NAME | /games | /who')
@@ -1133,6 +1141,19 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
         if self.notification_command(text):return True
         if self.host_settings_command(text):return True
         parts = text.split()
+        if parts[:1]==['/settings'] and len(parts)>1 and parts[1] in ('storage','export','import'):
+            import shlex
+            from .preferences import perform
+            try:
+                args=shlex.split(text)
+                if len(args)>3:raise ValueError('Quote folder paths containing spaces.')
+                self.lines.append(perform(args[1],args[2] if len(args)>2 else None))
+                if args[1]=='import' or args[1]=='storage' and len(args)>2:
+                    from .tracking import Tracker
+                    self.tracker=Tracker(self.name)
+                self.lines.append('Friends, lists, cluster choices and login preferences are portable. Credentials, sessions and device consent stay local. Reopen LAN42 after changing storage/importing.')
+            except (OSError,ValueError) as error:self.lines.append(str(error))
+            return True
         if not parts or parts[0] not in ('/settings','/profile'):
             return False
         if len(parts)==1 and parts[0]=='/profile':
@@ -1148,6 +1169,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                 '/volume [0–100] — desktop output; /settings audio-auto-on on|off — uwu unmute',
                 '/settings audio-startup-volume on|off — set output to 30% on HQ launch',
                 '/settings clusters-auto-open on|off — open the clusters miniapp with HQ',
+                '/settings storage [FOLDER] — link portable preferences; /settings export FOLDER | import FOLDER',
                 '/uwu auto|off — persistent local automatic calls; /settings koel-sound always — persistent sound consent',
                 '/settings host-discovery on|off | auto-host-join on|off | host-poll 60–300',
                 '/settings permissions — browser, popup and notification consent',
@@ -1432,6 +1454,8 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             for pair,color in enumerate((curses.COLOR_CYAN,curses.COLOR_YELLOW,curses.COLOR_MAGENTA,
                                          curses.COLOR_BLUE,curses.COLOR_RED,curses.COLOR_WHITE),2):
                 curses.init_pair(pair,color,curses.COLOR_BLACK)
+            from .lobby_view import init_cluster_colors
+            init_cluster_colors(curses)
             self.colors = True
         if getattr(self,'role','lobby')=='lobby':
             self.koel_favorite(startup=True)
@@ -1444,6 +1468,7 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
             self.occupancy_tick()
             self.tracking_tick()
             self.announcement_tick()
+            self.time_tick()
             self.quiet_tick()
             self.uwu_auto_tick()
             self.permission_tick()
@@ -1533,6 +1558,8 @@ class Client(QuietUI,SearchControls,NotificationControls,QuickControls,Permissio
                         self.link_friend(address(parts[1]),int(parts[2]) if len(parts)==3 else self.port)
                     except ValueError as exc:
                         self.lines.append(str(exc))
+                elif self.time_command(text):
+                    pass
                 elif text=='/forknite' or text.startswith('/forknite '):
                     self.open_game('/game forknite')
                 elif text.startswith('/game ') or (getattr(self,'role','lobby')=='lobby' and (text.startswith('/host ') or text.startswith('/join '))):

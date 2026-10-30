@@ -419,3 +419,122 @@ local operator can view them. Guest/remote-approval-only windows prompt for
 sign-in instead. FORKNITE has the same private browser header. No names are sent
 in the status payload. One mode-600 current-count file outside Git serves local
 operator windows; it overwrites the previous count and is not a history log.
+
+
+## Cluster colors and portable preferences
+
+Cluster 1 uses cyan headings and row/seat labels; cluster 2 uses amber. Your own
+signed-in entry has a contrasting white **You** badge in the map and roster,
+including when you also belong to a friend/list category. The local operator
+hnah is recognized in the dedicated clusters window too. Text labels remain
+available without color. Friend/list/status colors retain their meanings.
+
+Friends, relationships, named lists, campus arrival rules, cluster auto-open and
+login, notification, search, audio and saved popup preferences are portable JSON preferences, keyed by your login rather than
+your Linux/macOS username. Use your own private repository and a dedicated folder:
+
+```text
+/settings storage "/path/to/private-repo/42/lan42"
+/settings storage
+/settings export "/path/to/local-backup"
+/settings import "/path/to/local-backup"
+```
+
+`storage FOLDER` copies the existing portable preferences and creates the local
+`~/.config/42sg-campus-lan/preferences` symlink to that folder. The actual local
+root follows XDG_CONFIG_HOME when set. Existing local files are retained; a
+conflicting destination is reported rather than overwritten. Git checkouts lose
+private mode bits, so explicitly choosing a dedicated preferences folder restores
+mode 700 on that folder and mode 600 on its files. A symlinked file is refused.
+
+On another Mac/Linux computer, clone your private repository and run the same
+storage command using that computer's path. Alternatively, export and import the
+folder. Imports preserve existing conflicting settings for manual reconciliation.
+The equivalent terminal command is:
+
+```sh
+python3 -m campus_lan.preferences storage "/path/to/private-repo/42/lan42"
+python3 -m campus_lan.preferences export "/path/to/local-backup"
+python3 -m campus_lan.preferences import "/path/to/local-backup"
+```
+
+The folder contains private relationship information: keep it in a private repo.
+Selecting a folder does not commit or push it. Authentication credentials, TLS
+keys/trust, bearer sessions, host approvals, one-time popup grants, command
+history, file-sharing receive approvals and local directory paths stay local.
+Saved popup/audio/search/notification choices follow the account as requested.
+KoelDrop always-join is scoped to the verified numeric account and pinned host;
+its directory choice remains in the local account configuration, without a
+seat/hostname key. Existing seat-specific choices migrate once, retaining the
+originals and using the most recent saved choice. Copying preferences never signs you in or authorizes a
+host. Reopen LAN42 after switching storage/importing so all windows use it.
+
+
+## Clock, alarms, timers and stopwatch
+
+The HQ header shows the clock, plus a running stopwatch and nearest timer.
+The default is **GMT+8**, independent of the computer's timezone. UTC is **Z**
+(Zulu). A decimal offset is hours: `+4.5` means **GMT+4:30**.
+
+```text
+/clock
+/clock zone +8
+/clock zone Z
+/clock display utc
+/clock display +8
+/clock display +4.5
+/clock display local
+/alarm 30m Take a break
+/alarm 8
+/alarm 162532
+/alarm 162121+4.5
+/alarm 162121Z
+/alarm daily 8pm Dinner
+/alarm weekdays 08:00
+/alarm weekly mon,wed 16:25
+/alarm every 30m Stretch
+/alarm on 2026-12-01 8pm
+/alarm list
+/alarm cancel ID
+/alarm snooze ID 5m
+/alarm clear
+/timer 5m Tea
+/timer pause ID
+/timer resume ID
+/timer status
+/timer cancel ID
+/stopwatch start
+/stopwatch lap
+/stopwatch pause
+/stopwatch status
+/stopwatch reset
+```
+
+`/alarm` shows schedules and setup examples. `/alarm 8` asks **am or pm**;
+nothing is scheduled until you answer. `162532` is **16:25:32**.
+`162121+4.5` is **16:21:21 at GMT+4:30**, not 16:21:21 GMT+8.
+Offsets may also use `+4:30` or `+0430`; `Z`, `z`, `+Z` and `+z` mean UTC.
+Saved due timestamps use canonical ISO 8601 UTC strings ending in uppercase `Z`;
+the original scheduling offset is retained separately for wall-clock recurrence.
+Internal UTC storage does not force UTC viewing: timestamps display in GMT+8
+unless the schedule explicitly chose UTC, or `/clock display utc` is enabled.
+`/clock display +8`, `+4`, `+4.5`, `+04:30`, `UTC` or `Z` explicitly converts
+all timestamp views to that offset. `/clock display local` restores automatic
+GMT+8 viewing, keeping explicitly UTC schedules in UTC. Thus the
+`162121+4.5` example displays as **19:51:21 GMT+8**, while `162121Z` displays
+as **16:21:21 UTC**. A clock-only time uses
+its next occurrence. Daily, weekday and weekly alarms retain the timezone used
+when created. `/clock zone` changes the default for future wall-clock schedules.
+Relative durations support seconds/minutes/hours/days, such as `1h30m`.
+Bare numbers are seconds for timers, hours (with AM/PM clarification) for alarms.
+
+**HQ must be running for alarms to fire.** Saved alarms/timers follow the account
+and portable preferences; an overdue schedule is shown once when HQ reopens.
+Missed recurring occurrences are not replayed as a burst. Multiple HQ windows
+claim each due alarm once. There is no separate background clock service.
+A stopwatch uses a monotonic clock and is **session-only**. Restarting HQ loses
+its running state and laps. No test starts a real alarm or plays audio.
+
+Alarms always appear inside HQ. Desktop delivery respects `--no-notify`, saved
+popup denial and `/notify all off`; `/notify alarms on|off` controls that channel.
+Clock tools never raise system volume or enable sound permissions automatically.

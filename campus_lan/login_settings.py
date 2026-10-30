@@ -1,6 +1,7 @@
 """Local login preferences; no credentials or browser data in this file."""
 import json
 from .auth import config_dir,private_read,private_write
+from .preferences import settings_path
 
 _paused=False
 
@@ -15,7 +16,7 @@ def auto_login_paused():return _paused
 
 class LoginSettings:
     def __init__(self):
-        self.path=config_dir()/'login-settings.json'
+        self.path=settings_path('login-settings.json',config_dir())
         self.data=dict(autologin='off',close_tab=True,autologin_asked=False);self.error=None
         try:
             data=json.loads(private_read(self.path))

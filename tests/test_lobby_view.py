@@ -58,6 +58,20 @@ class LobbyView(unittest.TestCase):
         self.assertIn('Empty*',''.join(text for text,_ in rows[1]))
         self.assertTrue(any(style==0 and text=='[06]' for row in rows for text,style in row))
 
+    def test_cluster_flavours_and_self_override_relationship_without_guest_spoof(self):
+        from campus_lan.lobby_view import CLUSTER_STYLES,SELF_STYLE
+        people=[dict(player('hnah','c1r1s1'),api_presence=True),
+                dict(player('other','c2r1s1'),api_presence=True),player('hnah')]
+        decorated=relationship_overlay(people,{'people':{'hnah':{'relationship':'friends'}}},'hnah')
+        self.assertEqual(player_style(decorated[0]),SELF_STYLE)
+        self.assertEqual(player_style(decorated[2]),GUEST_STYLE)
+        self.assertEqual(len({SELF_STYLE,*CLUSTER_STYLES.values()}),3)
+        rows=lobby_lines(decorated,'roster',0)
+        self.assertTrue(any('CLUSTER 1' in text and style==CLUSTER_STYLES[1] for row in rows for text,style in row))
+        self.assertTrue(any('CLUSTER 2' in text and style==CLUSTER_STYLES[2] for row in rows for text,style in row))
+        self.assertIn('/ you',''.join(text for row in rows for text,_ in row))
+        self.assertNotIn('local_self',people[0])
+
     def test_guest_name_cannot_claim_friend_or_list_color(self):
         decorated=relationship_overlay([player('friend')],dict(people={'friend':dict(relationship='friends')},lists={'lunch':['friend']}))
         self.assertEqual(player_style(decorated[0]),GUEST_STYLE)

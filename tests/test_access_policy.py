@@ -30,9 +30,32 @@ class PolicyTests(unittest.TestCase):
         self.assertFalse(p.is_admin('234449'));self.assertFalse(p.is_admin(True))
         self.assertTrue(p.is_admin(INITIAL_OWNER_UID))
         self.assertFalse(p.is_admin(2));self.assertEqual(p.require_member(member())['uid'],2)
-        with patch('campus_lan.access.host_id',return_value='b'*64):
+        with patch('campus_lan.access.host_id',return_value='b'*64), patch.object(p,'campus_owner_host',return_value=False):
             with self.assertRaises(AuthError):p.require_host()
         with patch('campus_lan.access.host_id',return_value=HOST):p.require_host()
+
+    def test_explicit_campus_owner_roams_without_enrolling_machines(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'XDG_CONFIG_HOME':tmp}), \
+                patch('campus_lan.access.host_id',return_value='b'*64), \
+                patch('campus_lan.access.platform.system',return_value='Linux'), \
+                patch('pwd.getpwuid',return_value=Mock(pw_name='hnah')), \
+                patch('campus_lan.auth_daily.current_seat',return_value='10.11.3.1') as seat:
+            p=policy()
+            with self.assertRaises(AuthError):p.require_host()
+            private_write(config_dir()/'campus-owner-host.json',json.dumps(dict(schema=1,uid=INITIAL_OWNER_UID,os_account='hnah')))
+            private_write(config_dir()/'local-operator.json',json.dumps(dict(uid=INITIAL_OWNER_UID)))
+            p.require_host()
+            self.assertEqual(p.data['approved_hosts'],[HOST])
+            with patch('pwd.getpwuid',return_value=Mock(pw_name='student')):
+                with self.assertRaises(AuthError):p.require_host()
+            seat.side_effect=AuthError('Not locally assigned')
+            with self.assertRaises(AuthError):p.require_host()
+            seat.side_effect=None
+            p.data['admins']=[2]
+            with self.assertRaises(AuthError):p.require_host()
+            p.data['admins']=[INITIAL_OWNER_UID]
+            (config_dir()/'campus-owner-host.json').unlink()
+            with self.assertRaises(AuthError):p.require_host()
 
     def test_operator_and_admin_are_independent_and_policy_revocation_is_live(self):
         with tempfile.TemporaryDirectory() as tmp,patch.dict(os.environ,{'XDG_CONFIG_HOME':tmp}),patch('campus_lan.access.host_id',return_value=HOST):
@@ -123,7 +146,7 @@ class ServerBoundaries(unittest.IsolatedAsyncioTestCase):
     async def test_host_revocation_blocks_existing_sessions(self):
         p=policy()
         b=Broker(Mock(),policy_factory=lambda:p);b.sessions['key']=dict(member(),expires=time.time()+100)
-        with patch('campus_lan.access.host_id',return_value=HOST):
+        with patch('campus_lan.access.host_id',return_value=HOST), patch.object(p,'campus_owner_host',return_value=False):
             self.assertTrue(b.active('key'));p.data['approved_hosts']=[];self.assertFalse(b.active('key'))
 
 class LocalOwnerViews(unittest.TestCase):

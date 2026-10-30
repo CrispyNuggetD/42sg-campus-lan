@@ -35,9 +35,17 @@ LIST_STYLE=2    # cyan
 SIGNED_STYLE=1  # green
 GUEST_STYLE=3   # yellow
 API_STYLE=5     # blue
+CLUSTER_STYLES={1:8,2:9}  # cool cyan / warm amber
+SELF_STYLE=10             # high-contrast personal badge
 
 
-def relationship_overlay(players, data):
+def init_cluster_colors(curses):
+    curses.init_pair(8,curses.COLOR_CYAN,curses.COLOR_BLACK)
+    curses.init_pair(9,curses.COLOR_YELLOW,curses.COLOR_BLACK)
+    curses.init_pair(10,curses.COLOR_BLACK,curses.COLOR_WHITE)
+
+
+def relationship_overlay(players, data, owner=None):
     """Local display decoration only; never send relationship/list data to peers."""
     people=data.get('people',{})
     listed={name for members in data.get('lists',{}).values() for name in members}
@@ -47,11 +55,12 @@ def relationship_overlay(players, data):
         trusted=player.get('verified') or player.get('api_presence')
         friendly=people.get(name,{}).get('relationship') in {'friends','mutuals','oomf'}
         kind='friend' if trusted and friendly else 'list' if trusted and name in listed else None
-        result.append(dict(player,local_relationship=kind))
+        result.append(dict(player,local_relationship=kind,local_self=bool(trusted and owner and name==owner.lower())))
     return result
 
 
 def player_style(player):
+    if player.get('local_self'):return SELF_STYLE
     if player.get('local_relationship')=='friend':return FRIEND_STYLE
     if player.get('local_relationship')=='list':return LIST_STYLE
     if player.get('api_presence') and not player.get('lan42_peer'):return API_STYLE
@@ -59,7 +68,7 @@ def player_style(player):
 
 
 def map_legend():
-    return [('Friend ',FRIEND_STYLE),('List ',LIST_STYLE),('Signed/approved ',SIGNED_STYLE),
+    return [('You ',SELF_STYLE),('Friend ',FRIEND_STYLE),('List ',LIST_STYLE),('Signed/approved ',SIGNED_STYLE),
             ('Guest ',GUEST_STYLE),('API only ',API_STYLE),('Empty* ',0),('[++]: shared',0)]
 
 
@@ -81,7 +90,8 @@ def player_line(number, player, location):
     status=('Remote approved / '+('42 signed in' if player.get('verified') else 'unverified')) if player.get('remote_approved') else ('LAN42 verified' if player.get('verified') else 'LAN42 guest') if player.get('lan42_peer') else 'API login' if player.get('api_presence') else '42 Verified' if player.get('verified') else 'Guest'
     relation=player.get('local_relationship')
     if relation:status+=' / '+relation
-    return [(f'{number:>3}. {name:<24}', player_style(player)),(f' {label:<22} {status}',0)]
+    if player.get('local_self'):status+=' / you'
+    return [(f'{number:>3}. {name:<24}', player_style(player)),(f' {label:<22} {status}',CLUSTER_STYLES.get(location[0],0) if location else 0)]
 
 
 def lobby_lines(players, view='roster', cluster=1):
@@ -96,14 +106,14 @@ def lobby_lines(players, view='roster', cluster=1):
         lines = []
         for group,title in ((1,'CLUSTER 1'), (2,'CLUSTER 2'), (3,'OFF CAMPUS / SEAT UNKNOWN')):
             members = [(n,p,s) for n,p,s in entries if (s[0] if s else 3)==group]
-            lines.append(plain(f'{title} - {len(members)} online'))
+            lines.append([(f'{title} - {len(members)} online',CLUSTER_STYLES.get(group,0))])
             lines.extend(player_line(n,p,s) for n,p,s in members)
             if not members:
                 lines.append(plain('     Nobody connected here yet.'))
             lines.append(plain(''))
         return lines
 
-    lines = [plain(f'CLUSTER {cluster} - physical seat map (even desks above odd desks)'),
+    lines = [[(f'CLUSTER {cluster} - physical seat map (even desks above odd desks)',CLUSTER_STYLES[cluster])],
              map_legend()]
     occupied = {}
     for n,p,s in entries:
@@ -111,7 +121,7 @@ def lobby_lines(players, view='roster', cluster=1):
             occupied.setdefault((s[1],s[2]), []).append((n,p))
     for row,count in LAYOUT[cluster].items():
         for parity in (0,1):
-            line = [(f'R{row:<2} ' if parity==0 else '    ',0)]
+            line = [(f'R{row:<2} ' if parity==0 else '    ',CLUSTER_STYLES[cluster])]
             for desk in range(1,count+1):
                 if desk % 2 != parity:
                     line.append(('    ',0))
@@ -120,7 +130,7 @@ def lobby_lines(players, view='roster', cluster=1):
                 token,style = f'[{desk:02}]',0
                 if members:
                     priority={'friend':0,'list':1}
-                    n,p = min(members,key=lambda item:priority.get(item[1].get('local_relationship'),2 if item[1].get('verified') else 3 if item[1].get('lan42_peer') else 4))
+                    n,p = min(members,key=lambda item:(-1 if item[1].get('local_self') else priority.get(item[1].get('local_relationship'),2 if item[1].get('verified') else 3 if item[1].get('lan42_peer') else 4)))
                     token = '[++]' if len(members)>1 else (f'[#{n}]' if n<10 else f'[{n:02}]' if n<100 else '[**]')
                     style = player_style(p)
                 line.append((token,style))

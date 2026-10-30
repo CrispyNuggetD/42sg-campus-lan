@@ -43,7 +43,8 @@ class SyncSession:
                 except Conflict:conflicts.append(offer.path)
             if offer.version not in self.pending:
                 self.pending[offer.version]=offer
-                notices.append(file_notice(offer,self.mirror.path/offer.path,sound_enabled))
+                if offer.author_uid!=self.mirror.uid:
+                    notices.append(file_notice(offer,self.mirror.path/offer.path,sound_enabled))
         return dict(uploaded=uploaded,received=received,conflicts=conflicts,notices=notices,limited=limited)
 
     def accept(self,version):

@@ -88,10 +88,10 @@ class Courier:
         self.limited_paths=limited
         pending=list(self.sync.pending.values())
         # Stable file IDs are the immutable server versions, never arbitrary paths or URLs.
-        conflicts=[dict(version=o.version,path=o.path,author=o.author) for o in pending if o.path in result['conflicts'] and not o.deleted]
-        self.emit(lines=lines,conflicts=conflicts,offers=[dict(version=o.version,path=o.path,author=o.author,deleted=o.deleted,size=o.size) for o in pending],
-                  notices=[dict(version=o.version,path=o.path,author=o.author,deleted=o.deleted,size=o.size) for o in pending
-                           if o.version not in before])
+        conflicts=[dict(version=o.version,path=o.path,author=o.author,author_uid=o.author_uid) for o in pending if o.path in result['conflicts'] and not o.deleted and o.author_uid!=self.uid]
+        self.emit(lines=lines,conflicts=conflicts,offers=[dict(version=o.version,path=o.path,author=o.author,author_uid=o.author_uid,deleted=o.deleted,size=o.size) for o in pending],
+                  notices=[dict(version=o.version,path=o.path,author=o.author,author_uid=o.author_uid,deleted=o.deleted,size=o.size) for o in pending
+                           if o.version not in before and o.author_uid!=self.uid])
 
     def perform(self,operation,args):
         if operation=='create':

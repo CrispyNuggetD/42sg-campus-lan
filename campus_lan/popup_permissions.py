@@ -7,6 +7,7 @@ import re
 import secrets
 import atexit
 from .auth import config_dir,private_read,private_write
+from .preferences import settings_path
 
 BROWSER_CATEGORIES={'search','help','forknite','profiles','signin','tools','photos'}
 CATEGORIES=('browser','help','forknite','profiles','signin','tools','photos','notifications','terminals','search')
@@ -37,7 +38,7 @@ def session_alive():
 class Permissions:
     def __init__(self,owner):
         self.owner=owner
-        self.path=config_dir()/('popup-permissions-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json')
+        self.path=settings_path('popup-permissions-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json',config_dir())
         self.policies={};self.error=None;self.once=set()
         self.reload()
 

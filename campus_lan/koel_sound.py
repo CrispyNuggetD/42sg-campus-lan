@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from .auth import private_read,private_write,config_dir
+from .preferences import settings_path
 from .popup_permissions import Permissions
 
 ASSET=Path(__file__).resolve().parents[1]/'assets/sounds/uwu.ogg'
@@ -11,7 +12,7 @@ MAC_ASSET=ASSET.with_name('uwu.wav')
 class SoundChoice:
     def __init__(self,owner):
         import hashlib
-        self.preference=config_dir()/('koel-sound-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json')
+        self.preference=settings_path('koel-sound-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json',config_dir())
         session=Permissions(owner).session_path()
         self.path=session.with_name(session.stem+'-koel.json') if session else None
         self.local=dict(asked=False,enabled=False)
@@ -44,7 +45,7 @@ class AutoChoice:
     """Persistent local automatic-call choice, separate from sound consent."""
     def __init__(self,owner):
         import hashlib
-        self.path=config_dir()/('koel-auto-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json')
+        self.path=settings_path('koel-auto-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json',config_dir())
 
     def read(self):
         try:return json.loads(private_read(self.path)).get('enabled') is True

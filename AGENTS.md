@@ -255,3 +255,23 @@ fallback when tmux is declined. Optional game/API-host dependencies remain separ
 ## Owner-requested add-only KoelDrop
 
 The public file API assigns authenticated sender/revision filenames and accepts additions only. Never expose replacement or shared deletion routes. Retain older data; mutable-history helpers are for historical fixtures/internal storage only. Enforce persisted per-student rolling limits across groups: shared 6 additions/24 MiB per minute, own folder 30/96 MiB. Return canonical receipts via pinned transport; never silently remove source files or auto-approve incoming files. F3 opens both clusters through existing API authorization.
+
+## Owner-authorized campus account roaming
+
+The owner clarified that the managed Linux hnah host follows their campus OS
+account across seats, rather than requiring approval of each physical machine.
+Preserve the explicit private campus-owner-host.json account grant and its actual
+local seat-address, OS-account, numeric operator and admin checks. Do not silently
+create this grant for students or infer it from a client login/IP alone. Machine
+approval remains the separate path for other hosts. See docs/access-policy.md.
+
+## Account-scoped settings and self-upload notices
+
+The owner explicitly requests personal settings to follow the verified Intra
+account, not IP/seat/hostname. Friends, lists, popup/audio/search/notification
+choices and KoelDrop join preferences must survive campus seat changes. Keep
+command history, one-time grants and popup-rate dedup separate from preferences.
+Authentication tokens/credentials and host roles are not portable preferences.
+KoelDrop self-upload offers may remain available for manual recovery, but never
+send incoming-file desktop prompts for the same authenticated numeric author UID.
+Do not auto-download, reject or delete those retained files to suppress prompts.

@@ -2,11 +2,12 @@
 import hashlib
 import json
 from .auth import config_dir,private_read,private_write
+from .preferences import settings_path
 
 
 class ClusterSettings:
     def __init__(self,owner):
-        self.path=config_dir()/('clusters-auto-open-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json')
+        self.path=settings_path('clusters-auto-open-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json',config_dir())
 
     def read(self):
         try:return json.loads(private_read(self.path)).get('enabled') is True

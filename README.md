@@ -21,12 +21,12 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <!-- shell-installer-features:start -->
 - **Campus HQ:** `lan42` uses its own tmux session in an Ubuntu terminal tab; no-sudo setup asks before Python/tmux installation. Mac hosts can opt into one-connection remote guest approval; approval is separate from Intra sign-in.
-- **Find your people:** `/who` lists peers; `/track` groups relationships/lists with a private SG whitelist. Owner `/tool` accepts logins or local SG/cohort selectors; invalid logins are skipped. The saver closes photo tabs.
+- **Find your people:** `/who` and `/track` show friends/lists. Cyan/amber clusters have a personal You badge. Settings link/export/import portable preferences to a private folder. Owner `/tool` supports SG selectors.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. Purple marks the odd-table last eater; orange marks overdue waits. `/sabo online` supports cluster filters; `/sabo verified` selects active SG sign-ins.
-- **Easy controls:** F2 sign in/out; F3 opens a separate clusters window with optional auto-open; F4 mute, F5 output 0/30%, F6 uwu once, F7 saved auto uwu; optional 30% HQ launch volume; Up/Down history and !COMMAND.
+- **Easy controls:** F2 sign in/out, F3 clusters, F4 mute, F5 volume, F6/F7 uwu. `/alarm`, `/timer`, `/stopwatch` and `/clock` add account-scoped GMT+8 schedules, recurring alarms and explicit timezone offsets.
 - **Useful alerts:** moderated `/broadcast`, pinned host arrival and exam-time LAN42-only audio quiet. `/notify` separates alerts from DMs/pokes; release popups are coalesced and daily-limited.
-- **Versioned server:** startup shows version/date; `/changelog` explains releases. Enrolled operators can read own SG hours. Mac/Linux ask [y/N] before package-wide reloads after checkout updates.
+- **Versioned server:** startup shows version/date; `/changelog` explains releases. hnah’s managed host follows the campus account; operators can read own SG hours. Mac/Linux ask [y/N] before package-wide reloads after checkout updates.
 - **Web search:** `/search` defaults to Ecosia; Google/custom engines are optional. Permanent aggregate impact totals and estimated unique searches have a counting opt-out.
 <!-- shell-installer-features:end -->
 
