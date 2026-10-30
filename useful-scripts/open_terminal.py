@@ -28,7 +28,10 @@ def main():
         install = 'sh '+str(REPO/'setup.sh')
         raise RuntimeError('tmux is required for LAN42 workspaces. Install it: ' + install +
                            '. Use lan42_here to run directly in this terminal meanwhile.')
-    result=subprocess.run(terminal_command(REPO, args=sys.argv[1:]), check=True,capture_output=True,text=True)
+    result=subprocess.run(terminal_command(REPO, args=sys.argv[1:]), capture_output=True,text=True)
+    if result.returncode:
+        detail=result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(detail or f'Terminal helper exited with status {result.returncode}.')
     if sys.argv[1:2]==['clusters'] and result.stdout.startswith('Already open:'):
         sys.path.insert(0,str(REPO))
         from campus_lan.tmux_control import refresh_cluster_window

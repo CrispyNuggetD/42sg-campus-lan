@@ -58,6 +58,19 @@ class TerminalSetup(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, hint):
                     module.main()
 
+    def test_helper_failure_reports_captured_reason(self):
+        for stderr, stdout, expected in (
+            ('daily tmux: cannot switch client\n', '', 'cannot switch client'),
+            ('', 'helper unavailable\n', 'helper unavailable'),
+            ('', '', 'status 1'),
+        ):
+            result=subprocess.CompletedProcess([],1,stdout,stderr)
+            with patch.object(module.shutil,'which',return_value='/mock/tmux'), \
+                 patch.object(module.subprocess,'run',return_value=result), \
+                 patch.object(module.sys,'argv',['open_terminal.py','clusters']):
+                with self.assertRaisesRegex(RuntimeError,expected):
+                    module.main()
+
     def test_setup_defaults_to_append_and_opt_out_leaves_rc(self):
         with tempfile.TemporaryDirectory() as tmp:
             rc = Path(tmp)/'.zshrc'
