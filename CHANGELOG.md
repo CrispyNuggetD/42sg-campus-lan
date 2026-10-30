@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.24.0-beta.1 · 2026-10-30T16:59:26+08:00
+
+- feat: combine portable preferences and resolve settings conflicts
+
 ## 2.23.0-beta.1 · 2026-10-30T15:30:42+08:00
 
 - feat: add seat ranges and restore saved startup behavior

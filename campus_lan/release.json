@@ -1,8 +1,16 @@
 {
-  "version": "2.23.0-beta.1",
-  "date": "2026-10-30T15:30:42+08:00",
-  "source": "e81c7de67638dd5987d8397f7cc36c4bf40de7a0",
+  "version": "2.24.0-beta.1",
+  "date": "2026-10-30T16:59:26+08:00",
+  "source": "29f55d823c388cbc4085309eeb17360cf6664619",
   "history": [
+    {
+      "version": "2.24.0-beta.1",
+      "date": "2026-10-30T16:59:26+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: combine portable preferences and resolve settings conflicts"
+      ]
+    },
     {
       "version": "2.23.0-beta.1",
       "date": "2026-10-30T15:30:42+08:00",
@@ -558,5 +566,5 @@
       ]
     }
   ],
-  "runtime_sha256": "6738473ac38a58a5fd182d1485e7f681b3e5b98b72fef4cd41f37f1f92aca942"
+  "runtime_sha256": "51a3848113312d6cf06166705fdf301ce3880c4b3269ff5f1fb04e379f4a887e"
 }
