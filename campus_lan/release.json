@@ -1,8 +1,16 @@
 {
-  "version": "2.26.1-beta.1",
-  "date": "2026-10-30T20:37:45+08:00",
-  "source": "331541706b9c59ac849853eb3809ab6d74d32a65",
+  "version": "2.26.2-beta.1",
+  "date": "2026-11-02T16:44:54+08:00",
+  "source": "229bf2b69542818f22e505f16ae9164b36a38ff6",
   "history": [
+    {
+      "version": "2.26.2-beta.1",
+      "date": "2026-11-02T16:44:54+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: refresh the campus cluster window automatically"
+      ]
+    },
     {
       "version": "2.26.1-beta.1",
       "date": "2026-10-30T20:37:45+08:00",
@@ -590,5 +598,5 @@
       ]
     }
   ],
-  "runtime_sha256": "6c36c8cc5f18a0de3eeac9110950aedd7d3542d735cb980b5da4242667517c3d"
+  "runtime_sha256": "b0dd2f1eb1cf54fae6130864a75b05048dc69a16a102381a5133fc1ad4346a93"
 }
