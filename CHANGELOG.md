@@ -4,6 +4,11 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.27.0-beta.1 · 2026-11-02T17:47:47+08:00
+
+- feat: run FORKNITE tournaments with start bonus
+- fix: show FORKNITE bonus startup hints and evaluation workflow
+
 ## 2.26.2-beta.1 · 2026-11-02T16:44:54+08:00
 
 - fix: refresh the campus cluster window automatically

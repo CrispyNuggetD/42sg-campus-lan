@@ -1,8 +1,17 @@
 {
-  "version": "2.26.2-beta.1",
-  "date": "2026-11-02T16:44:54+08:00",
-  "source": "229bf2b69542818f22e505f16ae9164b36a38ff6",
+  "version": "2.27.0-beta.1",
+  "date": "2026-11-02T17:47:47+08:00",
+  "source": "13f98a887b01f4518f2c963b1c16201b6f041655",
   "history": [
+    {
+      "version": "2.27.0-beta.1",
+      "date": "2026-11-02T17:47:47+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: run FORKNITE tournaments with start bonus",
+        "fix: show FORKNITE bonus startup hints and evaluation workflow"
+      ]
+    },
     {
       "version": "2.26.2-beta.1",
       "date": "2026-11-02T16:44:54+08:00",
@@ -598,5 +607,5 @@
       ]
     }
   ],
-  "runtime_sha256": "b0dd2f1eb1cf54fae6130864a75b05048dc69a16a102381a5133fc1ad4346a93"
+  "runtime_sha256": "525431aa19ee794c581e6ff110f6b9f4d4b420a6f795f344b109138823c9d002"
 }
