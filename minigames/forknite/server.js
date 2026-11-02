@@ -20,6 +20,11 @@ const seating=require('./seating');
 let settings=controlSecret?{...rules.presets.chill}:{die:Number(args[1]||130),eat:Number(args[2]||60),sleep:Number(args[3]||60),storm,shrink:Number(opt('--shrink','10')),meals:Number(args[4]||opt('--meals','3')),pause:4000};
 let phase='waiting',stopping=false;
 const binary = opt('--exec', null), port = Number(opt('--port', process.env.PORT || 4242));
+let nativeBinary=binary,nativeMode='mandatory';
+function killNative(signal='SIGTERM'){
+ if(!child)return;
+ try{process.kill(-child.pid,signal);}catch(e){if(e.code!=='ESRCH')child.kill(signal);}
+}
 const count = Number(opt('--count', args[0] || 50));
 if (!Number.isInteger(count) || count < 1 || count > 500 || (!piped && (!binary || args.length < 4))) {
  console.error('Usage: node server.js --exec /path/philo [--storm] -- 50 130 60 60\n   or: ./philo 50 130 60 60 | node server.js --pipe --count 50'); process.exit(1);
@@ -69,9 +74,9 @@ function begin() {
  emit('round',{round,args:runargs,count:controlSecret?players.size:count,players:roster()});
  const rawlog = fs.createWriteStream(path.join(logdir, session + '-round-' + round + '.log'));
  rawlog.on('error', e => { console.error(e.message); shutdown(); });
- const command = options.includes('--buffered') ? binary : 'stdbuf';
- const commandArgs = options.includes('--buffered') ? runargs : ['-oL', binary].concat(runargs);
- child = spawn(command, commandArgs, {stdio:['ignore','pipe','pipe']});
+ const command = options.includes('--buffered') ? nativeBinary : 'stdbuf';
+ const commandArgs = options.includes('--buffered') ? runargs : ['-oL', nativeBinary].concat(runargs);
+ child = spawn(command, commandArgs, {stdio:['ignore','pipe','pipe'],detached:true});
  consume(child.stdout, rawlog);
  child.stderr.on('data', b => { process.stderr.write(b); emit('stderr',{round,line:b.toString()}); });
  child.on('error', e => emit('error',{round,message:e.message}));
@@ -140,13 +145,13 @@ const server = http.createServer(async (req,res) => {
     campusStatus=value;return json(res,200,{ok:true});
    }
    if(data.action==='roster')return json(res,200,{players:roster()});
-   if(data.action==='status')return json(res,200,{phase,round,players:players.size,deadline,settings});
+   if(data.action==='status')return json(res,200,{phase,round,players:players.size,deadline,settings,mode:nativeMode});
    if(data.action==='configure'){
     if(active||timer)return json(res,409,{error:'Use /stop before changing timings or storm settings.'});
     const preset=data.preset&&rules.presets[data.preset];
     if(data.preset&&!preset)return json(res,400,{error:'Preset must be chill or chaos'});
     settings=rules.configure(preset?{...preset}:settings,data.patch||{});deadline=settings.die;
-    emit('settings',{settings});return json(res,200,{phase,round,players:players.size,deadline,settings});
+    emit('settings',{settings});return json(res,200,{phase,round,players:players.size,deadline,settings,mode:nativeMode});
    }
    if(data.action==='diners'){
     if(active||timer)return json(res,409,{error:'Use /stop before changing diners.'});
@@ -174,13 +179,13 @@ const server = http.createServer(async (req,res) => {
     emit('players',{players:roster()});return json(res,200,{added});
    }
    if(data.action==='sabo'){sabo(data.logins||[]);return json(res,200,{ok:true});}
-   if(data.action==='start'){if(active||timer)return json(res,409,{error:'Tournament already running. Use /stop first.'});if(players.size<2)return json(res,400,{error:'At least two diners are needed. Invite a friend or use /sabo LOGIN.'});stopping=false;deadline=settings.die;begin();return json(res,200,{ok:true});}
-   if(data.action==='stop'){stopping=true;clearTimeout(timer);timer=null;phase='stopped';if(child)child.kill();return json(res,200,{ok:true});}
+   if(data.action==='start'){if(active||timer)return json(res,409,{error:'Tournament already running. Use /stop first.'});if(players.size<2)return json(res,400,{error:'At least two diners are needed. Invite a friend or use /sabo LOGIN.'});const mode=data.mode||'mandatory';if(!['mandatory','bonus'].includes(mode))return json(res,400,{error:'Use /start or /start bonus.'});if(mode==='bonus'&&(typeof data.binary!=='string'||!path.isAbsolute(data.binary)||!fs.existsSync(data.binary)))return json(res,400,{error:'Configure philo_bonus on the room host.'});nativeMode=mode;nativeBinary=mode==='bonus'?data.binary:binary;stopping=false;deadline=settings.die;begin();return json(res,200,{ok:true});}
+   if(data.action==='stop'){stopping=true;clearTimeout(timer);timer=null;phase='stopped';killNative();return json(res,200,{ok:true});}
    if(data.action!=='members'||!Array.isArray(data.members)||data.members.length>count)throw Error();
    const members=data.members,ids=new Set(members.map(m=>m.id));auth.revoke(ids);
    auth.setCampusAccess(new Map(members.map(m=>[m.id,m.campus_access===true&&m.verified===true])));
    const previous=new Set(Array.from(players.values()).filter(p=>p.memberId).map(p=>p.memberId));
-   if((active||timer)&&(previous.size!==ids.size||Array.from(previous).some(id=>!ids.has(id)))){stopping=true;clearTimeout(timer);timer=null;phase='stopped';if(child)child.kill();emit('notice',{message:'Room membership changed. Tournament stopped; host can /start again.'});}
+   if((active||timer)&&(previous.size!==ids.size||Array.from(previous).some(id=>!ids.has(id)))){stopping=true;clearTimeout(timer);timer=null;phase='stopped';killNative();emit('notice',{message:'Room membership changed. Tournament stopped; host can /start again.'});}
 
    for(const [slot,p]of players)if(p.memberId&&!ids.has(p.memberId))players.delete(slot);
    const entries=[];
@@ -234,10 +239,10 @@ const server = http.createServer(async (req,res) => {
 let avatarRosterSignature='';
 const avatarRefresh=setInterval(()=>{const current=roster(),signature=JSON.stringify(current);if(signature!==avatarRosterSignature){avatarRosterSignature=signature;if(players.size)emit('players',{players:current});}},2000);
 const heartbeat=setInterval(()=>clients.forEach(res=>res.write(': heartbeat\n\n')),15000);
-function shutdown() { if(killed)return; killed=true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(avatarRefresh); if(child)child.kill('SIGTERM'); clients.forEach(r=>r.end()); server.close(); log.end(); }
+function shutdown() { if(killed)return; killed=true; clearTimeout(timer); clearInterval(heartbeat); clearInterval(avatarRefresh); killNative(); clients.forEach(r=>r.end()); server.close(); log.end(); }
 process.on('SIGINT',shutdown); process.on('SIGTERM',shutdown);
 server.listen(port,opt('--host','0.0.0.0'),()=>{
  console.error('\nFORKNITE → http://localhost:'+port+' | LAN: http://<this-machine-IP>:'+port+'\nLogs: '+logdir+'\n'+(piped?'Watching stdin; browsers can replay when it ends.':'Players join first. Type start + Enter here to run. Type stop to stop.'));
  if(piped){ active=true; round=1; emit('round',{round,count,args:[]}); consume(process.stdin,null).on('close',()=>{active=false;emit('end',{round,death:firstDeath});}); }
- else readline.createInterface({input:process.stdin}).on('line',s=>{ if(['/restart','restart','/update','update','/upgrade'].includes(s.trim())){maintenance(!['/restart','restart'].includes(s.trim()));return;} const words=s.trim().replace(/^\//,'').split(/\s+/); if(words[0]==='sabo')sabo(words.slice(1)); if(s.trim()==='start')begin(); if(s.trim()==='stop'){ clearTimeout(timer); if(child)child.kill('SIGTERM'); } });
+ else readline.createInterface({input:process.stdin}).on('line',s=>{ if(['/restart','restart','/update','update','/upgrade'].includes(s.trim())){maintenance(!['/restart','restart'].includes(s.trim()));return;} const words=s.trim().replace(/^\//,'').split(/\s+/); if(words[0]==='sabo')sabo(words.slice(1)); if(s.trim()==='start')begin(); if(s.trim()==='stop'){ clearTimeout(timer); killNative(); } });
 });

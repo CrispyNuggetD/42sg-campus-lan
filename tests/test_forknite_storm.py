@@ -12,6 +12,34 @@ from campus_lan.forknite_room import ForkniteRoom
 
 @unittest.skipUnless(shutil.which('node'),'Node.js required')
 class Storm(unittest.IsolatedAsyncioTestCase):
+    async def test_bonus_binary_is_selected_and_plain_start_restores_mandatory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mandatory=Path(tmp)/'philo';bonus=Path(tmp)/'philo_bonus'
+            for binary,stamp in ((mandatory,10),(bonus,20)):
+                binary.write_text('#!/bin/sh\nprintf "'+str(stamp)+' 1 died\\n"\n')
+                binary.chmod(0o700)
+            with patch.dict(os.environ,{'LAN42_PHILO_BINARY':str(mandatory),'LAN42_PHILO_BONUS_BINARY':str(bonus),'LAN42_FORKNITE_LOGDIR':tmp,'XDG_CACHE_HOME':tmp}):
+                room=await ForkniteRoom.create()
+                try:
+                    await room.control(dict(action='members',members=[dict(id='1',name='a',verified=False),dict(id='2',name='b',verified=False)]))
+                    await room.control(dict(action='start',mode='bonus'))
+                    for _ in range(100):
+                        status=await room.control(dict(action='status'))
+                        if status['phase']=='finished':break
+                        await asyncio.sleep(.01)
+                    self.assertEqual(status['mode'],'bonus')
+                    self.assertEqual(status['phase'],'finished')
+                    await room.control(dict(action='start'))
+                    for _ in range(100):
+                        status=await room.control(dict(action='status'))
+                        if status['phase']=='finished':break
+                        await asyncio.sleep(.01)
+                    self.assertEqual(status['mode'],'mandatory')
+                    output=''.join(p.read_text() for p in Path(tmp).glob('*-round-*.log'))
+                    self.assertIn('20 1 died',output);self.assertIn('10 1 died',output)
+                    with self.assertRaises(ValueError):await room.control(dict(action='start',mode='other'))
+                finally:await room.close()
+
     async def test_tightens_until_first_death_and_restarts_from_forgiving_base(self):
         with tempfile.TemporaryDirectory() as tmp:
             executable=Path(tmp)/'philo'

@@ -13,6 +13,7 @@ auth-key.pem
 /minigames/forknite/.logs/
 # Machine-local link to the owner's native C executable.
 /minigames/forknite/philo
+/minigames/forknite/philo_bonus
 
 # Generated public website
 _site/

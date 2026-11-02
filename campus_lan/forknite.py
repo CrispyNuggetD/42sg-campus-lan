@@ -9,7 +9,9 @@ from .updater import update_checkout, generation
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def ensure_binary():
+def ensure_binary(mode="mandatory"):
+    if mode=="bonus":return ensure_bonus_binary()
+    if mode!="mandatory":raise ValueError("Unknown FORKNITE mode.")
     local=ROOT/'minigames/forknite/philo'
     configured=os.environ.get('LAN42_PHILO_BINARY')
     folder=os.environ.get('LAN42_PHILO_DIR')
@@ -24,6 +26,27 @@ def ensure_binary():
     except (OSError,subprocess.SubprocessError):raise ValueError('philo build failed; check the configured directory and make output.') from None
     if not binary.is_file() or not os.access(binary,os.X_OK):raise ValueError('make did not produce the configured philo executable.')
     return str(binary)
+
+
+def ensure_bonus_binary():
+    configured=os.environ.get('LAN42_PHILO_BONUS_BINARY')
+    folder=os.environ.get('LAN42_PHILO_BONUS_DIR')
+    local=ROOT/'minigames/forknite/philo_bonus'
+    if configured:binary=Path(configured).expanduser()
+    elif folder:binary=Path(folder).expanduser()/'philo_bonus'
+    elif local.exists() or local.is_symlink():binary=local.resolve()
+    else:
+        found=shutil.which('philo_bonus')
+        if found:return found
+        mandatory=Path(ensure_binary())
+        binary=mandatory.parent.parent/'philo_bonus'/'philo_bonus'
+    if binary.is_file() and os.access(binary,os.X_OK):return str(binary.resolve())
+    if not binary.parent.is_dir():
+        raise ValueError('Configure LAN42_PHILO_BONUS_BINARY or LAN42_PHILO_BONUS_DIR for /start bonus.')
+    try:subprocess.run(['make','-C',str(binary.parent)],check=True,timeout=120)
+    except (OSError,subprocess.SubprocessError):raise ValueError('philo_bonus build failed; check the configured directory and make output.') from None
+    if not binary.is_file() or not os.access(binary,os.X_OK):raise ValueError('make did not produce philo_bonus.')
+    return str(binary.resolve())
 
 
 def launch(arguments):

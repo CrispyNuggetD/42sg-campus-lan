@@ -68,6 +68,9 @@ class ForkniteRoom:
         self.tool_pending.clear()
 
     async def control(self,data):
+        if data.get('action')=='start' and data.get('mode')=='bonus':
+            from .forknite import ensure_binary
+            data=dict(data,binary=await asyncio.to_thread(ensure_binary,'bonus'))
         records=data.get('members',[]) if data.get('action')=='members' else data.get('profiles',[]) if data.get('action')=='sabo_profiles' else []
         def request():
             req=urllib.request.Request('http://127.0.0.1:'+str(self.port)+'/internal/room',data=json.dumps(data).encode(),

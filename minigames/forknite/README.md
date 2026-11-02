@@ -284,3 +284,29 @@ selectors are `/sabo I4`, `i4`, `intake4` or `cohort4`. Cached SG names and phot
 are used before any missing-photo acquisition; only selected missing pictures
 are handed to the consent-controlled local photo tool. See the
 [campus selector guide](../../docs/campus-guide.md#select-campus-online-people-for-forknite).
+
+### Native bonus mode and visible evaluation output
+
+The room host uses `/start bonus` to run `philo_bonus`; `/start` selects `philo`.
+Both use the same configured timings and storm rounds. Stop before switching.
+Bonus lookup uses `LAN42_PHILO_BONUS_BINARY`, `LAN42_PHILO_BONUS_DIR`, the local
+ignored `minigames/forknite/philo_bonus` link, PATH, then a sibling
+`philo_bonus/philo_bonus` beside the mandatory project folder. Missing configured
+binaries can be built with make. C source is unchanged. `/status` shows the mode.
+
+The executable runs on the room host. Native stdout is echoed in
+`minigames/forknite/.logs/room-PORT.log` and saved in `*-round-N.log`; use
+`tail -f` on that room log to watch it in another terminal. Custom
+`LAN42_FORKNITE_LOGDIR` overrides the log folder. Logs stay local.
+
+For evaluation, run the C executable yourself and send the same stdout to both
+your terminal and the visualiser (replace the server path for your checkout):
+
+```sh
+./philo_bonus 5 800 200 200 3 | tee /dev/tty | node /path/to/42sg-campus-lan/minigames/forknite/server.js --pipe --count 5
+```
+
+Open `http://localhost:4242`. `--count` must match the native diner count. Pipe
+mode observes your process; browser pause/replay never pauses the C run. Output
+buffering can delay pipe delivery; on Linux prepend `stdbuf -oL` to the C command
+if needed. Use a normal interactive terminal for `/dev/tty`.

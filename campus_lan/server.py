@@ -491,7 +491,8 @@ class Lobby:
                                    (room['game']=='hexwars' and not room['engine'].over)):
                 raise ValueError('Game already running.')
             if room['game']=='forknite':
-                await room['web'].control(dict(action='start'))
+                if arg.strip() not in ('','bonus'):raise ValueError('Use /start or /start bonus.')
+                await room['web'].control(dict(action='start',mode='bonus' if arg.strip()=='bonus' else 'mandatory'))
                 await self.event('FORKNITE native simulation started; watch your browser.',room['members'])
                 await self.broadcast(dict(type='forknite_status',status=await room['web'].control(dict(action='status'))),room['members'])
                 return

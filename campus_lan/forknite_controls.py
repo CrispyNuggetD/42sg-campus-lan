@@ -1,7 +1,7 @@
 """Host controls for the native wrapper, never C source modifications."""
 HELP=[
  'FORKNITE | start roomy, tighten between native rounds until the first death',
- '/start — fresh tournament | /stop — stop simulation and queued rounds',
+ '/start [bonus] — fresh philo or philo_bonus tournament | /stop — stop simulation and queued rounds',
  '/diners TOTAL — fill table with random stand-ins, e.g. /diners 7 (stop first)',
  '/browser — reopen this room website with your LAN42 identity',
  '/status — native phase, diner count, timings and storm settings',
@@ -32,6 +32,6 @@ def parse(command,arg):
 
 def summary(status):
     s=status['settings']
-    return (f"FORKNITE {status['phase']} | round {status['round']} | {status['players']} diners | "
+    return (f"FORKNITE {status.get('mode','mandatory')} {status['phase']} | round {status['round']} | {status['players']} diners | "
             f"die/eat/sleep {status['deadline']}/{s['eat']}/{s['sleep']}ms | "
             f"storm {'on' if s['storm'] else 'off'} · step {s['shrink']}ms · meals {s['meals']} · gap {s['pause']}ms")

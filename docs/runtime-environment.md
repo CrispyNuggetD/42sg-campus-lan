@@ -212,3 +212,13 @@ requests were sent. The cluster window polls every 30 seconds, retains its page,
 waits during commands/confirmations and backs off pending requests to 120 seconds.
 Sign-out and disconnect stop polling. The campus observation snapshot was refreshed;
 interactive arrival detection still depends on upstream API freshness.
+
+## FORKNITE bonus launcher — 2 November 2026 SGT
+
+On this Ubuntu terminal, 10 FORKNITE Python tests, nine client tests, exported
+shell-feature checks and JavaScript auth/sabo checks passed with fake binaries
+and isolated configuration. Website tests passed with one dependency-related
+skip. Bonus-to-mandatory switching preserved native stdout in round logs.
+A loopback pipe check delivered native-format meal/death lines to browser events;
+its teardown timed out while stdin remained open and exited after the test closed
+stdin. No real student room, notification or live C project was used for testing.

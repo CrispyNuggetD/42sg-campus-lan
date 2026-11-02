@@ -1171,7 +1171,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
         elif game.get('game')=='forknite':
             status=game.get('forknite')
             self.line(screen,4,forknite_summary(status) if status else 'FORKNITE | waiting for status',curses.A_BOLD)
-            self.line(screen,5,'HOST: /start /stop | /status | /help | stop before changing settings')
+            self.line(screen,5,'HOST: /start or /start bonus | /stop /status | /help | stop before changing settings')
             self.line(screen,6,'/timings DIE EAT SLEEP | /storm on|off | /storm step MS | /storm pause MS')
             self.line(screen,7,'/meals N | /preset chill|chaos | /sabo LOGIN... | /admin (owner photos)')
             self.line(screen,8,'Defaults: 600/100/100ms, 3 meals, deadline -25ms per round, gap 2000ms')
