@@ -15,7 +15,8 @@ for the legacy curriculum context and the newer #42Next/Python additions.
 2. `/game forknite` creates a room; friends use `/join ROOM_NUMBER`.
 3. Each browser opens automatically, already identified as the corresponding LAN42 room member. No separate 42 login, nickname claim, URL-copy step or credentials are required from players.
    Use `/browser` in the game terminal to reopen the current room with a fresh entry ticket. The terminal also shows the plain room URL, which works in the same browser while its room cookie is valid.
-4. The host types `/start` in the LAN42 game terminal. `/leave` leaves the room.
+4. Seat at least two diners: friends join, or the host uses `/sabo LOGIN1 LOGIN2` or `/diners 5`.
+5. The host types `/start` for `philo` or `/start bonus` for `philo_bonus` in the LAN42 game terminal. `/stop` stops the tournament; `/leave` leaves the room.
 
 LAN42 guests keep their pseudonyms and silly avatars. Verified users get their Intra login, available profile photo, and `✓42`. Missing photos use silly faces. Player identities and slots are assigned by the room server, not by browser form fields. Direct URL visitors can spectate or claim an available guest slot. The last room member leaving shuts down the native process and wrapper. Browser sessions are revoked on room departure.
 

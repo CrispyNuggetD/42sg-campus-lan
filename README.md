@@ -160,3 +160,17 @@ with your idea or question.
 [Contributor workflow](AGENTS.md) · [Versioning](docs/versioning.md) ·
 [Last observed/tested systems](docs/runtime-environment.md) ·
 [API access and privacy boundaries](docs/access-policy.md)
+
+### Try FORKNITE with your Philosophers bonus
+
+In LAN42, run `/game forknite`, then invite friends to `/join ROOM_NUMBER`.
+The room host can optionally add named stand-ins with `/sabo LOGIN1 LOGIN2`,
+or fill the table with `/diners 5`. Run `/start` for `philo` or `/start bonus`
+for `philo_bonus`. Use `/stop` before switching. LAN42 supplies the diner count,
+identities, timings and automatic storm rounds; `/status` shows the native mode.
+
+For evaluation, you can launch C yourself and show its stdout in a normal
+terminal while piping those same lines to the browser visualiser. See the
+[native bonus and evaluation workflow](minigames/forknite/README.md#native-bonus-mode-and-visible-evaluation-output)
+for binary setup, the `tee /dev/tty` command and room log viewing. Pipe mode
+observes your run and needs no LAN42 room or `/sabo` step.

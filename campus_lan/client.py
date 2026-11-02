@@ -868,7 +868,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
                         continue
                     url=msg['url']+'/#lan42='+urllib.parse.quote(msg['ticket'])
                     self.open_urls('forknite',[url],'Open this FORKNITE room in your browser?')
-                    self.lines.append('FORKNITE: '+msg['url']+' | /browser reopens this room. Host uses /start here.')
+                    self.lines.append('FORKNITE: '+msg['url']+' | /browser reopens this room. Host: /start or /start bonus; friends join, or add /sabo LOGIN /diners 5 first.')
             elif kind=='welcome':
                 self.signed_in=bool(getattr(self,'secure',False) and msg.get('verified'))
                 self.remote_approved=bool(getattr(self,'secure',False) and msg.get('remote_approved'))
