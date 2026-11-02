@@ -203,3 +203,12 @@ Completion validation: all 293 selected LAN42 checks passed, including combined
 friend/cohort patterns and conflicting-cache handling. Cohort decoration uses
 only local cache data, with no additional API request or network payload field.
 The current local cache supplies the owner's inferred cohort for live rendering.
+
+## Cluster automatic refresh — 2 November 2026 SGT
+
+On the actual Ubuntu campus terminal, 25 cluster tests and the exported shell
+feature check passed with mocked sources; no live student notifications or API
+requests were sent. The cluster window polls every 30 seconds, retains its page,
+waits during commands/confirmations and backs off pending requests to 120 seconds.
+Sign-out and disconnect stop polling. The campus observation snapshot was refreshed;
+interactive arrival detection still depends on upstream API freshness.

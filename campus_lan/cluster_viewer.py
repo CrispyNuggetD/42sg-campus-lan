@@ -123,6 +123,8 @@ class ClusterViewer(ProfileCommands):
         self.input=''
         self.connected=True
         self.last_request=0
+        self.request_pending=False
+        self.auto_refresh_enabled=True
         self.owner=owner
         self.pending_profile_decision=None
         self.focus_location=None
@@ -136,12 +138,21 @@ class ClusterViewer(ProfileCommands):
                 self.tracker_data=Tracker(owner).data
             except (OSError,ValueError):pass
 
+    def auto_refresh(self):
+        if not self.connected or not self.auto_refresh_enabled:return
+        if self.input or self.pending_profile_decision:return
+        if getattr(self,'pending_number_action',None) or getattr(getattr(self,'consent',None),'active',None):return
+        elapsed=time.monotonic()-self.last_request
+        # Avoid stacking requests behind a slow host; retry a lost response later.
+        if elapsed >= (120 if self.request_pending else 30):self.refresh()
+
     def refresh(self):
+        self.last_request=time.monotonic()
         try:
             if self.source.refresh(self.cluster) is False:
                 self.status='Refresh already in progress; waiting for the campus snapshot.'
                 return
-            self.last_request=time.monotonic()
+            self.request_pending=True
             self.status='Refreshing from '+self.source.label+'; host cache lasts 30s and API requests may queue.'
         except OSError as error:self.status='Refresh failed: '+str(error)
 
@@ -150,6 +161,7 @@ class ClusterViewer(ProfileCommands):
             try:message=self.events.get_nowait()
             except queue.Empty:return
             kind=message.get('type')
+            if kind in ('clusters','error','signed_out','closed'):self.request_pending=False
             if kind=='clusters':
                 players=message.get('players')
                 stamp=message.get('updated_at')
@@ -166,14 +178,15 @@ class ClusterViewer(ProfileCommands):
                 if unchanged:
                     self.status='No newer campus snapshot yet; showing cached seats ('+age_label(stamp)+'). The host cache lasts 30s.'
                 else:
-                    self.page=0
-                    self.status='Loaded '+str(len(players))+' campus seats from '+self.source.label+'. Press r or Enter to refresh.'
+                    self.status='Loaded '+str(len(players))+' campus seats from '+self.source.label+'. Auto-refresh every 30s; r or Enter refreshes now.'
             elif kind=='error':self.status='Campus seats unavailable: '+str(message.get('text','Unknown error'))[:180]
             elif kind=='event' and not str(message.get('text','')).startswith('Loading campus API seats'):
                 self.status=str(message.get('text',''))[:180]
             elif kind=='local_profile_notice':self.status=str(message.get('text',''))[:300]
             elif kind=='local_api_notice':self.status=str(message.get('text',''))[:180]
-            elif kind=='signed_out':self.status='Sign-in expired. Renew it in HQ, then reopen clusters.'
+            elif kind=='signed_out':
+                self.auto_refresh_enabled=False
+                self.status='Sign-in expired. Renew it in HQ, then reopen clusters.'
             elif kind=='closed':
                 self.connected=False
                 if not self.status.startswith(('Campus seats unavailable','Sign-in expired')):
@@ -354,12 +367,13 @@ class ClusterViewer(ProfileCommands):
             if getattr(self,'refresh_requested',None) and self.refresh_requested.is_set():
                 self.refresh_requested.clear();self.refresh()
             self.consume()
+            self.auto_refresh()
             screen.erase()
             height,width=screen.getmaxyx()
             def line(y,value):
                 if y<height:screen.addnstr(y,0,value,max(1,width-1))
             line(0,self.heading())
-            line(1,'r/Enter refresh from host · /clusters both · /c1 /c2 · Tab map/roster · PgUp/PgDn · q quit')
+            line(1,'Auto 30s · r/Enter refresh · /clusters both · /c1 /c2 · Tab map/roster · PgUp/PgDn · q quit')
             decision=self.pending_profile_decision
             active=getattr(getattr(self,'consent',None),'active',None)
             description=decision[0] if decision else active[1]+' [y/N]' if active else (

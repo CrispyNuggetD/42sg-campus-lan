@@ -24,7 +24,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 - **Find your people:** `/who` lists peers; `/track` keeps friends. Click seats to highlight; double-click opens Intra; `/profile` confirms numbered students in HQ, game and cluster tabs. Private preferences combine via `/settings`.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Four games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. Round table/grid supports 50 diners. `/sabo c1|c2` accepts row/seat ranges (c1r3:4s1:2); I4/intake4/cohort4 means intake.
-- **Easy controls:** F2 sign-in, F3 clusters, F4 mute, F5 volume, F6/F7 uwu. Saved auto uwu stays on across windows, chirps at HQ startup and shows local toasts. `/alarm`, `/timer`, `/stopwatch`, `/clock` honor audio/quiet settings.
+- **Easy controls:** F2 sign-in, F3 clusters (auto-refresh 30s), F4 mute, F5 volume, F6/F7 uwu. Saved auto uwu chirps at HQ startup and shows local toasts. `/alarm`, `/timer`, `/stopwatch`, `/clock` honor audio/quiet settings.
 - **Useful alerts:** moderated `/broadcast`, pinned host arrival and exam-time LAN42-only audio quiet. `/notify` separates alerts from DMs/pokes; release popups are coalesced and daily-limited.
 - **Versioned server:** startup shows version/date; `/changelog` explains releases. hnah’s host follows the campus account; operators can read own SG hours. `/restart` asks [y/N] to reload all local tabs and services.
 - **Web search:** `/search` defaults to Ecosia; Google/custom engines are optional. Permanent aggregate impact totals and estimated unique searches have a counting opt-out.

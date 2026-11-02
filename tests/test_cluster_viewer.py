@@ -64,6 +64,34 @@ class ClusterViewerTests(unittest.TestCase):
         local.busy=True
         self.assertIs(local.refresh(0),False)
 
+    def test_automatic_refresh_waits_for_interval_and_slow_host(self):
+        viewer,source=self.viewer()
+        with patch('campus_lan.cluster_viewer.time.monotonic',return_value=100):viewer.refresh()
+        source.refresh.reset_mock()
+        with patch('campus_lan.cluster_viewer.time.monotonic',return_value=131):viewer.auto_refresh()
+        source.refresh.assert_not_called()
+        viewer.events.put(dict(type='clusters',players=[],updated_at=100))
+        viewer.consume();viewer.page=2
+        with patch('campus_lan.cluster_viewer.time.monotonic',return_value=131):viewer.auto_refresh()
+        source.refresh.assert_called_once_with(0)
+        viewer.events.put(dict(type='clusters',players=[],updated_at=131))
+        viewer.consume()
+        self.assertEqual(viewer.page,2)
+        source.refresh.reset_mock()
+        with patch('campus_lan.cluster_viewer.time.monotonic',return_value=160):viewer.auto_refresh()
+        source.refresh.assert_not_called()
+
+    def test_automatic_refresh_pauses_for_input_confirmation_and_disconnect(self):
+        viewer,source=self.viewer()
+        with patch('campus_lan.cluster_viewer.time.monotonic',return_value=200):
+            viewer.input='/profile 1';viewer.auto_refresh()
+            viewer.input='';viewer.pending_profile_decision=('Confirm?',None,None);viewer.auto_refresh()
+            viewer.pending_profile_decision=None;viewer.connected=False;viewer.auto_refresh()
+            source.refresh.assert_not_called()
+            viewer.connected=True
+            viewer.events.put(dict(type='signed_out'));viewer.consume();viewer.auto_refresh()
+            source.refresh.assert_not_called()
+
     def test_numeric_tracking_requires_confirmation_of_captured_occupants(self):
         viewer,_=self.viewer();viewer.owner='fixture-owner';viewer.stamp=100
         viewer.players=[dict(name='fixture',seat='c1r1s1')]
