@@ -1,8 +1,16 @@
 {
-  "version": "2.27.0-beta.1",
-  "date": "2026-11-02T17:47:47+08:00",
-  "source": "13f98a887b01f4518f2c963b1c16201b6f041655",
+  "version": "2.28.0-beta.1",
+  "date": "2026-11-10T08:40:38+08:00",
+  "source": "36f9780544134a9826082e704e43c46419cd9d72",
   "history": [
+    {
+      "version": "2.28.0-beta.1",
+      "date": "2026-11-10T08:40:38+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: add lightweight external CORE Game launch helpers"
+      ]
+    },
     {
       "version": "2.27.0-beta.1",
       "date": "2026-11-02T17:47:47+08:00",
@@ -607,5 +615,5 @@
       ]
     }
   ],
-  "runtime_sha256": "525431aa19ee794c581e6ff110f6b9f4d4b420a6f795f344b109138823c9d002"
+  "runtime_sha256": "e22e13bc9a7d13c717cbe5c33e63bb9eadfedc18bb4c8ec6060fa338c4239639"
 }
