@@ -62,6 +62,7 @@ HELP = [
     '/setup or /allow batch: choose popup categories y/n | /allow all: approve the whole list',
     '/signin | /settings (profile, sign out, notifications) | /authhost SEAT | /notify on|off | /home | /help | /quit (miniapps close their tmux window)',
     '/game forknite: browser game room | /browser: reopen current FORKNITE website',
+    '/core [open|signin|visualizer|source]: external CORE Game by 42core-team | /core clone: separate source clone',
     '/koel flock once|always|never|ask: host-started 42SG flock | /koel flock-dir PATH: service root; local copies are kept',
     '/roadmap koeldrop | /koel help: campus file sharing; /koel create | /koel pending',
     '/update (or /upgrade): update package + reload local instances | /restart: choose this window or all local LAN42 tabs',
@@ -608,6 +609,35 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
         error=getattr(tracker,'rules_error',None)
         if error and error!=getattr(self,'last_rule_error',None):self.lines.append('Cluster rules: '+error)
         self.last_rule_error=error
+
+    def core_command(self,text,approved=False):
+        parts=text.split()
+        if not parts or parts[0]!='/core':return False
+        from .core_game import CREDIT,SITE,SOURCE,VISUALIZER,clone_path
+        if len(parts)>2 or (len(parts)==2 and parts[1] not in ('open','signin','source','visualizer','clone')):
+            self.lines.append('Use /core [open|signin|visualizer|source|clone].');return True
+        action=parts[1] if len(parts)==2 else 'open'
+        self.lines.append(CREDIT)
+        if action!='clone':
+            self.lines.append('Sign in, enter competition codes and view leaderboards on CORE itself. LAN42 sign-in is separate.')
+            self.open_urls('browser',[{'source':SOURCE,'visualizer':VISUALIZER}.get(action,SITE)],
+                           'Open the external CORE Game '+action+' page in your browser?')
+            return True
+        if not approved:
+            self.request_popup('terminals','Clone CORE Game source separately into '+str(clone_path())+'? No build or installation.',
+                               lambda:self.core_command(text,True))
+            return True
+        root=Path(__file__).resolve().parents[1]
+        helper=os.environ.get('DAILY_TMUX_HELPER') or str(root/'useful-scripts/tmux_workspace.py')
+        try:
+            result=subprocess.run([sys.executable,helper,'open','--cwd',str(root),'core-source','--',
+                                   sys.executable,'-m','campus_lan.core_game','clone'],
+                                  capture_output=True,text=True,timeout=10)
+            if result.returncode:raise RuntimeError(result.stderr.strip() or result.stdout.strip())
+            self.lines.append('CORE source task opened in its own terminal window.')
+        except (OSError,RuntimeError,subprocess.TimeoutExpired):
+            self.lines.append('Could not open the source task. From the LAN42 folder run: python3 -m campus_lan.core_game clone')
+        return True
 
     def about_command(self,text):
         if text == '/changelog':
@@ -1664,6 +1694,8 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
                         self.link_friend(address(parts[1]),int(parts[2]) if len(parts)==3 else self.port)
                     except ValueError as exc:
                         self.lines.append(str(exc))
+                elif self.core_command(text):
+                    pass
                 elif self.time_command(text):
                     pass
                 elif text=='/forknite' or text.startswith('/forknite '):

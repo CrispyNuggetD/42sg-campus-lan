@@ -2,7 +2,7 @@
 import os
 
 GAMES = ('bluff', 'forknite', 'hexwars', 'tetris')
-COMMANDS = ('/quiet','/exams','/search','/key4','/changelog','/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/cluster', '/cluster1', '/cluster2', '/c1', '/c2', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
+COMMANDS = ('/core','/quiet','/exams','/search','/key4','/changelog','/setup','/allow','/volume','/adjust_volume','/announce','/broadcast','/uwu','/about','/repo','/koel','/koeldrop','/roadmap','/files','/track', '/untrack', '/compose', '/dm', '/alert', '/locate', '/clusters', '/cluster', '/cluster1', '/cluster2', '/c1', '/c2', '/make', '/sabo', '/tool', '/tools', '/admin', '/answer', '/authhost', '/bot', '/browser', '/connect', '/diners', '/forknite', '/game', '/games',
             '/help', '/info', '/info_campus', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
             '/lobby', '/map', '/next', '/meals', '/notify', '/practice', '/prev', '/preset', '/profile', '/quit', '/settings',
             '/restart', '/roster', '/rooms', '/signin', '/start', '/stop', '/status', '/storm', '/timings',
@@ -40,6 +40,8 @@ def complete(text):
             choices=('all','browser','search','help','forknite','profiles','signin','tools','photos','notifications','terminals')
         elif command=='/settings' and parts[1:2]==['permissions'] and len(parts)<=4:
             choices=('ask','allow','deny','inherit')
+        elif command=='/core' and len(parts)<=2:
+            choices=('open','signin','visualizer','source','clone')
         elif command in ('/roadmap','/experimental') and len(parts)<=2:
             choices=('koeldrop','files')
         elif command in ('/files','/koel','/koeldrop') and len(parts)<=2:

@@ -225,3 +225,39 @@ Open `http://localhost:4242`. `--count` must match the native diner count. Pipe
 mode observes your process; browser pause/replay never pauses the C run. Output
 buffering can delay pipe delivery; on Linux prepend `stdbuf -oL` to the C command
 if needed. Use a normal interactive terminal for `/dev/tty`.
+
+
+## CORE Game — external launch helper
+
+[CORE Game](https://coregame.sh) is developed by
+[42core-team](https://github.com/42core-team). LAN42 provides a small launch
+helper; CORE's engine, visualizer, assets and dependencies are not bundled in
+LAN42. Upstream authors retain their rights and notices. A source clone keeps
+its original notices; check the licence of each upstream component before
+redistributing or modifying it.
+
+- `/core` or `/core signin` opens CORE's own website with browser permission.
+  Use its sign-in, competition codes, teams and leaderboards there.
+- `/core visualizer` opens the upstream replay visualizer.
+- `/core source` opens the upstream gameplay repository.
+- `/core clone` asks permission, then opens a source task in a separate tmux
+  window. It shallow-clones the public gameplay repo into `~/Documents/CORE Game`
+  by default. `LAN42_CORE_CLONE` can select another destination. Existing clones
+  are left untouched; other existing folders/origins are rejected.
+
+The clone is optional: the hosted interface requires no local game installation.
+Cloning alone does not start a local game. Follow the clone's README for its
+VS Code devcontainer and build workflow. No builds, package installers, private
+submodules or upstream Makefile targets run automatically. The complete upstream
+website stack is separate and is not installed by LAN42.
+
+LAN42 and CORE sign-in are independent. No LAN42 session, API credential, profile
+or competition result is forwarded. This helper does not create a LAN42 CORE
+leaderboard or claim automatic single sign-on. Small future API/code-entry
+helpers can live here without vendoring CORE; they need a supported upstream
+interface. CLI alternative from the LAN42 directory:
+
+```sh
+python3 -m campus_lan.core_game open
+python3 -m campus_lan.core_game clone
+```

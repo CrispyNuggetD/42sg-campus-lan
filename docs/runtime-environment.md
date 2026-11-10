@@ -222,3 +222,18 @@ skip. Bonus-to-mandatory switching preserved native stdout in round logs.
 A loopback pipe check delivered native-format meal/death lines to browser events;
 its teardown timed out while stdin remained open and exited after the test closed
 stdin. No real student room, notification or live C project was used for testing.
+
+
+## CORE external launcher — 10 November 2026 SGT
+
+On the actual Ubuntu campus terminal, the small CORE launcher uses fixed public
+upstream links and an optional separate source clone. Launcher tests mock
+browsers, Git and terminal startup; checks cover popup consent, no session
+forwarding, destination preservation and Linux/macOS-neutral command arguments.
+The existing separate upstream clone was recognized without updating it. This
+is not a validation of upstream builds, real competition sign-in or macOS GUI
+launching. No live browser, game, student session or container was started.
+
+All 24 launcher/client/completion/shell-feature/website checks passed, including
+the full site build with its pinned Markdown dependency installed in a temporary
+virtual environment. Four external installer snapshot checks also passed.
