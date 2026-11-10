@@ -264,3 +264,15 @@ bulk directory. The
 login selections may reuse known directory entries too; unknown names still
 require live scoped SG membership checks. Photo tools retain live lookup for
 missing photos and manual refresh.
+
+### Local cluster display-name cache
+
+The explicit local operator command `python3 -m campus_lan.student_names` reads
+the already permitted campus-64 user list, bounded to 20 pages of 100. It stores
+only display names for numeric-ID/login pairs in the owner's existing academic
+directory, in a private repository-external cache. It does not refresh academic
+records, fetch individual profiles, download images or grant membership. No
+contacts or raw campus responses are stored. Cluster clicks read that cache
+offline, with login-only fallback. HTTP 429/5xx stop this operation immediately
+and preserve the previous complete name cache. No new API route or permission
+is introduced.

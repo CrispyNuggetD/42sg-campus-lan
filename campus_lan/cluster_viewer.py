@@ -129,6 +129,8 @@ class ClusterViewer(ProfileCommands):
         self.pending_profile_decision=None
         self.focus_location=None
         self.hits=[]
+        from .cluster_photo import PhotoPreview
+        self.photo_preview=PhotoPreview(lambda text:self.events.put(dict(type='local_profile_notice',text=text)))
         self.session_hint_pending=False
         self.session_hint_shown=False
         self.tracker_data={}
@@ -253,6 +255,12 @@ class ClusterViewer(ProfileCommands):
                     return True
                 self.focus_location=seat(members[0])
                 self.status='Selected '+', '.join(str(next((n for n,p,_ in roster(self.players) if p.get('name')==player.get('name') and seat(p)==seat(player)),'?'))+' = '+player.get('name','') for player in members)+' at c%dr%ds%d'%self.focus_location
+                if not double:
+                    if len(members)==1:
+                        self.photo_preview.show(members[0].get('name','').lower())
+                    else:
+                        self.photo_preview.close()
+                        self.status+=' · Shared seat: click an individual roster entry for their cached photo.'
                 if double:
                     if len(members)!=1:
                         self.report_profile('Shared seat: double-click an individual roster entry, or use /profile NUMBER to choose a student.')
@@ -275,7 +283,7 @@ class ClusterViewer(ProfileCommands):
         if self.session_hint_pending:
             self.session_hint_pending=False
             if not text and not self.pending_profile_decision and not getattr(getattr(self,'consent',None),'active',None):
-                self.status='Double-click opens a student profile; single-click highlights their seat.'
+                self.status='Double-click opens a student profile; single-click highlights and previews their existing local photo.'
                 return True
         if getattr(self,'confirmation_truncated',False) and text.lower() in ('y','yes'):
             self.status='Confirmation does not fit. Resize the terminal or cancel and select fewer people.'
@@ -377,7 +385,7 @@ class ClusterViewer(ProfileCommands):
             decision=self.pending_profile_decision
             active=getattr(getattr(self,'consent',None),'active',None)
             description=decision[0] if decision else active[1]+' [y/N]' if active else (
-                'Tip: double-click an occupied seat or roster entry to open its Intra profile; single-click highlights. Browser permission still applies. Enter dismisses.'
+                'Tip: double-click an occupied seat or roster entry to open its Intra profile; single-click previews the existing local photo in a small window. Browser permission still applies. Enter dismisses.'
                 if self.session_hint_pending else self.status)
             wrapped=textwrap.wrap(description,max(1,width-1)) or ['']
             max_notice=max(1,height-6)
@@ -442,4 +450,6 @@ def launch(cluster=0):
     try:
         with ui_notices(lambda text:events.put_nowait(dict(type='local_api_notice',text=text))):
             curses.wrapper(viewer.run)
-    finally:source.close()
+    finally:
+        viewer.photo_preview.close()
+        source.close()

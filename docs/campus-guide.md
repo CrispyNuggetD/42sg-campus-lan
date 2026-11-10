@@ -638,3 +638,20 @@ volume rules still apply. Toasts do not play an additional copy of the sound.
 HQ waits for sign-in or local operator access, honors terminal-popup denial,
 and retries a failed launch rather than consuming the startup request. Use
 `off` to disable it. No other user's default is changed.
+
+Single-click an occupied cluster seat or roster entry to preview its existing local API photo in one reusable 280 × 320 desktop window (Tk and Pillow required). It stays near the screen edge and floats above the maximized terminal so selecting another student keeps their photo visible. It takes no modal grab or forced keyboard focus; drag it aside or close it when needed. Escape or its close button hides it; quitting clusters closes it. Shared seats require selecting an individual roster entry. Missing photos are reported without downloads or API requests. Double-click still opens Intra with browser permission.
+
+The cluster photo preview shows the cached display name above the Intra login,
+with login-only fallback. Names stay in a private cache outside Git. On an
+approved API operator computer, `python3 -m campus_lan.student_names` explicitly
+refreshes names using only paginated `campus/64/users` responses (100/page,
+20-page hard cap). It retains only ID/login matches from the existing private
+42cursus directory. There are no individual profile lookups, academic-directory
+updates or photo downloads. Provider rate limits stop this name-only refresh
+immediately, keeping any previous complete cache. Clicking never calls the API.
+
+Photo popup text is selectable: drag over the name/login and use your usual
+copy shortcut. **Copy name** copies the cached name, **Copy Intra** copies the login, and
+**Copy details** copies the name (if available), login and Intra profile link.
+Copy name is disabled if no name is cached. Clipboard changes occur only when
+you copy explicitly.

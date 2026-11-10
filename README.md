@@ -21,7 +21,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <!-- shell-installer-features:start -->
 - **Campus HQ:** `lan42` uses its own tmux session in an Ubuntu terminal tab; no-sudo setup asks before Python/tmux installation. Mac hosts can opt into one-connection remote guest approval; approval is separate from Intra sign-in.
-- **Find your people:** `/who` lists peers; `/track` keeps friends. Click seats to highlight; double-click opens Intra; `/profile` confirms numbered students in HQ, game and cluster tabs. Private preferences combine via `/settings`.
+- **Find your people:** `/who` lists peers; `/track` keeps friends. Cluster clicks show photos/copyable names (Tk/Pillow); double-click opens Intra. `/profile` confirms numbered students; `/settings` combines private preferences.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. `/core` opens external CORE Game by 42core-team; `/core clone` fetches its source separately. CORE sign-in/competitions stay on its own site.
 - **Easy controls:** F2 sign-in, F3 clusters (auto-refresh 30s), F4 mute, F5 volume, F6/F7 uwu. Saved auto uwu chirps at HQ startup and shows local toasts. `/alarm`, `/timer`, `/stopwatch`, `/clock` honor audio/quiet settings.

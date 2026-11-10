@@ -237,3 +237,34 @@ launching. No live browser, game, student session or container was started.
 All 24 launcher/client/completion/shell-feature/website checks passed, including
 the full site build with its pinned Markdown dependency installed in a temporary
 virtual environment. Four external installer snapshot checks also passed.
+
+## Cached cluster photo preview — 10 November 2026 SGT
+
+On this Ubuntu campus terminal, 27 cluster checks, three website checks, the
+exported shell-feature check and the full site build passed. Photo tests mock
+the cache and desktop process; no student photo, API, browser or notification
+was used. Tk and Pillow imports succeeded locally. Desktop popup placement and
+focus behavior have not been interactively validated; macOS is untested.
+
+## Cached cluster display names — 10 November 2026 SGT
+
+On this Ubuntu campus terminal, 56 selected checks passed: five isolated name-cache
+checks, 28 cluster checks, 15 access-policy checks, one exported feature check,
+three website checks and four external installer checks. The full site build
+also passed. A live explicit name-only campus-list refresh completed, storing
+only directory-matched display names privately outside Git. The first cache
+write was refused due to parent permissions; a dedicated private directory and
+a preflight check were added before the successful repeat. Total live work was
+32 campus-list GETs and two OAuth requests, no individual profiles or images.
+Name caption placement has not been visually checked on the desktop; macOS
+remains untested. No student names or raw responses are included in this repo.
+
+## Copyable cluster photo details — 10 November 2026 SGT
+
+The popup has selectable read-only text and explicit Copy name, Copy Intra
+and Copy details buttons. Details contain the available name, login and Intra
+profile URL; missing names disable only Copy name. No automatic clipboard writes
+or API calls were added. All 37 selected cluster/name/shell-feature/website
+checks and the full site build passed. A hidden Tk smoke check confirmed
+read-only Unicode selection and copy payloads without writing the clipboard;
+visible desktop interaction and macOS have not been validated.
