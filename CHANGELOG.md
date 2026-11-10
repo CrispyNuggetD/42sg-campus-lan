@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.29.0-beta.1 · 2026-11-10T17:28:28+08:00
+
+- feat: add cached cluster photos with copyable student names
+
 ## 2.28.0-beta.1 · 2026-11-10T08:40:38+08:00
 
 - feat: add lightweight external CORE Game launch helpers
