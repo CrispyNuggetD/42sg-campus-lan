@@ -529,6 +529,11 @@ host. Reopen LAN42 after switching storage/importing so all windows use it.
 ## Clock, alarms, timers and stopwatch
 
 The HQ header shows the clock, plus a running stopwatch and nearest timer.
+The desktop terminal window title updates every second with all enabled timers
+(by ID) and the session stopwatch, including paused status. It remains visible
+in your desktop window overview while you work elsewhere; long titles may be
+truncated by the desktop. With tmux, HQ enables title forwarding for its own
+session. Reload HQ to activate this after an update.
 The default is **GMT+8**, independent of the computer's timezone. UTC is **Z**
 (Zulu). A decimal offset is hours: `+4.5` means **GMT+4:30**.
 

@@ -43,5 +43,18 @@ class WindowIdentity(unittest.TestCase):
         c=self.client('game');c.game=dict(game='forknite',room='7')
         with patch.dict('os.environ',{'TMUX_PANE':'%123'}), patch('campus_lan.client.shutil.which',return_value='/usr/bin/tmux'), patch('campus_lan.client.subprocess.run') as run:
             c.update_title();c.update_title()
-        self.assertEqual(run.call_count,1)
+        self.assertEqual(run.call_count,3)
         self.assertEqual(run.call_args.args[0],['tmux','rename-window','-t','%123','forknite-7'])
+
+    def test_desktop_title_has_multiple_timers_and_paused_stopwatch(self):
+        c=self.client('lobby')
+        c.clock_title_timers=[dict(id='a',due=160,remaining=0,paused=False),
+                              dict(id='b',due=0,remaining=90,paused=True)]
+        c.stopwatch_state=dict(elapsed=12,started=40)
+        with patch('campus_lan.time_tools.time.time',return_value=100), patch('campus_lan.time_tools.time.monotonic',return_value=43):
+            title=c.terminal_title()
+        self.assertIn('Timer a 00:01:00',title)
+        self.assertIn('Timer b 00:01:30 paused',title)
+        self.assertIn('Stopwatch 00:00:15',title)
+        c.stopwatch_state=dict(elapsed=15,started=None)
+        self.assertIn('Stopwatch 00:00:15 paused',c.terminal_title())

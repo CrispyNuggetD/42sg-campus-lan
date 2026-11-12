@@ -1117,11 +1117,17 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
         return 'GAME WINDOW | NO ROOM'
 
     def terminal_title(self):
-        return safe(f'LAN42 | {self.window_label()} | {self.name}')
+        status=self.clock_title() if getattr(self,'role','lobby')=='lobby' else ''
+        return safe('LAN42'+(' · '+status if status else '')+f' | {self.window_label()} | {self.name}')
 
     def update_title(self):
         title = self.terminal_title()
         if os.environ.get('TMUX_PANE') and shutil.which('tmux'):
+            if not getattr(self,'desktop_title_configured',False):
+                # tmux consumes OSC titles; forward the active pane title to the desktop.
+                for option,value in (('set-titles','on'),('set-titles-string','#{pane_title}')):
+                    subprocess.run(['tmux','set-option','-t',os.environ['TMUX_PANE'],option,value],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=2)
+                self.desktop_title_configured=True
             game=self.game.get('game') or getattr(self,'requested_game',None)
             label=(str(game)+'-'+str(self.game.get('room','waiting'))) if game else ('lan42' if getattr(self,'role','lobby')=='lobby' else 'game-waiting')
             label=''.join(c for c in label if c.isalnum() or c in '-_')[:64]

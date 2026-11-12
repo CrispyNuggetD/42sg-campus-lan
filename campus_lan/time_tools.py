@@ -284,6 +284,19 @@ class TimeControls:
         if timer is not None:label+=' · TMR '+elapsed_label(timer-time.time())
         return label
 
+    def clock_title(self):
+        """Compact live status without reading settings on every redraw."""
+        parts=[]
+        now=time.time()
+        for timer in getattr(self,'clock_title_timers',[]):
+            value=timer['remaining'] if timer['paused'] else timer['due']-now
+            parts.append('Timer '+timer['id']+' '+elapsed_label(value)+(' paused' if timer['paused'] else ''))
+        watch=getattr(self,'stopwatch_state',None)
+        if watch and (watch['started'] is not None or watch['elapsed']):
+            value=watch['elapsed']+(time.monotonic()-watch['started'] if watch['started'] is not None else 0)
+            parts.append('Stopwatch '+elapsed_label(value)+(' paused' if watch['started'] is None else ''))
+        return ' · '.join(parts)
+
     def alarm_sound(self):
         """One opted-in uwu for a due clock notice, using existing audio rules."""
         from .koel_sound import SoundChoice,play
@@ -312,6 +325,7 @@ class TimeControls:
             data=self.clocks().load();self.clock_zone=data['display_offset'] if data['display_offset'] is not None else 480
             timers=[a['due'] for a in data['alarms'] if a['kind']=='timer' and a['enabled'] and not a['paused']]
             self.clock_timer_due=min(timers) if timers else None
+            self.clock_title_timers=[dict(a) for a in data['alarms'] if a['kind']=='timer' and a['enabled']]
             self.clock_error=False
             for alarm in fired:
                 title=('Timer finished: ' if alarm['kind']=='timer' else 'Alarm: ')+alarm['label']
