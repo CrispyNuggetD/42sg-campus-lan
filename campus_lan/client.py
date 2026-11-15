@@ -36,7 +36,7 @@ from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
-    '/arrivals on|off|status: new campus API logins after a silent startup baseline; no friend/tracked labels',
+    '/arrivals on|off|status: campus login, seat and offline updates after a silent baseline; no friend/tracked labels',
     "/quiet status: LAN42-only exam audio mute | /exams: cached SG schedule | admin /quiet MINUTES | release popups: max once/24h",
     "/search TERMS: chosen engine in your browser | /settings search: engine + aggregate counting opt-out | /search stats",
     "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",

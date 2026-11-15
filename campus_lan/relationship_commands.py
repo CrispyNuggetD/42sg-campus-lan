@@ -2,7 +2,7 @@
 from .tracking import relationship, RELATIONSHIPS, ALIASES
 
 HELP=[
- '/arrivals on|off|status — new campus logins after a silent startup baseline; not friends or personal tracking',
+ '/arrivals on|off|status — campus login, seat and offline updates after a silent baseline; not friends or personal tracking',
  '/friend or /friends LOGIN|NUMBER... — track and mark friends across your LAN42 views; /friend lists friends',
  '/track LOGIN... — acquaintances (tracked); /untrack LOGIN...|all',
  '/track — grouped relationships and lists; /track friends|mutuals|oomf|tracked — view a group',
@@ -53,7 +53,7 @@ def configure(tracker,args):
             raise ValueError('Use /arrivals on|off|status')
         if len(args)==2 and args[1]!='status':tracker.set_arrivals(args[1]=='on')
         return ['Campus arrivals: '+('on' if tracker.arrivals_enabled else 'off'),
-                'First successful snapshot is silent; later new campus API logins are reported every ~30 seconds while HQ runs. Requires API access; adds no friend/tracked labels.']
+                'First successful snapshot is silent; later campus login, seat and offline updates are reported every ~30 seconds while HQ runs. Requires API access; adds no friend/tracked labels.']
     if command=='help':return HELP
     if command=='config':return ['Private relationship config: '+str(tracker.path)]
     if command in RELATIONSHIPS or command in ALIASES:

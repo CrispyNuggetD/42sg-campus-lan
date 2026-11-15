@@ -27,8 +27,13 @@ class CampusArrivals(unittest.TestCase):
         self.assertEqual(notices[0]['reason'],'arrivals')
         self.assertIsNone(notices[0]['relationship'])
         self.assertEqual(t.names,[])
-        self.assertEqual(t.transitions([person('new-person','c2r3s5')],'campus'),[])
-        self.assertEqual(t.transitions([],'campus'),[])
+        moved=t.transitions([person('new-person','c2r3s5')],'campus')
+        self.assertEqual(moved[0]['changes'],['seat'])
+        self.assertEqual(moved[0]['previous_seat'],'c2r3s4')
+        self.assertIn('Campus seat change',describe(moved[0])[0])
+        departed=t.transitions([],'campus')
+        self.assertEqual(departed[0]['changes'],['offline'])
+        self.assertIn('no active seat',describe(departed[0])[0])
         self.assertEqual(len(t.transitions([person('new-person')],'campus')),1)
 
     def test_default_off_lobby_ignored_and_restart_rebaselines(self):
@@ -63,7 +68,7 @@ class CampusArrivals(unittest.TestCase):
         with patch('campus_lan.student_names.cached_name',return_value='Fixture Name'):
             c.tracking_update([person('new-person')],'campus')
         text=' '.join(c.lines)
-        self.assertIn('Campus arrival: Fixture Name (new-person)',text)
+        self.assertIn('Campus login: Fixture Name (new-person)',text)
         self.assertIn('Intake 4 (locally inferred)',text)
         self.assertNotIn('Your friend',text)
         notice=dict(login='unknown',reason='arrivals',seat='c1r1s2')
@@ -73,5 +78,27 @@ class CampusArrivals(unittest.TestCase):
         t=self.tracker;t.set_arrivals(True);t.transitions([person('a')],'campus')
         c=Client.__new__(Client);c.tracker=t;c.lines=collections.deque()
         c.tracking_update(None,'campus')
-        self.assertEqual(t.arrival_seen,{'a'})
+        self.assertEqual(t.arrival_seen,{'a':('c1r1s1',)})
         self.assertEqual(t.transitions([person('a')],'campus'),[])
+
+
+    def test_multiple_active_seats_are_reported_as_a_set_not_order_dependent_moves(self):
+        t=self.tracker;t.set_arrivals(True)
+        a=person('student','c1r1s1');b=person('student','c2r2s2')
+        self.assertEqual(t.transitions([a,b],'campus'),[])
+        self.assertEqual(t.transitions([b,a],'campus'),[])
+        changes=t.transitions([b],'campus')
+        self.assertEqual(changes[0]['changes'],['seat'])
+        self.assertEqual(changes[0]['previous_seat'],'c1r1s1 / c2r2s2')
+        self.assertEqual(changes[0]['seat'],'c2r2s2')
+        self.assertIn('active API locations changed',describe(changes[0])[1])
+
+    def test_move_across_multiple_empty_polls_still_reports_new_location(self):
+        t=self.tracker;t.set_arrivals(True)
+        t.transitions([person('student','c1r1s1')],'campus')
+        self.assertEqual(t.transitions([],'campus')[0]['changes'],['offline'])
+        for _ in range(4):self.assertEqual(t.transitions([],'campus'),[])
+        returned=t.transitions([person('student','c2r4s5')],'campus')
+        self.assertEqual(len(returned),1)
+        self.assertEqual(returned[0]['seat'],'c2r4s5')
+        self.assertIn('Campus login',describe(returned[0])[0])

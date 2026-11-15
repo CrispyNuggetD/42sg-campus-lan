@@ -694,15 +694,16 @@ you copy explicitly.
 
 Enable `/arrivals on` in HQ to see **new active campus API logins after startup**.
 The first successful campus snapshot is a silent baseline: people already there
-are not announced. Later newly observed logins appear in HQ with a seat, cached
+are not announced. Later newly observed logins and seat changes appear in HQ with locations, cached
 display name when available, and locally inferred intake or “Intake unknown”.
 They are not added to friends, named lists or personal tracking.
 
 `/arrivals status` shows the preference; `/arrivals off` disables it. It defaults
 off and the switch follows the existing account-scoped portable preferences.
 Each new HQ session or re-enable establishes a fresh silent baseline. Baselines
-and comparisons stay in memory, not a saved attendance log. Seat moves and
-logouts alone are not arrival notices; a login seen leaving and later reappearing
+and comparisons stay in memory, not a saved attendance log. Seat changes produce a separate “Campus seat change” notice with old and new
+locations. A missing login produces “no active seat” with its last reported
+location; a login seen leaving and later reappearing
 can be reported again. Existing friend/personal alerts remain independent.
 
 HQ polls the existing shared, authorized Singapore campus view roughly every
@@ -715,3 +716,20 @@ requests are made to identify arrivals. Unknown cohort details are not guessed.
 Notices always appear inside HQ. Desktop delivery uses the existing tracking
 notification channel and its opt-outs (`/notify tracking off`); no one is
 messaged by enabling the feed. Keep HQ running; iOS suspension can pause checks.
+
+
+A seat change can correspond to one 42 location session ending and another
+starting. LAN42 compares successive active-location snapshots **by login**:
+remaining present with different active seats is a seat change; absent then
+present is a new/reappearing login. A logout gap shorter than the polling period
+is not observed. If several sessions are active, the whole sorted seat set is
+shown; reordered API records do not generate a false move. These observations
+do not prove someone entered or left the physical campus.
+
+
+The feed's purpose is current location updates, not a physical attendance claim:
+“Campus login” means newly active in the API snapshot, “Campus seat change”
+shows changed locations, and “no active seat” means no location was reported in
+the latest successful snapshot. Going for lunch only produces an absence/return
+if those API states are observed. A seat change spanning several polling periods
+still produces a new-location update when the login reappears.

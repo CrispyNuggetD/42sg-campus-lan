@@ -240,16 +240,31 @@ class Tracker:
         for name in list(previous):
             if name not in personal|rules:previous.pop(name,None)
         if source=='campus' and self.arrivals_enabled:
-            present={n:p for n,p in current.items() if seat(p)}
+            # Compare the complete active-seat set per login. Concurrent sessions
+            # and response ordering must not masquerade as a physical seat move.
+            present={}
+            for player in players:
+                location=seat(player)
+                if location:
+                    name=player.get('name','').lower()
+                    present.setdefault(name,set()).add('c{}r{}s{}'.format(*location))
+            present={name:tuple(sorted(seats)) for name,seats in present.items()}
             if self.arrival_seen is not None:
-                already={n['login'] for n in notices if 'online' in n['changes']}
-                for name in sorted(set(present)-self.arrival_seen-already):
+                already={n['login'] for n in notices if any(change in n['changes'] for change in ('online','seat','offline'))}
+                for name in sorted(set(present)-already):
                     try:login(name)
                     except ValueError:continue
-                    notices.append(dict(login=name,source='campus',seat=snapshot(present[name])['seat'],
-                                        verified=True,changes=['online'],previous_seat=None,
+                    old=self.arrival_seen.get(name)
+                    if old==present[name]:continue
+                    notices.append(dict(login=name,source='campus',seat=' / '.join(present[name]),
+                                        verified=True,changes=['seat'] if old else ['online'],
+                                        previous_seat=' / '.join(old) if old else None,
                                         relationship=None,reason='arrivals',warm=False))
-            self.arrival_seen=set(present)
+                for name in sorted(set(self.arrival_seen)-set(present)-already):
+                    notices.append(dict(login=name,source='campus',seat=' / '.join(self.arrival_seen[name]),
+                                        verified=True,changes=['offline'],previous_seat=None,
+                                        relationship=None,reason='arrivals',warm=False))
+            self.arrival_seen=present
         return notices
 
 
@@ -260,7 +275,11 @@ def describe(notice):
         label='Intake '+str(cohort)+' (locally inferred)' if type(cohort) is int else 'Intake unknown'
         display=notice.get('display_name')
         identity=(display+' ('+name+')') if display else name
-        return 'Campus arrival: '+identity, label+' | '+notice.get('seat','unknown')+' | new active API login since the previous snapshot.'
+        if 'offline' in notice.get('changes',[]):
+            return 'Campus update: '+identity+' has no active seat', label+' | last reported: '+notice.get('seat','unknown')+' | absent from the latest active-location snapshot.'
+        if 'seat' in notice.get('changes',[]):
+            return 'Campus seat change: '+identity, label+' | '+notice.get('previous_seat','unknown')+' -> '+notice.get('seat','unknown')+' | active API locations changed.'
+        return 'Campus login: '+identity, label+' | '+notice.get('seat','unknown')+' | new active API login since the previous snapshot.'
     if notice.get('warm'):
         label={'friends':'friend','mutuals':'mutual','oomf':'oomf'}[notice['relationship']]
         prefix='Your '+label+' '+name

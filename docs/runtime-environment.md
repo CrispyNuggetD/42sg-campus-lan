@@ -391,3 +391,16 @@ portable preferences, notification preferences, shell features and website.
 Tests use fake people, temporary state and mocked API/browser/desktop operations.
 Guide refresh and website build passed. Actual phone color legibility and live
 campus feed delivery remain unverified; no live attendance history was collected.
+
+
+## Campus location updates across logout gaps — 15 November 2026 SGT
+
+The arrivals preference now reports new active logins, active-seat changes and
+no-active-seat observations after the silent baseline. It compares sorted sets
+of active locations per login, so response-order changes or overlapping sessions
+do not masquerade as a unique physical seat move. A logout gap spanning several
+polls still produces the new location when the login reappears. Labels describe
+API observations, not physical entry/exit or the reason for being absent.
+Seven feed regressions plus existing tracking, relationship, cluster/UI,
+preferences, notification and website checks passed in the 122-test selection.
+Guide refresh and website build passed. No live location data was collected.
