@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.34.5-beta.1 · 2026-11-15T17:53:07+08:00
+
+- fix: mark C1 dividing wall and aligned bocal room with doorway
+
 ## 2.34.4-beta.1 · 2026-11-15T17:16:25+08:00
 
 - fix: synchronize cluster snapshots with HQ and refresh every 30 seconds

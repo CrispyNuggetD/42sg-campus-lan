@@ -1,8 +1,16 @@
 {
-  "version": "2.34.4-beta.1",
-  "date": "2026-11-15T17:16:25+08:00",
-  "source": "3e1756e87370245fc790893842b9e2a6c4c812db",
+  "version": "2.34.5-beta.1",
+  "date": "2026-11-15T17:53:07+08:00",
+  "source": "3123004df64bde6dace2168d60289099b65c7b4f",
   "history": [
+    {
+      "version": "2.34.5-beta.1",
+      "date": "2026-11-15T17:53:07+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: mark C1 dividing wall and aligned bocal room with doorway"
+      ]
+    },
     {
       "version": "2.34.4-beta.1",
       "date": "2026-11-15T17:16:25+08:00",
@@ -727,5 +735,5 @@
       ]
     }
   ],
-  "runtime_sha256": "2ec5c5f76d1cf514882ba03adca46a694876ebcdf8cf8d7c25afcd28aeed16cf"
+  "runtime_sha256": "565caabbe803653d7da8f98e88b42b7fd1d65be15b0e8bc584304578c35b2b48"
 }
