@@ -268,7 +268,8 @@ class ClusterViewer(ProfileCommands):
                 self.status='Selected '+', '.join(str(next((n for n,p,_ in roster(self.players) if p.get('name')==player.get('name') and seat(p)==seat(player)),'?'))+' = '+player.get('name','') for player in members)+' at c%dr%ds%d'%self.focus_location
                 if not double:
                     if len(members)==1:
-                        self.photo_preview.show(members[0].get('name','').lower())
+                        self.photo_preview.show(members[0].get('name','').lower(),
+                                                seat='c%dr%ds%d'%self.focus_location)
                     else:
                         self.photo_preview.close()
                         self.status+=' · Shared seat: click an individual roster entry for their cached photo.'

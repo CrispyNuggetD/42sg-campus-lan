@@ -59,7 +59,7 @@ class ClusterProfileInteraction(unittest.TestCase):
     def test_single_click_does_not_open_and_shared_cell_requires_specific_occupant(self):
         v=self.viewer();v.hits=occupant_hits(v.players,'map',1)
         row,left,_,_=v.hits[0];v.click(left,row);v.open_urls.assert_not_called()
-        v.photo_preview.show.assert_called_once_with('fixture')
+        v.photo_preview.show.assert_called_once_with('fixture',seat='c1r8s2')
         v.players.append(dict(name='second',seat='c1r8s2'));v.hits=occupant_hits(v.players,'map',1)
         v.last_click=None
         row,left,_,_=v.hits[0];v.click(left,row,double=True)

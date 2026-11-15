@@ -698,9 +698,12 @@ updates or photo downloads. Provider rate limits stop this name-only refresh
 immediately, keeping any previous complete cache. Clicking never calls the API.
 
 Photo popup text is selectable: drag over the name/login and use your usual
-copy shortcut. **Copy name** copies the cached name, **Copy Intra** copies the login, and
-**Copy details** copies the name (if available), login and Intra profile link.
-Copy name is disabled if no name is cached. Clipboard changes occur only when
+copy shortcut. The first button row has **Copy name**, **Copy Intra** and
+**Copy seat** (for example, `c1r3s6`). A full-width **Copy details** button sits
+on its own row below and copies the cached name (if available), login, selected
+snapshot seat and Intra profile link. The seat is also shown in the caption; it
+is the API-reported selection, not independently verified physical presence.
+Unavailable name/seat buttons are disabled. Clipboard changes occur only when
 you copy explicitly.
 
 

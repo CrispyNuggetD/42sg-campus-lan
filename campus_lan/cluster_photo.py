@@ -14,7 +14,7 @@ class PhotoPreview:
         self.report = report
         self.process = None
 
-    def show(self, login):
+    def show(self, login, seat=""):
         # No profile lookup, browser, photo acquisition or network fallback.
         try:
             AvatarCache().read(login)
@@ -34,7 +34,7 @@ class PhotoPreview:
                     for line in process.stdout:
                         self.report(line.strip()[:180])
                 threading.Thread(target=notices, daemon=True).start()
-            self.process.stdin.write(json.dumps(login) + '\n')
+            self.process.stdin.write(json.dumps(dict(login=login, seat=seat)) + '\n')
             self.process.stdin.flush()
         except (OSError, ValueError):
             self.close()
@@ -57,16 +57,18 @@ class PhotoPreview:
                 process.wait()
 
 
-def photo_caption(login):
+def photo_caption(login, seat=""):
     from .student_names import cached_name
     name = cached_name(login)
-    return (name + '\n' if name else '') + login + ' · local photo · Esc closes'
+    return (name + '\n' if name else '') + login + ('\nSeat: ' + seat if seat else '') + ' · local photo · Esc closes'
 
 
-def copy_fields(login, name):
+def copy_fields(login, name, seat=""):
     details = ((name + '\n') if name else '') + login
+    if seat:
+        details += '\nSeat: ' + seat
     details += '\nhttps://profile-v3.intra.42.fr/users/' + login
-    return dict(name=name, intra=login, details=details)
+    return dict(name=name, intra=login, seat=seat, details=details)
 
 
 def present(root):
@@ -96,7 +98,7 @@ def main():
                           state='disabled', exportselection=False)
         caption.pack(fill='x')
         copy_values = {}
-        copy_labels = dict(name='Copy name', intra='Copy Intra', details='Copy details')
+        copy_labels = dict(name='Copy name', intra='Copy Intra', seat='Copy seat', details='Copy details')
         actions = tk.Frame(details)
         actions.pack(fill='x', pady=(2, 0))
         buttons = {}
@@ -111,8 +113,11 @@ def main():
         for column, field in enumerate(copy_labels):
             button = tk.Button(actions, text=copy_labels[field], padx=3,
                                command=lambda field=field: copy(field))
-            button.grid(row=0, column=column, sticky='ew')
-            actions.columnconfigure(column, weight=1)
+            if field == 'details':
+                button.grid(row=1, column=0, columnspan=3, sticky='ew', pady=(4, 0))
+            else:
+                button.grid(row=0, column=column, sticky='ew')
+                actions.columnconfigure(column, weight=1)
             buttons[field] = button
         root.bind('<Escape>', lambda event: root.withdraw())
         root.protocol('WM_DELETE_WINDOW', root.withdraw)
@@ -125,22 +130,27 @@ def main():
         def update():
             try:
                 while True:
-                    login = incoming.get_nowait()
-                    if login is None:
+                    selection = incoming.get_nowait()
+                    if selection is None:
                         root.destroy()
                         return
+                    # Accept older parent processes that send only the login.
+                    login = selection.get('login', '') if isinstance(selection, dict) else selection
+                    seat = selection.get('seat', '') if isinstance(selection, dict) else ''
+                    if not isinstance(seat, str):
+                        seat = ''
                     try:
                         data, _ = AvatarCache().read(login)
                         from .student_names import cached_name
                         name = cached_name(login)
                         copy_values.clear()
-                        copy_values.update(copy_fields(login, name))
+                        copy_values.update(copy_fields(login, name, seat))
                         for field, button in buttons.items():
                             button.configure(text=copy_labels[field],
-                                             state='disabled' if field=='name' and not name else 'normal')
+                                             state='normal' if copy_values.get(field) else 'disabled')
                         caption.configure(state='normal')
                         caption.delete('1.0', 'end')
-                        caption.insert('1.0', photo_caption(login))
+                        caption.insert('1.0', photo_caption(login, seat))
                         caption.configure(state='disabled')
                         root.update_idletasks()
                         lines = caption.count('1.0', 'end-1c', 'displaylines')

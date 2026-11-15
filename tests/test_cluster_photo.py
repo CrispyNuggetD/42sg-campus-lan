@@ -1,10 +1,20 @@
 """Isolated preview tests: no desktop, real cache or network access."""
+import json
 import unittest
 from unittest.mock import Mock, patch
-from campus_lan.cluster_photo import PhotoPreview, present
+from campus_lan.cluster_photo import PhotoPreview, present, copy_fields, photo_caption
 
 
 class PhotoPreviewTests(unittest.TestCase):
+    def test_copied_details_include_selected_seat_and_missing_fields_stay_empty(self):
+        fields = copy_fields('fixture', 'Example Student', 'c2r3s4')
+        self.assertEqual(fields['seat'], 'c2r3s4')
+        self.assertEqual(fields['details'], 'Example Student\nfixture\nSeat: c2r3s4\n'
+                         'https://profile-v3.intra.42.fr/users/fixture')
+        self.assertEqual(copy_fields('fixture', '')['seat'], '')
+        with patch('campus_lan.student_names.cached_name', return_value='Example Student'):
+            self.assertIn('Seat: c2r3s4', photo_caption('fixture', 'c2r3s4'))
+
     def test_each_selection_raises_preview_without_stealing_keyboard_focus(self):
         root=Mock()
         present(root)
@@ -35,7 +45,9 @@ class PhotoPreviewTests(unittest.TestCase):
         process.poll.return_value=None
         preview=PhotoPreview(Mock())
         preview.show('first')
-        preview.show('second')
+        preview.show('second', seat='c2r3s4')
+        self.assertEqual(json.loads(process.stdin.write.call_args.args[0]),
+                         dict(login='second', seat='c2r3s4'))
         launch.assert_called_once()
         self.assertEqual(process.stdin.write.call_count,2)
         cache.return_value.fetch.assert_not_called()
