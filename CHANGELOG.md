@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.30.0-beta.1 · 2026-11-15T11:21:30+08:00
+
+- feat(setup): detect iSH and provision Alpine dependencies
+
 ## 2.29.1-beta.1 · 2026-11-13T07:30:22+08:00
 
 - WIP: checkpoint 2026-11-13T07:30:06+08:00
