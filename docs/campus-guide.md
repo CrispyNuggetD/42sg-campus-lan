@@ -629,28 +629,34 @@ without relying on color:
 | F / M / O | Friend / mutual / oomf |
 | L / T | Named list / individually tracked |
 | A / + / ? | API-only / verified or approved / guest |
-| >09< | Selected roster number 9 |
-| [++] / >++< | Shared seat / selected shared seat |
+| >4F09< | Selected cohort 4 friend, roster number 9; arrows occupy the existing gaps |
+| [++] / >[++]< | Shared seat / selected shared seat |
 
-An occupied map token such as `[F9]` means friend, roster number 9; `F:12` means
-friend, roster number 12. Empty `[09]` remains a desk number, not a roster number.
-Selected cells keep persistent `>nn<` delimiters and bold/underline emphasis.
-Their inverse-video emphasis pulses every 0.6 seconds in both HQ and the separate
-cluster viewer, including when color is disabled. The marker and details never
-disappear; the animation is driven by redraws, not terminal hardware blink. Selecting an occupant shows their login, seat and
-relationship in the details line. `/locate LOGIN` in the cluster viewer selects
-the matching map seat and opens its page. A stale selection does not silently
-move to a replacement occupant. Shared seats still require choosing an individual
-roster entry before opening an Intra profile.
+Map cells retain **cohort + relationship + roster number** together. For example,
+`4F09` means cohort 4, friend, roster number 9. `?A09` means unknown intake, API
+occupant, roster number 9. Two-digit intakes retain their full intake number:
+`12F9` means intake 12, friend, roster number 9; `12F*` uses `*` when the roster
+number cannot also fit, with the exact number/login available in the roster and
+selected details. Empty `[09]` remains a desk number, not a roster number.
 
-Ordinary occupied seats use a stable eight-color intake palette when cached
-intake is known; `I4~` in the roster/details remains the exact label. The palette
-uses 256-color hues when available and basic terminal colors otherwise; intakes
-above eight repeat the palette. Unknown-intake API occupants use cyan, guests
-use amber, and empty desk tokens are dim. Friend magenta, list blue and self
-badges take priority over intake color. Relationship symbols always remain,
-and the selected seat pulses independently of its relationship. This restores
-the map’s color overview without making color the only status cue.
+**Foreground hue means cohort.** Friend/mutual/oomf, list and self badges add a
+dark background band and a letter; they do not replace the cohort hue. In a
+basic eight-color terminal the band can collapse to the normal background, but
+the relationship letter remains. Intake color repeats after eight; `I~` text and
+the map's explicit intake number remove that ambiguity.
+
+**Selection keeps the original foreground, background and cell text.** Arrows
+occupy the existing spacing beside the selected cell. Underlining stays on and
+bold weight pulses every 0.6 seconds in both HQ and the separate cluster viewer.
+There is no white selection palette or inverse-video color swap. At an outer
+map edge only the arrow that fits in existing spacing is shown. A selected
+roster entry gets a leading arrow and retains its badge and intake text.
+
+Selecting an occupant shows their login, seat and relationship in the details
+line. `/locate LOGIN` selects the matching map seat and opens its page. A stale
+selection does not silently move to a replacement occupant. Shared seats still
+require choosing an individual roster entry before opening an Intra profile.
+Unknown-intake API occupants are cyan, guests amber, and empty desk tokens dim.
 
 `~` means the cohort comes from the existing local Singapore cache's inferred
 intake numbering, not official membership metadata. Missing or conflicting

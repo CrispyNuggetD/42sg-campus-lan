@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from . import VERSION, PROTOCOL
 from .network import seat_address, address
-from .lobby_view import lobby_lines, guest_style, overlay_campus, roster, seat, LAYOUT
+from .lobby_view import lobby_lines, guest_style, overlay_campus, roster, seat, LAYOUT, SELECTED_STYLE, selection_attributes
 from .hexbot import SDK, compile_bot
 from . import auth_client
 from .updater import RestartRequested, generation
@@ -1137,11 +1137,10 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
             for text,style in segments:
                 attr = curses.A_BOLD if style else 0
                 if style and getattr(self,'colors',False):
-                    attr |= curses.color_pair(style)
+                    attr |= curses.color_pair(style & ~SELECTED_STYLE)
                 if re.fullmatch(r'\[\d+\]',text) and not style:attr|=curses.A_DIM
-                from .lobby_view import SELECTED_STYLE,selection_attributes
-                if style==SELECTED_STYLE:
-                    attr=selection_attributes(curses,getattr(self,'colors',False))
+                if style&SELECTED_STYLE:
+                    attr=selection_attributes(curses,getattr(self,'colors',False),style=style)
                 self.line(screen,y,text,attr,x)
                 x += len(text)
         bottom = 5+capacity

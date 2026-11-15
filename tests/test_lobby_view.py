@@ -37,7 +37,7 @@ class LobbyView(unittest.TestCase):
         ordered = roster(peers)
         self.assertEqual([p['name'] for _,p,_ in ordered], ['hnah','thtay','home'])
         rows=lobby_lines(peers, 'map', 1)
-        self.assertTrue(any('[?1]' in text and style==GUEST_STYLE for line in rows for text,style in line))
+        self.assertTrue(any('??01' in text and style==GUEST_STYLE for line in rows for text,style in line))
         self.assertNotEqual(guest_style('hnah'),1)  # verified green remains reserved
         peers.append(player('other','c1r8s6'))
         self.assertTrue(any('[++]' in text for line in lobby_lines(peers,'map',1) for text,_ in line))
@@ -55,7 +55,7 @@ class LobbyView(unittest.TestCase):
         self.assertEqual(decorated[1]['local_relationship'],'list')
         self.assertNotIn('local_relationship',people[0])
         rows=lobby_lines(decorated,'map',1)
-        self.assertIn('>nn< selected',''.join(text for text,_ in rows[1]))
+        self.assertIn('>cell< select',''.join(text for text,_ in rows[1]))
         self.assertTrue(any(style==0 and text=='[06]' for row in rows for text,style in row))
 
     def test_cluster_flavours_and_self_override_relationship_without_guest_spoof(self):
@@ -81,15 +81,15 @@ class LobbyView(unittest.TestCase):
         data={'people':{n:{'relationship':'friends'} for n in ('hnah','friend4','friend5')}}
         decorated=relationship_overlay(people,data,'hnah',{'hnah':4,'friend4':4,'friend5':5,'other5':5,'spoof':4})
         self.assertEqual(len(decorated),len(people))
-        self.assertEqual([player_style(p) for p in decorated],[SELF_STYLE,FRIEND_STYLE,FRIEND_STYLE,COHORT_STYLES[5],GUEST_STYLE])
+        self.assertEqual([player_style(p) for p in decorated],[44,27,28,COHORT_STYLES[5],GUEST_STYLE])
         rows=lobby_lines(decorated,'roster',0)
         text='\n'.join(''.join(s for s,_ in row) for row in rows)
         self.assertEqual(text.count('friend4'),1)
         self.assertIn('friend / I4~',text)
         self.assertIn('friend / I5~',text)
         mapped=lobby_lines(decorated,'map',1)
-        self.assertTrue(any(token=='[F2]' and style==FRIEND_STYLE for row in mapped for token,style in row))
-        self.assertTrue(any(token=='[F3]' and style==FRIEND_STYLE for row in mapped for token,style in row))
+        self.assertTrue(any(token=='4F02' and style==27 for row in mapped for token,style in row))
+        self.assertTrue(any(token=='5F03' and style==28 for row in mapped for token,style in row))
         self.assertIsNone(decorated[-1]['local_cohort'])
 
     def test_guest_name_cannot_claim_friend_or_list_color(self):
@@ -158,7 +158,7 @@ class SelectionAccessibility(unittest.TestCase):
         players=relationship_overlay([dict(name='friend',seat='c1r8s2',api_presence=True)],{'people':{'friend':{'relationship':'friends'}}})
         content=lobby_lines(players,'map',1)
         selected=selection_overlay(players,content,'map',1,(1,8,2),'friend')
-        self.assertTrue(any(text=='>01<' and style==SELECTED_STYLE for row in selected for text,style in row))
+        self.assertTrue(any(text=='?F01' and style&SELECTED_STYLE for row in selected for text,style in row))
         self.assertEqual([sum(len(t) for t,_ in row) for row in selected],[sum(len(t) for t,_ in row) for row in content])
         self.assertIn('friend [F: friend]',selected_details(players,(1,8,2),'friend'))
         changed=[dict(name='replacement',seat='c1r8s2',api_presence=True)]
@@ -169,7 +169,8 @@ class SelectionAccessibility(unittest.TestCase):
         from campus_lan.lobby_view import selection_overlay
         players=[dict(name=n,seat='c1r1s1',api_presence=True) for n in ('a','b')]
         result=selection_overlay(players,lobby_lines(players,'map',1),'map',1,(1,1,1))
-        self.assertTrue(any(text=='>++<' for row in result for text,_ in row))
+        self.assertTrue(any(text=='[++]' and style&(1<<12) for row in result for text,style in row))
+        self.assertIn('>[++]<',''.join(text for row in result for text,_ in row))
 
 
 class MapPaletteAndPulse(unittest.TestCase):
@@ -192,13 +193,98 @@ class MapPaletteAndPulse(unittest.TestCase):
 
     def test_selection_pulse_changes_attributes_without_hiding_marker(self):
         from types import SimpleNamespace
-        from campus_lan.lobby_view import selection_attributes,map_legend,SELECTED_STYLE
+        from campus_lan.lobby_view import selection_attributes,map_legend,SELECTED_STYLE,API_STYLE
         colors=SimpleNamespace(A_BOLD=1,A_UNDERLINE=2,A_REVERSE=4,color_pair=lambda style:style<<8)
         bright=selection_attributes(colors,True,now=0)
         quiet=selection_attributes(colors,True,now=.7)
         self.assertNotEqual(bright,quiet)
         for attr in (bright,quiet):
-            self.assertEqual(attr&3,3)
-            self.assertEqual(attr&(SELECTED_STYLE<<8),SELECTED_STYLE<<8)
+            self.assertTrue(attr&colors.A_UNDERLINE)
+            self.assertEqual(attr&0xFF00,API_STYLE<<8)
+            self.assertFalse(attr&colors.A_REVERSE)
         self.assertNotEqual(selection_attributes(colors,False,0),selection_attributes(colors,False,.7))
         self.assertTrue(all(style!=SELECTED_STYLE for _,style in map_legend()))
+
+
+class IndependentVisualCues(unittest.TestCase):
+    def test_cohort_foreground_survives_friend_band_and_both_selection_phases(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from campus_lan.lobby_view import init_cluster_colors,selection_overlay,selection_attributes,SELECTED_STYLE
+        curses=SimpleNamespace(COLORS=256,COLOR_BLACK=0,COLOR_BLUE=4,COLOR_CYAN=6,
+                               COLOR_GREEN=2,COLOR_YELLOW=3,COLOR_MAGENTA=5,
+                               COLOR_WHITE=7,COLOR_RED=1,init_pair=Mock(),
+                               A_BOLD=1,A_UNDERLINE=2,A_REVERSE=4,color_pair=lambda style:style<<8)
+        init_cluster_colors(curses)
+        pairs={call.args[0]:call.args[1:] for call in curses.init_pair.call_args_list}
+        original=[dict(name='friend',seat='c1r8s2',api_presence=True)]
+        normal=relationship_overlay(original,{},cohorts={'friend':4})
+        friendly=relationship_overlay(original,{'people':{'friend':{'relationship':'friends'}}},cohorts={'friend':4})
+        base=player_style(normal[0]);band=player_style(friendly[0])
+        self.assertEqual(pairs[base][0],pairs[band][0])
+        self.assertNotEqual(pairs[base][1],pairs[band][1])
+        content=lobby_lines(friendly,'map',1)
+        selected=selection_overlay(friendly,content,'map',1,(1,8,2),'friend')
+        token,style=next((text,style) for row in selected for text,style in row if text=='4F01')
+        self.assertTrue(style&SELECTED_STYLE)
+        self.assertEqual(style&~SELECTED_STYLE,band)
+        for phase in (0,.7):
+            attr=selection_attributes(curses,True,phase,style)
+            self.assertEqual(attr&0xFF00,band<<8)
+            self.assertFalse(attr&curses.A_REVERSE)
+        self.assertIn('>4F01<',''.join(text for row in selected for text,_ in row))
+
+    def test_two_digit_intake_remains_explicit_without_widening_cell(self):
+        shown=relationship_overlay([dict(name='friend',seat='c1r1s1',api_presence=True)],
+                                   {'people':{'friend':{'relationship':'friends'}}},cohorts={'friend':12})
+        self.assertTrue(any(text=='12F1' for row in lobby_lines(shown,'map',1) for text,_ in row))
+
+    def test_real_curses_preserves_friend_cohort_pair_across_selection_phases(self):
+        import errno
+        import fcntl
+        import os
+        import pty
+        import struct
+        import termios
+        pid,fd=pty.fork()
+        if pid==0:
+            try:
+                import curses
+                from campus_lan.lobby_view import init_cluster_colors,selection_overlay,selection_attributes,SELECTED_STYLE,occupant_hits
+                os.environ['TERM']='xterm-256color'
+                fcntl.ioctl(1,termios.TIOCSWINSZ,struct.pack('HHHH',40,100,0,0))
+                def check(screen):
+                    curses.start_color();init_cluster_colors(curses)
+                    people=relationship_overlay([dict(name='friend',seat='c1r8s2',api_presence=True)],
+                                                {'people':{'friend':{'relationship':'friends'}}},cohorts={'friend':4})
+                    base=lobby_lines(people,'map',1)
+                    shown=selection_overlay(people,base,'map',1,(1,8,2),'friend')
+                    row,left,_,_=occupant_hits(people,'map',1)[0]
+                    style=player_style(people[0])
+                    for phase in (0,.7):
+                        screen.erase()
+                        for y,segments in enumerate(shown[:39]):
+                            x=0
+                            for text,pair in segments:
+                                attr=selection_attributes(curses,True,phase,pair) if pair&SELECTED_STYLE else curses.color_pair(pair)
+                                if x<99:screen.addnstr(y,x,text,99-x,attr)
+                                x+=len(text)
+                        screen.refresh()
+                        self.assertEqual(curses.pair_number(screen.inch(row,left)),style)
+                        self.assertEqual(''.join(chr(screen.inch(row,left+i)&curses.A_CHARTEXT) for i in range(4)),'4F01')
+                curses.wrapper(check)
+                os.write(1,b'COHORT_PAIR_PRESERVED');os._exit(0)
+            except BaseException:os._exit(1)
+        output=b''
+        try:
+            while True:
+                try:chunk=os.read(fd,65536)
+                except OSError as exc:
+                    if exc.errno==errno.EIO:break
+                    raise
+                if not chunk:break
+                output+=chunk
+        finally:
+            os.close(fd);_,status=os.waitpid(pid,0)
+        self.assertEqual(os.waitstatus_to_exitcode(status),0)
+        self.assertIn(b'COHORT_PAIR_PRESERVED',output)

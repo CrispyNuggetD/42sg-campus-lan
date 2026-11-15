@@ -424,3 +424,24 @@ selected token stays visible; palette tests verify occupied-seat colors and map
 swatches. Website build passed. Fake people, temporary state and mocked native
 operations were used. Actual iSH legibility and device frame timing remain
 unverified; no live people were selected or notified.
+
+## Independent cohort, relationship and selection cues — 15 November 2026 SGT
+
+Cohort foreground hues now survive friend, list and self decoration. Known-intake
+relationship variants use the same foreground with a dark background band and
+letter marker; basic-color terminals retain the letters when the band is not
+available. Cells encode intake, relationship and roster index together (4F09).
+Two-digit intake numbers stay explicit, with * when the roster index cannot fit.
+Selection preserves that cell text and its foreground/background pair. Arrows
+use existing map gaps; underline persists and bold weight pulses, without white
+replacement or inverse-video swapping. Hit geometry and occupant confirmation
+remain unchanged. The legend no longer uses a friend hue that competes with an
+intake hue.
+
+The 84-test focused cluster/lobby/click/profile/client/campus/relationship/feature/
+website selection passed. An additional real curses pseudo-terminal regression
+passed, checking that a selected cohort-4 friend retains both the original color
+pair and the 4F01 text across pulse phases (85 focused checks in total). Palette
+tests separately verify equal foreground hues and distinct normal/friend bands.
+Website build passed. Actual iSH font-weight and background-band legibility
+remain unverified; no live student interaction or API call was used.

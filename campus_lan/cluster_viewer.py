@@ -15,7 +15,7 @@ from . import PROTOCOL,auth_client
 from .access import Policy
 from .api_pacing import ui_notices
 from .cluster_commands import normalize_cluster_command
-from .lobby_view import lobby_lines,overlay_campus,relationship_overlay,roster,seat
+from .lobby_view import lobby_lines,overlay_campus,relationship_overlay,roster,seat,SELECTED_STYLE,selection_attributes
 from .updater import RestartRequested,generation
 from .numbered_occupants import ProfileCommands
 
@@ -442,10 +442,9 @@ class ClusterViewer(ProfileCommands):
                 x=0
                 for value,style in segments:
                     if x>=width-1:break
-                    attr=curses.color_pair(style) if colors and style else 0
-                    from .lobby_view import SELECTED_STYLE,selection_attributes
-                    if style==SELECTED_STYLE:
-                        attr=selection_attributes(curses,colors)
+                    attr=curses.color_pair(style & ~SELECTED_STYLE) if colors and style else 0
+                    if style&SELECTED_STYLE:
+                        attr=selection_attributes(curses,colors,style=style)
                     elif re.fullmatch(r'\[\d+\]',value) and not style:
                         attr|=curses.A_DIM
                     try:screen.addnstr(index,x,value,width-1-x,attr)

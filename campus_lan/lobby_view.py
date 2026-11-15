@@ -31,23 +31,20 @@ def plain(text):
     return [(text, 0)]
 
 
-FRIEND_STYLE=4  # magenta
-LIST_STYLE=20   # blue; cluster identity keeps cyan/amber
+FRIEND_STYLE=49  # unknown-intake friendly band; known intakes use 24..31
+LIST_STYLE=50    # unknown-intake list band; known intakes use 32..39
 SIGNED_STYLE=1  # green
 GUEST_STYLE=21  # amber; ? marker carries guest status
 API_STYLE=22    # cyan occupancy when intake is unknown
 CLUSTER_STYLES={1:8,2:9}  # cool cyan / warm amber
-SELF_STYLE=10             # high-contrast personal badge
-SELECTED_STYLE=19
+SELF_STYLE=51             # unknown-intake self band; known intakes use 41..48
+SELECTED_STYLE=1 << 12  # rendering flag; never a replacement color pair
 COHORT_STYLES={n:11+(n-1)%8 for n in range(1,100)}  # Stable intake palette, with I labels.
 
 
 def init_cluster_colors(curses):
     curses.init_pair(8,curses.COLOR_CYAN,curses.COLOR_BLACK)
     curses.init_pair(9,curses.COLOR_YELLOW,curses.COLOR_BLACK)
-    curses.init_pair(10,curses.COLOR_BLACK,curses.COLOR_WHITE)
-    curses.init_pair(19,curses.COLOR_WHITE,curses.COLOR_BLUE)
-    curses.init_pair(20,curses.COLOR_BLUE,curses.COLOR_WHITE)
     curses.init_pair(21,curses.COLOR_YELLOW,curses.COLOR_BLACK)
     curses.init_pair(22,curses.COLOR_CYAN,curses.COLOR_BLACK)
     extended=(33,45,82,214,141,220,203,37)
@@ -56,14 +53,20 @@ def init_cluster_colors(curses):
     palette=extended if getattr(curses,'COLORS',0)>=256 else basic
     for pair,color in enumerate(palette,11):
         curses.init_pair(pair,color,curses.COLOR_BLACK)
+    band=236 if getattr(curses,'COLORS',0)>=256 else curses.COLOR_BLACK
+    for start in (24,32,41):
+        for index,color in enumerate(palette):
+            curses.init_pair(start+index,color,band)
+    for pair in (FRIEND_STYLE,LIST_STYLE,SELF_STYLE):
+        curses.init_pair(pair,curses.COLOR_CYAN,band)
 
 
-def selection_attributes(curses, colors=False, now=None):
-    """Visible software pulse in terminals that ignore the hardware blink flag."""
+def selection_attributes(curses, colors=False, now=None, style=API_STYLE):
+    """Pulse weight, never foreground/background hue or identifying text."""
     moment=time.monotonic() if now is None else now
-    attr=curses.A_BOLD|curses.A_UNDERLINE
-    if colors:attr|=curses.color_pair(SELECTED_STYLE)
-    if int(moment/.6)%2==0:attr|=curses.A_REVERSE
+    attr=curses.A_UNDERLINE
+    if colors:attr|=curses.color_pair(style & ~SELECTED_STYLE)
+    if int(moment/.6)%2==0:attr|=curses.A_BOLD
     return attr
 
 
@@ -84,10 +87,14 @@ def relationship_overlay(players, data, owner=None, cohorts=None):
 
 
 def player_style(player):
-    if player.get('local_self'):return SELF_STYLE
-    if player.get('local_relationship')=='friend':return FRIEND_STYLE
-    if player.get('local_relationship')=='list':return LIST_STYLE
-    if player.get('local_cohort') in COHORT_STYLES:return COHORT_STYLES[player['local_cohort']]
+    cohort=player.get('local_cohort')
+    known=cohort in COHORT_STYLES
+    offset=(cohort-1)%8 if known else 0
+    # Relationship changes the background band, never the cohort foreground.
+    if player.get('local_self'):return 41+offset if known else SELF_STYLE
+    if player.get('local_relationship')=='friend':return 24+offset if known else FRIEND_STYLE
+    if player.get('local_relationship')=='list':return 32+offset if known else LIST_STYLE
+    if known:return COHORT_STYLES[cohort]
     if player.get('api_presence') and not player.get('lan42_peer'):return API_STYLE
     return SIGNED_STYLE if player.get('verified') or player.get('remote_approved') else GUEST_STYLE
 
@@ -105,8 +112,8 @@ def relationship_badge(player):
 
 
 def map_legend():
-    return [('Y you ',SELF_STYLE),('F/M/O friends ',FRIEND_STYLE),('L list ',LIST_STYLE),
-            ('T tracked A API + verified ? guest ',0),('>nn< selected',0)]
+    return [('Y you ',0),('F/M/O friends ',0),('L list ',0),
+            ('T tracked A API + verified ? guest ',0),('>cell< select',0)]
 
 
 def overlay_campus(players, peers):
@@ -152,7 +159,7 @@ def lobby_lines(players, view='roster', cluster=1):
             lines.append(plain(''))
         return lines
 
-    lines = [[(f'CLUSTER {cluster} - physical seat map (even desks above odd desks)',CLUSTER_STYLES[cluster])],
+    lines = [[(f'CLUSTER {cluster} - physical seat map | 4F09 = I4 / Friend / #09',CLUSTER_STYLES[cluster])],
              map_legend()]
     occupied = {}
     for n,p,s in entries:
@@ -171,7 +178,10 @@ def lobby_lines(players, view='roster', cluster=1):
                     priority={'friend':0,'list':1}
                     n,p = min(members,key=lambda item:(-1 if item[1].get('local_self') else priority.get(item[1].get('local_relationship'),2 if item[1].get('verified') else 3 if item[1].get('lan42_peer') else 4)))
                     badge,_=relationship_badge(p)
-                    token = '[++]' if len(members)>1 else (f'[{badge}{n}]' if n<10 else f'{badge}:{n:02}' if n<100 else f'[{badge}*]')
+                    cohort=p.get('local_cohort')
+                    intake=str(cohort) if cohort else '?'
+                    number=f'{n:02}' if n<100 else '**'
+                    token = '[++]' if len(members)>1 else (intake+badge+number if len(intake)==1 else intake+badge+(str(n) if n<10 else '*'))
                     style = player_style(p)
                 line.append((token,style))
             lines.append(line)
@@ -229,23 +239,25 @@ def selected_details(players, location, name=None):
 
 
 def selection_overlay(players, content, view, cluster, location, name=None):
-    """Persistent non-color selection, preserving four-column cells and hit geometry."""
+    """Add gutter arrows and a pulse flag; keep cell text, color and geometry."""
     if not location:return content
     hits=[hit for hit in occupant_hits(players,view,cluster)
           if any(seat(p)==location and (not name or p.get('name','').lower()==name.lower()) for p in hit[3])]
     result=[]
     for row,segments in enumerate(content):
-        x=0;out=[]
-        for text,style in segments:
+        x=0;out=list(segments)
+        for index,(text,style) in enumerate(segments):
             selected=any(y==row and left<x+len(text) and x<right for y,left,right,_ in hits)
             if selected:
-                style=SELECTED_STYLE
-                if len(text)==4:
-                    members=next(m for y,left,right,m in hits if y==row and left<x+len(text) and x<right)
-                    number=next((n for n,p,_ in roster(players) if p in members),0)
-                    text='>++<' if len(members)>1 else '>'+ (f'{number:02}' if number<100 else '**')+'<'
+                out[index]=(text,style|SELECTED_STYLE)
+                if len(text)==4 and index>0:
+                    before,previous_style=out[index-1]
+                    if before.endswith(' '):out[index-1]=(before[:-1]+'>',previous_style)
+                    if index+1<len(out):
+                        after,next_style=out[index+1]
+                        if after.startswith(' '):out[index+1]=('<'+after[1:],next_style)
                 elif text[:5].strip().endswith('.'):
-                    text='>'+text[1:]
-            out.append((text,style));x+=len(text)
+                    out[index]=('>'+text[1:],style|SELECTED_STYLE)
+            x+=len(text)
         result.append(out)
     return result

@@ -112,7 +112,7 @@ class ClusterProfileInteraction(unittest.TestCase):
             v=self.viewer();v.focus_location=(1,8,2);v.focus_name='fixture'
             with patch('campus_lan.lobby_view.time.monotonic',return_value=moment):
                 screen=self.run_screen(v,[3])
-            selected=[call for call in screen.addnstr.call_args_list if call.args[2]=='>01<']
+            selected=[call for call in screen.addnstr.call_args_list if call.args[2]=='?A01']
             self.assertTrue(selected)
             attributes.append(selected[0].args[4])
         self.assertNotEqual(*attributes)
