@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.35.1-beta.1 · 2026-11-15T20:11:17+08:00
+
+- fix: explain KoelDrop sync failures and announce recovery
+
 ## 2.35.0-beta.1 · 2026-11-15T19:47:43+08:00
 
 - feat: copy selected seat and full details from cluster photos

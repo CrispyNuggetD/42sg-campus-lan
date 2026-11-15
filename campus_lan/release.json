@@ -1,8 +1,16 @@
 {
-  "version": "2.35.0-beta.1",
-  "date": "2026-11-15T19:47:43+08:00",
-  "source": "7f7805d39a80a24e3b64d907c88d524e1fc628d3",
+  "version": "2.35.1-beta.1",
+  "date": "2026-11-15T20:11:17+08:00",
+  "source": "a1b4835dd6d5b5c7763f2b42e30edf39793eac36",
   "history": [
+    {
+      "version": "2.35.1-beta.1",
+      "date": "2026-11-15T20:11:17+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: explain KoelDrop sync failures and announce recovery"
+      ]
+    },
     {
       "version": "2.35.0-beta.1",
       "date": "2026-11-15T19:47:43+08:00",
@@ -752,5 +760,5 @@
       ]
     }
   ],
-  "runtime_sha256": "3520b83bd11dd17cbffd233f5323e4abea06d920e382d5ce915e82ac3dbb12b8"
+  "runtime_sha256": "2b9c979f793e51adcdcfd3b2d6a0313b52cf7d83cedbfcdb1458337ac57c499c"
 }
