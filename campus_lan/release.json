@@ -1,8 +1,16 @@
 {
-  "version": "2.31.0-beta.1",
-  "date": "2026-11-15T11:57:07+08:00",
-  "source": "2ae90e59933b736ecff39156069858f1ac01df29",
+  "version": "2.32.0-beta.1",
+  "date": "2026-11-15T12:07:16+08:00",
+  "source": "0d8ef5c9f8ed75792e7a21b73dbf2474009d6814",
   "history": [
+    {
+      "version": "2.32.0-beta.1",
+      "date": "2026-11-15T12:07:16+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat(api): add explicit standalone iSH operator setup"
+      ]
+    },
     {
       "version": "2.31.0-beta.1",
       "date": "2026-11-15T11:57:07+08:00",
@@ -671,5 +679,5 @@
       ]
     }
   ],
-  "runtime_sha256": "bcb8b4a782aee392cdb26ca47f326a48684ba2b690c8824900c6b496e553cd93"
+  "runtime_sha256": "ea2b1c328fbf6a337a891378e7c97c2b99ecc9885f02de88ef5f2fa2ff586cb3"
 }

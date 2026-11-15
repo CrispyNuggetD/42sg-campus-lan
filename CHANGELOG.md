@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.32.0-beta.1 · 2026-11-15T12:07:16+08:00
+
+- feat(api): add explicit standalone iSH operator setup
+
 ## 2.31.0-beta.1 · 2026-11-15T11:57:07+08:00
 
 - feat(friends): track and label friends across LAN42 views
