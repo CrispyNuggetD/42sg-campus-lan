@@ -150,7 +150,7 @@ class SelectionAccessibility(unittest.TestCase):
         text='\n'.join(''.join(t for t,_ in row) for row in lobby_lines(shown,'roster',1))
         for badge in ('[Y]','[F]','[M]','[O]','[T]','[L]','[A]'):self.assertIn(badge,text)
         self.assertIn('I4~',text)
-        self.assertEqual(set(COHORT_STYLES.values()),{API_STYLE})
+        self.assertEqual(len(set(COHORT_STYLES.values())),8)
         self.assertLessEqual(sum(len(t) for t,_ in map_legend()),75)
 
     def test_selection_is_persistent_and_does_not_change_hit_geometry(self):
@@ -170,3 +170,35 @@ class SelectionAccessibility(unittest.TestCase):
         players=[dict(name=n,seat='c1r1s1',api_presence=True) for n in ('a','b')]
         result=selection_overlay(players,lobby_lines(players,'map',1),'map',1,(1,1,1))
         self.assertTrue(any(text=='>++<' for row in result for text,_ in row))
+
+
+class MapPaletteAndPulse(unittest.TestCase):
+    def test_extended_palette_colors_occupied_intakes_and_unknown_api(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from campus_lan.lobby_view import init_cluster_colors,API_STYLE,GUEST_STYLE
+        colors=SimpleNamespace(COLORS=256,COLOR_BLACK=0,COLOR_BLUE=4,COLOR_CYAN=6,
+                               COLOR_GREEN=2,COLOR_YELLOW=3,COLOR_MAGENTA=5,
+                               COLOR_WHITE=7,COLOR_RED=1,init_pair=Mock())
+        init_cluster_colors(colors)
+        pairs={call.args[0]:call.args[1:] for call in colors.init_pair.call_args_list}
+        self.assertEqual(len({pairs[n][0] for n in range(11,19)}),8)
+        self.assertEqual(pairs[API_STYLE][0],colors.COLOR_CYAN)
+        self.assertEqual(pairs[GUEST_STYLE][0],colors.COLOR_YELLOW)
+        self.assertNotEqual(pairs[API_STYLE][0],colors.COLOR_WHITE)
+        rows=lobby_lines([], 'map',1)
+        swatches=next(row for row in rows if row[0][0]=='Intake colors: ')
+        self.assertEqual([style for _,style in swatches[1:9]],list(range(11,19)))
+
+    def test_selection_pulse_changes_attributes_without_hiding_marker(self):
+        from types import SimpleNamespace
+        from campus_lan.lobby_view import selection_attributes,map_legend,SELECTED_STYLE
+        colors=SimpleNamespace(A_BOLD=1,A_UNDERLINE=2,A_REVERSE=4,color_pair=lambda style:style<<8)
+        bright=selection_attributes(colors,True,now=0)
+        quiet=selection_attributes(colors,True,now=.7)
+        self.assertNotEqual(bright,quiet)
+        for attr in (bright,quiet):
+            self.assertEqual(attr&3,3)
+            self.assertEqual(attr&(SELECTED_STYLE<<8),SELECTED_STYLE<<8)
+        self.assertNotEqual(selection_attributes(colors,False,0),selection_attributes(colors,False,.7))
+        self.assertTrue(all(style!=SELECTED_STYLE for _,style in map_legend()))

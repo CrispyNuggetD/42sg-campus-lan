@@ -404,3 +404,23 @@ API observations, not physical entry/exit or the reason for being absent.
 Seven feed regressions plus existing tracking, relationship, cluster/UI,
 preferences, notification and website checks passed in the 122-test selection.
 Guide refresh and website build passed. No live location data was collected.
+
+## Occupied-seat palette and software selection pulse — 15 November 2026 SGT
+
+Ordinary occupied seats again use a stable eight-color intake palette, with
+256-color hues when supported and a basic terminal fallback. Map swatches name
+I1–I8; exact I~ labels remain in details/roster and later intakes repeat colors.
+Unknown-intake API seats are cyan and guests amber, rather than white. Friend,
+list and self overrides and all non-color relationship badges remain intact.
+Only the selected cell/roster entry pulses its inverse emphasis every 0.6 seconds
+in both renderers. Bold, underline, >nn< and the static details remain visible.
+The shared helper uses redraw timing rather than hardware blink; the legend
+itself does not pulse. Selection styling now uses the identity-checked overlay,
+so the older seat-only highlight cannot emphasize a replacement occupant.
+
+All 82 focused map/cluster/click/profile/client/campus/relationship/website/feature
+checks passed. Renderer tests compare two software pulse phases and confirm the
+selected token stays visible; palette tests verify occupied-seat colors and map
+swatches. Website build passed. Fake people, temporary state and mocked native
+operations were used. Actual iSH legibility and device frame timing remain
+unverified; no live people were selected or notified.

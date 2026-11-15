@@ -443,8 +443,11 @@ class ClusterViewer(ProfileCommands):
                 for value,style in segments:
                     if x>=width-1:break
                     attr=curses.color_pair(style) if colors and style else 0
-                    if any(row==index and left<x+len(value) and x<right and any(seat(player)==self.focus_location for player in members)
-                           for row,left,right,members in self.hits):attr|=curses.A_REVERSE|curses.A_BOLD
+                    from .lobby_view import SELECTED_STYLE,selection_attributes
+                    if style==SELECTED_STYLE:
+                        attr=selection_attributes(curses,colors)
+                    elif re.fullmatch(r'\[\d+\]',value) and not style:
+                        attr|=curses.A_DIM
                     try:screen.addnstr(index,x,value,width-1-x,attr)
                     except curses.error:pass
                     x+=len(value)

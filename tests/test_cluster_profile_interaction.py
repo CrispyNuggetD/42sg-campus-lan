@@ -104,3 +104,15 @@ class ClusterProfileInteraction(unittest.TestCase):
         self.assertFalse(any('Tip: double-click' in call.args[2] for call in screen.addnstr.call_args_list))
         fresh=self.viewer();screen=self.run_screen(fresh,[3])
         self.assertTrue(any('Tip: double-click' in call.args[2] for call in screen.addnstr.call_args_list))
+
+    def test_selected_seat_visibly_pulses_in_real_viewer_render_loop(self):
+        from campus_lan.lobby_view import selection_attributes
+        attributes=[]
+        for moment in (0,.7):
+            v=self.viewer();v.focus_location=(1,8,2);v.focus_name='fixture'
+            with patch('campus_lan.lobby_view.time.monotonic',return_value=moment):
+                screen=self.run_screen(v,[3])
+            selected=[call for call in screen.addnstr.call_args_list if call.args[2]=='>01<']
+            self.assertTrue(selected)
+            attributes.append(selected[0].args[4])
+        self.assertNotEqual(*attributes)

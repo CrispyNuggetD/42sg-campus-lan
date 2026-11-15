@@ -1,6 +1,7 @@
 """Pure roster and ASCII floor-plan rendering shared by the terminal lobby."""
 import re
 import zlib
+import time
 
 # Physical layout from the owner's cluster screenshots: highest row at the top,
 # even seats above odd seats, staggered by one desk.
@@ -33,12 +34,12 @@ def plain(text):
 FRIEND_STYLE=4  # magenta
 LIST_STYLE=20   # blue; cluster identity keeps cyan/amber
 SIGNED_STYLE=1  # green
-GUEST_STYLE=21  # neutral white; ? marker carries guest status
-API_STYLE=22    # neutral white; A marker carries API-only status
+GUEST_STYLE=21  # amber; ? marker carries guest status
+API_STYLE=22    # cyan occupancy when intake is unknown
 CLUSTER_STYLES={1:8,2:9}  # cool cyan / warm amber
 SELF_STYLE=10             # high-contrast personal badge
 SELECTED_STYLE=19
-COHORT_STYLES={n:API_STYLE for n in range(1,100)}  # Intake is text, not another palette.
+COHORT_STYLES={n:11+(n-1)%8 for n in range(1,100)}  # Stable intake palette, with I labels.
 
 
 def init_cluster_colors(curses):
@@ -47,8 +48,23 @@ def init_cluster_colors(curses):
     curses.init_pair(10,curses.COLOR_BLACK,curses.COLOR_WHITE)
     curses.init_pair(19,curses.COLOR_WHITE,curses.COLOR_BLUE)
     curses.init_pair(20,curses.COLOR_BLUE,curses.COLOR_WHITE)
-    curses.init_pair(21,curses.COLOR_WHITE,curses.COLOR_BLACK)
-    curses.init_pair(22,curses.COLOR_WHITE,curses.COLOR_BLACK)
+    curses.init_pair(21,curses.COLOR_YELLOW,curses.COLOR_BLACK)
+    curses.init_pair(22,curses.COLOR_CYAN,curses.COLOR_BLACK)
+    extended=(33,45,82,214,141,220,203,37)
+    basic=(curses.COLOR_BLUE,curses.COLOR_CYAN,curses.COLOR_GREEN,curses.COLOR_YELLOW,
+           curses.COLOR_MAGENTA,curses.COLOR_WHITE,curses.COLOR_RED,curses.COLOR_CYAN)
+    palette=extended if getattr(curses,'COLORS',0)>=256 else basic
+    for pair,color in enumerate(palette,11):
+        curses.init_pair(pair,color,curses.COLOR_BLACK)
+
+
+def selection_attributes(curses, colors=False, now=None):
+    """Visible software pulse in terminals that ignore the hardware blink flag."""
+    moment=time.monotonic() if now is None else now
+    attr=curses.A_BOLD|curses.A_UNDERLINE
+    if colors:attr|=curses.color_pair(SELECTED_STYLE)
+    if int(moment/.6)%2==0:attr|=curses.A_REVERSE
+    return attr
 
 
 def relationship_overlay(players, data, owner=None, cohorts=None):
@@ -90,7 +106,7 @@ def relationship_badge(player):
 
 def map_legend():
     return [('Y you ',SELF_STYLE),('F/M/O friends ',FRIEND_STYLE),('L list ',LIST_STYLE),
-            ('T tracked A API + verified ? guest ',0),('>nn< selected',SELECTED_STYLE)]
+            ('T tracked A API + verified ? guest ',0),('>nn< selected',0)]
 
 
 def overlay_campus(players, peers):
@@ -159,6 +175,7 @@ def lobby_lines(players, view='roster', cluster=1):
                     style = player_style(p)
                 line.append((token,style))
             lines.append(line)
+    lines.append([('Intake colors: ',0)]+[(f'I{number} ',COHORT_STYLES[number]) for number in range(1,9)]+[('(~ inferred)',0)])
     lines += [plain(''), plain('CURRENTLY ONLINE - map markers match these roster numbers')]
     lines.extend(player_line(n,p,s) for n,p,s in entries)
     if not entries:

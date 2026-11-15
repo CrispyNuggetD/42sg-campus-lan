@@ -634,17 +634,23 @@ without relying on color:
 
 An occupied map token such as `[F9]` means friend, roster number 9; `F:12` means
 friend, roster number 12. Empty `[09]` remains a desk number, not a roster number.
-Selected cells use persistent `>nn<` delimiters and strong emphasis, including
-when color is disabled. Selecting an occupant shows their login, seat and
+Selected cells keep persistent `>nn<` delimiters and bold/underline emphasis.
+Their inverse-video emphasis pulses every 0.6 seconds in both HQ and the separate
+cluster viewer, including when color is disabled. The marker and details never
+disappear; the animation is driven by redraws, not terminal hardware blink. Selecting an occupant shows their login, seat and
 relationship in the details line. `/locate LOGIN` in the cluster viewer selects
 the matching map seat and opens its page. A stale selection does not silently
 move to a replacement occupant. Shared seats still require choosing an individual
 roster entry before opening an Intra profile.
 
-Intake uses the `I4~` text label in the roster/details rather than another
-rainbow palette. Friend magenta and list blue supplement these symbols; unknown
-API/guest names are neutral. Self and selection use contrasting badges. This
-keeps intake, cluster, relationship and selection from competing for one color.
+Ordinary occupied seats use a stable eight-color intake palette when cached
+intake is known; `I4~` in the roster/details remains the exact label. The palette
+uses 256-color hues when available and basic terminal colors otherwise; intakes
+above eight repeat the palette. Unknown-intake API occupants use cyan, guests
+use amber, and empty desk tokens are dim. Friend magenta, list blue and self
+badges take priority over intake color. Relationship symbols always remain,
+and the selected seat pulses independently of its relationship. This restores
+the map’s color overview without making color the only status cue.
 
 `~` means the cohort comes from the existing local Singapore cache's inferred
 intake numbering, not official membership metadata. Missing or conflicting

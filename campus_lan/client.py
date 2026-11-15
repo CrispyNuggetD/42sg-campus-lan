@@ -1139,9 +1139,9 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
                 if style and getattr(self,'colors',False):
                     attr |= curses.color_pair(style)
                 if re.fullmatch(r'\[\d+\]',text) and not style:attr|=curses.A_DIM
-                if any(row==y and left<x+len(text) and x<right and seat(member)==getattr(self,'focus_location',None)
-                       for row,left,right,member in self.lobby_hits) :
-                    attr|=curses.A_REVERSE|curses.A_BOLD
+                from .lobby_view import SELECTED_STYLE,selection_attributes
+                if style==SELECTED_STYLE:
+                    attr=selection_attributes(curses,getattr(self,'colors',False))
                 self.line(screen,y,text,attr,x)
                 x += len(text)
         bottom = 5+capacity
