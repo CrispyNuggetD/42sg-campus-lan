@@ -204,3 +204,13 @@ service host; existing access-policy and TLS enrollment still apply. The campus
 systemd service is not an iSH service manager. No credentials are installed or
 copied by setup. a-Shell is a different environment and is not supported by this
 Alpine setup path. On-device lobby, networking and UI validation remains pending.
+
+### iSH local server startup
+
+The first emulated Python server startup may exceed the desktop readiness budget.
+LAN42 waits up to 60 seconds on iSH and allows two seconds for each readiness
+probe; desktop startup retains its five-second budget. Keep iSH foregrounded.
+A timeout does not kill the server. Inspect
+`~/.local/state/42sg-campus-lan/server-31415.log` if it still fails.
+The log saying “listening” confirms the socket opened, not that the full UI or
+API sign-in has passed device testing.

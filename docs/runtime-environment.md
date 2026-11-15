@@ -293,3 +293,17 @@ Six simulated iSH setup checks, ten terminal checks, four Python setup checks,
 one shell-feature check and three website checks passed in the development
 Linux container; the website build passed. No iPhone/iPad session, actual apk
 installation, desktop notification or API host was exercised.
+
+
+## iSH local server readiness — 15 November 2026 SGT
+
+The user's iPhone log shows LAN42 2.30.1-beta.1 reached listening on loopback
+31415 after the launcher reported an unconfirmed startup. This supports a slow
+startup/readiness race; it does not establish completed UI or API operation.
+The iSH launcher now waits up to 60 seconds with two-second readiness probes,
+using a monotonic deadline and preserving immediate child-exit errors. Desktop
+startup retains a five-second deadline. Five fake-clock regressions and nine
+existing lifecycle/tmux checks passed on the development Linux container.
+Simulated checks cover delayed readiness, bounded timeout, early exit and reuse;
+real process lifecycle tests use isolated loopback/state. No iSH retest or live
+campus/student operation was performed.

@@ -21,10 +21,10 @@ def runtime_dir():
     path.mkdir(parents=True,exist_ok=True,mode=0o700)
     return path
 
-def probe(host,port):
+def probe(host,port,timeout=.5):
     try:
-        with socket.create_connection((host,port),timeout=.5) as sock:
-            sock.settimeout(.5)
+        with socket.create_connection((host,port),timeout=timeout) as sock:
+            sock.settimeout(timeout)
             sock.sendall((json.dumps(dict(type='ping',protocol=PROTOCOL))+'\n').encode())
             with sock.makefile('rb') as stream:
                 msg = json.loads(stream.readline(2048))
@@ -51,7 +51,10 @@ def local_node_busy(host,port):
 
 def start_background(bind,port):
     target = '127.0.0.1' if bind=='0.0.0.0' else bind
-    existing = probe(target,port)
+    ish = Path('/proc/ish').is_dir()
+    timeout = 60 if ish else 5
+    probe_timeout = 2 if ish else .5
+    existing = probe(target,port,timeout=probe_timeout)
     if existing:
         print(f"Reusing lobby server v{existing['version']} on {target}:{port}.")
         return target
@@ -63,16 +66,19 @@ def start_background(bind,port):
             stdin=subprocess.DEVNULL,stdout=output,stderr=subprocess.STDOUT,
             start_new_session=True,close_fds=True,
             cwd=str(Path(__file__).resolve().parent.parent))
-    for _ in range(50):
+    deadline = time.monotonic() + timeout
+    if ish:
+        print('Starting local lobby in iSH; first startup may take up to 60 seconds.', flush=True)
+    while time.monotonic() < deadline:
         if child.poll() is not None:
             raise RuntimeError(f'Server could not start (port may be occupied). See {log}')
-        if probe(target,port):
+        if probe(target,port,timeout=probe_timeout):
             threading.Thread(target=child.wait,daemon=True).start()
             print(f'Background server PID {child.pid}; log: {log}')
             print('This node stays alive while your app is open, including visits to other nodes.')
             return target
         time.sleep(.1)
-    raise RuntimeError(f'Server startup not confirmed. Inspect {log}; no process was killed.')
+    raise RuntimeError(f'Server startup not confirmed within {timeout}s. Inspect {log}; no process was killed.')
 
 class Owner:
     def __init__(self,host,port,name):
