@@ -179,17 +179,24 @@ The same `sh setup.sh` detects iSH through `/proc/ish` or its kernel version.
 After cloning, no platform flag or separate installer is needed. If Git is not
 installed yet, run `apk update && apk add git` before the clone command.
 
-Setup offers one package installation for missing Git, Python, ncurses terminal
-information, tmux and (unless `--no-zsh`) zsh. Accepting runs `apk update` then
+Setup first offers missing Git, Python, ncurses terminal information and tmux.
+It then separately offers `apk add zsh` when zsh is missing, unless `--no-zsh`
+was selected. If accepted, setup installs zsh and appends the same guarded LAN42
+helper block to `.zshrc` used on desktop. This step also runs when all basic
+dependencies were already present. Accepting runs `apk update` then
 `apk add` inside iSH. It does not change repositories or run `apk upgrade`.
 Declining still permits setup when Python/curses and Git already work; tmux and
 zsh remain optional. An incompatible Python stops with an Alpine repair hint,
 without attempting the desktop uv download. Rerunning checks existing tools.
 
-Launch in the current terminal with `sh lan42.sh`. The default iSH shell does
-not load `.zshrc`; installing helpers does not change the default shell. Desktop
-window launchers, notifications, audio, browser opening and API-host startup
-are not certified on iSH. Use at least 76 columns by 28 rows and keep iSH open;
+Launch in the current terminal with `sh lan42.sh`, or run `zsh` then `lan42`.
+On iSH, `lan42` creates the same tmux workspace and attaches in the existing
+terminal; inside tmux it switches clients instead of nesting. `lan42_here` runs
+directly. Interactive setup offers to start zsh immediately after helper setup.
+The default iSH shell does not load `.zshrc`; installing helpers does not change
+the default shell or rewrite `.profile`. If already in zsh, reload `.zshrc` or
+start a fresh zsh. Desktop notifications, audio, browser opening and API-host
+startup are not certified on iSH. Use at least 76 columns by 28 rows and keep iSH open;
 tmux does not prevent iOS suspending the app.
 
 This is dependency setup only. API keys alone do not approve an API operator or

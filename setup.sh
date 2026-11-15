@@ -22,13 +22,10 @@ if [ -d /proc/ish ] || { [ -r /proc/version ] && grep -qi 'ish' /proc/version; }
         ish_packages="$ish_packages python3"
     fi
     command -v tmux >/dev/null 2>&1 || ish_packages="$ish_packages tmux"
-    if [ "$install_zsh" = 1 ] && ! command -v zsh >/dev/null 2>&1; then
-        ish_packages="$ish_packages zsh"
-    fi
     apk info -e ncurses-terminfo >/dev/null 2>&1 || ish_packages="$ish_packages ncurses-terminfo"
     if [ -n "$ish_packages" ]; then
         echo "iSH packages:$ish_packages" >&2
-        echo 'Python/curses runs LAN42; Git updates it; terminfo describes the terminal. tmux and zsh helpers are optional.' >&2
+        echo 'Python/curses runs LAN42; Git updates it; terminfo describes the terminal. tmux is optional. Zsh setup follows separately.' >&2
         echo 'This uses apk update and apk add inside iSH, not on iOS or a campus computer. No apk upgrade or repository changes.' >&2
         if setup_install_choice; then
             # Fixed package names above; splitting this list is intentional.
@@ -82,9 +79,32 @@ else
     echo 'tmux skipped. LAN42 is still ready in this terminal: ./lan42.sh (or lan42_here after loading helpers).'
 fi
 if [ "$install_zsh" = 1 ]; then
+    if [ "$setup_ish" = 1 ] && ! command -v zsh >/dev/null 2>&1; then
+        echo 'Optional: zsh provides the desktop-style lan42, lan42_here and dailylogin commands.' >&2
+        echo 'Install zsh with apk add zsh, then configure the LAN42 helpers in .zshrc?' >&2
+        if setup_install_choice; then
+            if ! apk add zsh; then
+                echo 'Zsh installation failed; direct launch still works. Rerun sh setup.sh to retry.' >&2
+            fi
+        fi
+    fi
     if command -v zsh >/dev/null; then
         python3 "$repo_dir/useful-scripts/install_zsh.py" "$repo_dir"
     else
         echo 'zsh is unavailable; launcher is ready. Install zsh and rerun setup for shell helpers.'
+    fi
+fi
+
+if [ "$setup_ish" = 1 ]; then
+    echo 'LAN42 setup complete. Keep iSH open while using LAN42.'
+    if [ "$install_zsh" = 1 ] && command -v zsh >/dev/null 2>&1; then
+        echo 'Run zsh, then lan42 to open the tmux workspace here (lan42_here runs directly).'
+        if [ -t 0 ] && [ -t 1 ]; then
+            printf 'Start zsh now with your LAN42 helpers? [y/N]: '
+            start_zsh=''; IFS= read -r start_zsh || :
+            case "$start_zsh" in y|Y|yes|YES) exec zsh -i ;; esac
+        fi
+    else
+        echo 'Start LAN42 here: sh lan42.sh'
     fi
 fi

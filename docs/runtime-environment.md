@@ -280,3 +280,16 @@ on the development Linux container. Website build passed with its pinned Markdow
 dependency. Fake tools and a temporary proc tree were used; no device packages,
 credentials, API enrollment or live student operations were changed. Actual iSH
 lobby/UI/networking and desktop integrations remain unverified.
+
+
+## iSH zsh and workspace continuation — 15 November 2026 SGT
+
+Setup now offers missing zsh separately after basic dependencies, installs and
+configures its existing LAN42 helper block, and offers to start zsh on an
+interactive terminal. It does not change the default shell. The local iSH
+launcher uses the existing workspace creator in batch mode and attaches on the
+current terminal, switching rather than nesting when already inside tmux.
+Six simulated iSH setup checks, ten terminal checks, four Python setup checks,
+one shell-feature check and three website checks passed in the development
+Linux container; the website build passed. No iPhone/iPad session, actual apk
+installation, desktop notification or API host was exercised.

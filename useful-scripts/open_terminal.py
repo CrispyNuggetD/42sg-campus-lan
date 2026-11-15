@@ -28,7 +28,11 @@ def main():
         install = 'sh '+str(REPO/'setup.sh')
         raise RuntimeError('tmux is required for LAN42 workspaces. Install it: ' + install +
                            '. Use lan42_here to run directly in this terminal meanwhile.')
-    result=subprocess.run(terminal_command(REPO, args=sys.argv[1:]), capture_output=True,text=True)
+    ish = Path('/proc/ish').is_dir()
+    # Use the same workspace/window creator, then attach on iSH's existing TTY.
+    # Batch mode prevents the desktop helper from trying to open a GUI terminal.
+    env = dict(os.environ, DAILY_TMUX_BATCH='1') if ish else None
+    result=subprocess.run(terminal_command(REPO, args=sys.argv[1:]), capture_output=True,text=True, env=env)
     if result.returncode:
         detail=result.stderr.strip() or result.stdout.strip()
         raise RuntimeError(detail or f'Terminal helper exited with status {result.returncode}.')
@@ -36,6 +40,21 @@ def main():
         sys.path.insert(0,str(REPO))
         from campus_lan.tmux_control import refresh_cluster_window
         refresh_cluster_window()
+    if ish:
+        if not sys.stdin.isatty() or not sys.stdout.isatty():
+            print(result.stdout, end='')
+            print('Open an interactive iSH terminal and run lan42 to attach.')
+            return
+        # Honour the same session and optional socket as the workspace helper.
+        sys.path.insert(0, str(REPO/'useful-scripts'))
+        import tmux_workspace
+        target = '=' + tmux_workspace.session_name('lan42')
+        command = ['tmux']
+        if os.environ.get('DAILY_TMUX_SOCKET'):
+            command += ['-S', os.environ['DAILY_TMUX_SOCKET']]
+        command += ['switch-client' if os.environ.get('TMUX') else 'attach-session', '-t', target]
+        subprocess.run(command, check=True)
+        return
     print(result.stdout,end='')
     print('LAN42 is in its tmux workspace; run lan42_window to reconnect.')
 

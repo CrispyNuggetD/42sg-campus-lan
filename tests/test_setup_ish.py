@@ -2,6 +2,8 @@
 import os
 from pathlib import Path
 import subprocess
+import sys
+import shutil
 import tempfile
 import unittest
 
@@ -63,3 +65,52 @@ class IshSetup(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('package setup failed', result.stderr)
         self.assertNotIn('add ', calls)
+
+
+class IshZshSetup(unittest.TestCase):
+    def attempt(self, answer, no_zsh=False):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root/'proc/ish').mkdir(parents=True)
+            binary = root/'bin'; binary.mkdir()
+            helpers = root/'useful-scripts'; helpers.mkdir()
+            for name in ('setup_python.sh', 'install_zsh.py', 'ensure_tmux.py'):
+                shutil.copy2(ROOT/'useful-scripts'/name, helpers/name)
+            (root/'lan42.sh').touch()
+            (helpers/'campus.zsh').touch()
+            for name in ('dirname', 'grep'):
+                (binary/name).symlink_to(shutil.which(name))
+            (binary/'python3').symlink_to(sys.executable)
+            def tool(name, source):
+                p = binary/name
+                p.write_text('#!/bin/sh\n'+source+'\n'); p.chmod(0o700)
+            tool('git', 'exit 0')
+            tool('tmux', 'echo tmux-test')
+            tool('apk', 'echo "$*" >> "$TEST_ROOT/calls"\n'
+                 'if [ "$1" = add ] && [ "$2" = zsh ]; then\n'
+                 '  printf "#!/bin/sh\\nexit 0\\n" > "$TEST_ROOT/bin/zsh"\n'
+                 '  /bin/chmod +x "$TEST_ROOT/bin/zsh"\nfi\nexit 0')
+            source = (ROOT/'setup.sh').read_text().replace('/proc/ish', str(root/'proc/ish'))
+            (root/'setup.sh').write_text(source)
+            result = subprocess.run(['/bin/sh', str(root/'setup.sh'), *(['--no-zsh'] if no_zsh else [])],
+                input=answer, text=True, capture_output=True,
+                env=dict(os.environ, PATH=str(binary), HOME=tmp, ZDOTDIR=tmp,
+                         FORTYTWO_TOOLS_ROOT=str(root/'tools'), TEST_ROOT=tmp))
+            rc = (root/'.zshrc').read_text() if (root/'.zshrc').exists() else ''
+            return result, (root/'calls').read_text(), rc
+
+    def test_zsh_is_offered_after_basic_dependencies_are_already_installed(self):
+        result, calls, rc = self.attempt('y\n')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Install zsh', result.stderr)
+        self.assertIn('add zsh', calls)
+        self.assertIn('campus.zsh', rc)
+        self.assertIn('Run zsh, then lan42', result.stdout)
+
+    def test_decline_or_no_zsh_preserves_direct_launch(self):
+        for answer, optout in [('n\n', False), ('', True)]:
+            result, calls, rc = self.attempt(answer, optout)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn('add zsh', calls)
+            self.assertEqual(rc, '')
+            self.assertIn('sh lan42.sh', result.stdout)

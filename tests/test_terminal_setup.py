@@ -116,3 +116,26 @@ dailylogin
             self.assertIn('Optional: tmux',result.stderr)
             self.assertIn('still ready',result.stdout)
             self.assertFalse((root/'tools').exists())
+
+
+class IshTerminalSetup(unittest.TestCase):
+    def test_ish_creates_workspace_then_attaches_or_switches_without_nesting(self):
+        import types
+        for nested in (False, True):
+            env = dict(TMUX='test') if nested else dict(TMUX='')
+            fake_helper = types.SimpleNamespace(session_name=lambda role: 'lan42')
+            with patch.dict(os.environ, env), \
+                 patch.dict(sys.modules, {'tmux_workspace': fake_helper}), \
+                 patch.object(module.Path, 'is_dir', return_value=True), \
+                 patch.object(module.shutil, 'which', return_value='/mock/tmux'), \
+                 patch.object(module.sys.stdin, 'isatty', return_value=True), \
+                 patch.object(module.sys.stdout, 'isatty', return_value=True), \
+                 patch.object(module.sys, 'argv', ['open_terminal.py']), \
+                 patch.object(module.subprocess, 'run', return_value=subprocess.CompletedProcess([],0,'','')) as run:
+                module.main()
+            self.assertEqual(run.call_count, 2)
+            self.assertEqual(run.call_args_list[0].kwargs['env']['DAILY_TMUX_BATCH'], '1')
+            attach = run.call_args_list[1].args[0]
+            self.assertIn('switch-client' if nested else 'attach-session', attach)
+            self.assertEqual(attach[-2:], ['-t', '=lan42'])
+            self.assertNotIn('capture_output', run.call_args_list[1].kwargs)
