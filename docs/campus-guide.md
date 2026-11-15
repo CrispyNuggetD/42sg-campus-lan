@@ -154,8 +154,9 @@ the layout; occupied seats and student logins are fetched from the 42 API. This 
 than a guarantee of physical attendance or instantaneous updates.
 
 `/settings clusters-auto-open on` saves a local choice to open this miniapp when
-HQ connects. It is off by default. This explicit setting permits the clusters
-terminal at startup; manual openings still use the terminal permission prompt.
+HQ connects. Desktop defaults off; fresh iSH profiles default on once API access
+is ready. Any explicitly saved on/off choice takes priority. Manual openings
+still use the terminal permission prompt.
 HQ waits for sign-in or local operator access and retries failed launches.
 Explicit terminal denial still applies. Use `/settings clusters-auto-open off`
 to stop automatic opening. The account-scoped choice follows your linked portable
@@ -682,7 +683,8 @@ volume rules still apply. Toasts do not play an additional copy of the sound.
 `/settings clusters-auto-open on` saves the automatic clusters-window choice.
 HQ waits for sign-in or local operator access, honors terminal-popup denial,
 and retries a failed launch rather than consuming the startup request. Use
-`off` to disable it. No other user's default is changed.
+`off` to disable it. Desktop defaults are unchanged; fresh iSH profiles open it
+automatically once sign-in or local API enrollment permits the view.
 
 Single-click an occupied cluster seat or roster entry to preview its existing local API photo in one reusable 280 × 320 desktop window (Tk and Pillow required). It stays near the screen edge and floats above the maximized terminal so selecting another student keeps their photo visible. It takes no modal grab or forced keyboard focus; drag it aside or close it when needed. Escape or its close button hides it; quitting clusters closes it. Shared seats require selecting an individual roster entry. Missing photos are reported without downloads or API requests. Double-click still opens Intra with browser permission.
 
@@ -745,3 +747,11 @@ shows changed locations, and “no active seat” means no location was reported
 the latest successful snapshot. Going for lunch only produces an absence/return
 if those API states are observed. A seat change spanning several polling periods
 still produces a new-location update when the login reappears.
+
+
+On iSH, automatic cluster startup creates/reuses the named clusters tmux window
+and focuses it from HQ, even though HQ captures the launcher's output. It does
+not need an interactive subprocess terminal or attach another nested tmux client.
+Existing terminal-popup denial is respected. Unconfigured guests stay in HQ
+until trusted sign-in or local operator enrollment is available. An explicitly
+saved `clusters-auto-open off` remains off after upgrading.

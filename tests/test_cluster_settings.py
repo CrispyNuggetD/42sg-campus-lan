@@ -59,3 +59,25 @@ class ClusterSettingsTests(unittest.TestCase):
              patch('campus_lan.popup_permissions.Permissions.persistent_mode',return_value='deny'):
             c=Client.__new__(Client);c.name='fixture';c.role='lobby';c.id='ready';c.connected=True;c.signed_in=True
             c.open_clusters=Mock();c.clusters_auto_open_tick();c.open_clusters.assert_not_called()
+
+    def test_fresh_ish_defaults_on_but_saved_off_and_broken_settings_stay_off(self):
+        with patch('campus_lan.cluster_settings.Path.is_dir',return_value=True):
+            choice=ClusterSettings('root')
+            self.assertTrue(choice.read())
+            choice.set(False)
+            self.assertFalse(ClusterSettings('root').read())
+            choice.path.write_text('{broken')
+            self.assertFalse(choice.read())
+
+    def test_ish_default_waits_for_local_api_then_opens_once(self):
+        from campus_lan.auth import AuthError
+        c=Client.__new__(Client);c.name='root';c.role='lobby';c.id='ready';c.connected=True;c.signed_in=False
+        c.open_clusters=Mock(side_effect=lambda *a,**kw:setattr(c,'clusters_launch_ok',True))
+        with patch('campus_lan.cluster_settings.Path.is_dir',return_value=True), \
+             patch('campus_lan.popup_permissions.Permissions.persistent_mode',return_value='allow'), \
+             patch('campus_lan.access.Policy.local_operator',side_effect=AuthError('not enrolled')) as operator, \
+             patch('campus_lan.client.time.monotonic',return_value=100) as now:
+            c.clusters_auto_open_tick();c.open_clusters.assert_not_called()
+            operator.side_effect=None;operator.return_value=234449;now.return_value=106
+            c.clusters_auto_open_tick();c.clusters_auto_open_tick()
+        c.open_clusters.assert_called_once_with('/clusters',approved=True)

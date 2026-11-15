@@ -20,7 +20,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 ## Highlights
 
 <!-- shell-installer-features:start -->
-- **Campus HQ:** `lan42` has its own tmux workspace; setup asks before dependencies. iSH supports main-shell launch and standalone owner API setup. Mac remote guest approval is separate from Intra sign-in.
+- **Campus HQ:** `lan42` has its own tmux workspace. iSH supports main-shell launch, automatic clusters after API access, and standalone owner setup. Dependency installs ask first; Mac remote guest approval stays separate from sign-in.
 - **Find your people:** `/friend` or `/friends` tracks friends. `/arrivals on` reports campus login/seat changes after a silent baseline. Cohort hues, relationship bands and selection pulses keep map cues separate.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. `/core` opens external CORE Game by 42core-team; `/core clone` fetches its source separately. CORE sign-in/competitions stay on its own site.

@@ -6,7 +6,7 @@ import shlex
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch,Mock
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('open_terminal', ROOT/'useful-scripts/open_terminal.py')
@@ -123,7 +123,7 @@ class IshTerminalSetup(unittest.TestCase):
         import types
         for nested in (False, True):
             env = dict(TMUX='test') if nested else dict(TMUX='')
-            fake_helper = types.SimpleNamespace(session_name=lambda role: 'lan42')
+            fake_helper = types.SimpleNamespace(session_name=lambda role: 'lan42',find_window=lambda session,role:None)
             with patch.dict(os.environ, env), \
                  patch.dict(sys.modules, {'tmux_workspace': fake_helper}), \
                  patch.object(module.Path, 'is_dir', return_value=True), \
@@ -139,3 +139,21 @@ class IshTerminalSetup(unittest.TestCase):
             self.assertIn('switch-client' if nested else 'attach-session', attach)
             self.assertEqual(attach[-2:], ['-t', '=lan42'])
             self.assertNotIn('capture_output', run.call_args_list[1].kwargs)
+
+    def test_captured_hq_launch_selects_cluster_window_without_tty_or_nested_attach(self):
+        import types
+        helper=types.SimpleNamespace(session_name=lambda role:'lan42',find_window=Mock(return_value='@5'))
+        with patch.dict(os.environ,{'TMUX':'socket,1,0','DAILY_TMUX_SOCKET':'/tmp/fake-lan42.sock'}), \
+             patch.dict(sys.modules,{'tmux_workspace':helper}), \
+             patch.object(module.Path,'is_dir',return_value=True), \
+             patch.object(module.shutil,'which',return_value='/mock/tmux'), \
+             patch.object(module.sys.stdin,'isatty',return_value=False), \
+             patch.object(module.sys.stdout,'isatty',return_value=False), \
+             patch.object(module.sys,'argv',['open_terminal.py','clusters','--cluster','0']), \
+             patch.object(module.subprocess,'run',return_value=subprocess.CompletedProcess([],0,'','')) as run:
+            module.main()
+        helper.find_window.assert_called_once_with('lan42','lan42-clusters')
+        commands=[call.args[0] for call in run.call_args_list]
+        self.assertEqual(commands[1],['tmux','-S','/tmp/fake-lan42.sock','select-window','-t','@5'])
+        self.assertEqual(commands[2][-3:],['switch-client','-t','=lan42'])
+        self.assertFalse(any('attach-session' in command for command in commands))

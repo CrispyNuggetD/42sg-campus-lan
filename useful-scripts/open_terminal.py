@@ -8,6 +8,11 @@ import sys
 REPO = Path(__file__).resolve().parents[1]
 
 
+def window_role(args):
+    return ('lan42-clusters' if args and args[0]=='clusters' else
+            ('lan42-admin-' if args and args[0]=='admin' else 'lan42-game-') + str(os.getpid()) if args else 'lan42')
+
+
 def terminal_command(repo, platform=sys.platform, which=shutil.which, args=()):
     launcher = str(repo / 'lan42.sh')
     invocation = ['sh', launcher, *args]
@@ -18,8 +23,7 @@ def terminal_command(repo, platform=sys.platform, which=shutil.which, args=()):
     helper = os.environ.get('DAILY_TMUX_HELPER') or str(repo / 'useful-scripts/tmux_workspace.py')
     if not Path(helper).is_file():
         raise RuntimeError('Tmux workspace helper missing: ' + helper)
-    role = ('lan42-clusters' if args and args[0]=='clusters' else
-            ('lan42-admin-' if args and args[0]=='admin' else 'lan42-game-') + str(os.getpid()) if args else 'lan42')
+    role = window_role(args)
     return [sys.executable, helper, 'open', '--cwd', str(repo), role, '--', *invocation]
 
 
@@ -41,19 +45,26 @@ def main():
         from campus_lan.tmux_control import refresh_cluster_window
         refresh_cluster_window()
     if ish:
-        if not sys.stdin.isatty() or not sys.stdout.isatty():
-            print(result.stdout, end='')
-            print('Open an interactive iSH terminal and run lan42 to attach.')
-            return
-        # Honour the same session and optional socket as the workspace helper.
+        # HQ captures stdout while launching a miniapp; tmux control does not
+        # require a TTY. Select/focus before considering interactive attachment.
         sys.path.insert(0, str(REPO/'useful-scripts'))
         import tmux_workspace
-        target = '=' + tmux_workspace.session_name('lan42')
+        session = tmux_workspace.session_name('lan42')
+        target = '=' + session
         command = ['tmux']
         if os.environ.get('DAILY_TMUX_SOCKET'):
             command += ['-S', os.environ['DAILY_TMUX_SOCKET']]
-        command += ['switch-client' if os.environ.get('TMUX') else 'attach-session', '-t', target]
-        subprocess.run(command, check=True)
+        window = tmux_workspace.find_window(session, window_role(sys.argv[1:]))
+        if window:
+            subprocess.run([*command,'select-window','-t',window],check=True)
+        if os.environ.get('TMUX'):
+            subprocess.run([*command,'switch-client','-t',target],check=True)
+            return
+        if not sys.stdin.isatty() or not sys.stdout.isatty():
+            print(result.stdout, end='')
+            print('Workspace ready. Run lan42 in an interactive iSH terminal to attach.')
+            return
+        subprocess.run([*command,'attach-session','-t',target],check=True)
         return
     print(result.stdout,end='')
     print('LAN42 is in its tmux workspace; run lan42_window to reconnect.')

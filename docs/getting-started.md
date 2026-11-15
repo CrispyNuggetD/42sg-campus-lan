@@ -272,3 +272,13 @@ iSH uses a private random installation identity because its emulated environment
 may have no `/etc/machine-id`. It identifies this iSH installation, not physical
 hardware. Do not copy its private identity/policy to another device; enroll that
 installation explicitly. Removing private settings loses local enrollment.
+
+
+### Automatic clusters in iSH
+
+After HQ connects and API access is available (trusted sign-in or local operator
+enrollment), a fresh iSH profile automatically opens and focuses clusters in its
+own tmux window. HQ stays in its original window. The existing saved setting is
+respected: `/settings clusters-auto-open on` enables it and `off` disables it.
+Explicit terminal denial still prevents auto-opening. No API privileges are
+granted by this startup preference. Desktop defaults are unchanged.

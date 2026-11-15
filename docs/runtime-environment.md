@@ -445,3 +445,23 @@ pair and the 4F01 text across pulse phases (85 focused checks in total). Palette
 tests separately verify equal foreground hues and distinct normal/friend bands.
 Website build passed. Actual iSH font-weight and background-band legibility
 remain unverified; no live student interaction or API call was used.
+
+## iSH automatic cluster startup and tmux focus — 15 November 2026 SGT
+
+Fresh iSH profiles now default cluster auto-open on once HQ has trusted sign-in
+or approved local API access; desktop defaults remain off. Existing saved false
+and malformed/private-unreadable settings remain off, and explicit terminal denial
+still blocks startup. The shared UI reads the same default as the startup path.
+
+The iSH launcher now selects the named miniapp window and switches the existing
+tmux client before checking whether subprocess stdin/stdout are TTYs. HQ captures
+launcher output, so the previous TTY guard silently left clusters detached. Batch
+workspace creation remains shared with desktop; no vendored helper was changed,
+no extra tmux attachment is nested, and the configured socket/session are honored.
+
+All 68 focused terminal, cluster, client, popup-permission, feature and website
+checks passed. Added checks simulate captured HQ output and assert exact tmux
+focus commands, fresh-profile defaults, API-readiness gating, one-time startup,
+saved opt-out and broken-config handling. Website build passed. The development
+container has no tmux executable; tmux commands were mocked, and real iSH client
+focus remains unverified. No live window, student session or API request was used.
