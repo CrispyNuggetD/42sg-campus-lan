@@ -1,8 +1,16 @@
 {
-  "version": "2.33.0-beta.1",
-  "date": "2026-11-15T12:15:37+08:00",
-  "source": "50ade138b6bfc332b5c395f38d879df8e51565d9",
+  "version": "2.34.0-beta.1",
+  "date": "2026-11-15T12:19:47+08:00",
+  "source": "b1c3e47e66ae1fa5e2fcd3882362db5b31e02893",
   "history": [
+    {
+      "version": "2.34.0-beta.1",
+      "date": "2026-11-15T12:19:47+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat(arrivals): report seat changes and observed offline state"
+      ]
+    },
     {
       "version": "2.33.0-beta.1",
       "date": "2026-11-15T12:15:37+08:00",
@@ -687,5 +695,5 @@
       ]
     }
   ],
-  "runtime_sha256": "5492bd76e410372be31fcc40839d20ce6f97899f4f26e8ad2da5ef4c202ed838"
+  "runtime_sha256": "942030b3052054440aa2bbaccdbfcedc5d9bb134db216d8913eb89880b1173df"
 }
