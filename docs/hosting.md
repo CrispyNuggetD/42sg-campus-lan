@@ -155,6 +155,15 @@ pinned TLS. Neither keeps a persistent chat or account database. It has no inter
 hosting node's process and port. macOS can run it, with terminal notifications
 as the fallback when Linux `notify-send` isn't available.
 
+## Check running versions
+
+HQ's banner shows its loaded client version. `/version` reports that client,
+the connected host's advertised version, local checkout version/commit and local
+edits. An explicit background Git fetch checks origin/main and distinguishes
+up-to-date, update available, local-ahead, diverged and unavailable checks.
+It does not install code or reload any process. A current checkout does not
+prove the client or host has reloaded it; local edits may also be unreleased.
+
 ## Update the whole LAN42 package
 
 `/update` is the single advertised package-update command. Type `/up` then Tab

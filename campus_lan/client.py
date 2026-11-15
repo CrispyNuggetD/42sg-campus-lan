@@ -22,7 +22,7 @@ from .network import seat_address, address
 from .lobby_view import lobby_lines, guest_style, overlay_campus, roster, seat, LAYOUT, SELECTED_STYLE, selection_attributes
 from .hexbot import SDK, compile_bot
 from . import auth_client
-from .updater import RestartRequested, generation
+from .updater import RestartRequested, generation, checkout_revision
 from .completion import complete
 from .local_console import LocalConsole,History,shell_command
 from .numbered_occupants import ProfileCommands
@@ -41,7 +41,7 @@ HELP = [
     "/search TERMS: chosen engine in your browser | /settings search: engine + aggregate counting opt-out | /search stats",
     "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",
     "Click footer buttons or use F2 sign in/out | F3 clusters window | F4 system mute | F5 output 0/30% | F6 uwu | F7 auto uwu",
-    '/changelog: server release history and alpha testing credits',
+    '/version: running client/host, checkout and upstream update status (no install) | /changelog: release history',
     'API views: verified Singapore sign-in; enrolled API operators may use local /clusters and /info offsite.',
     '/announce TEXT / /broadcast TEXT: host broadcasts; students request host approval | /announce status',
     'Up/Down: local command history | !COMMAND: local shell | /volume [0–100]: output volume',
@@ -151,6 +151,8 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
         self.auth_destination = None
         self.sock, self.name = sock, name
         self.role, self.initial_command = role, initial_command
+        self.running_revision = checkout_revision(Path(__file__).resolve().parent.parent)
+        self.host_version = None
         from .koel_sound import AutoChoice
         self.uwu_auto_enabled=AutoChoice(name).read()
         self.uwu_auto_owner=name
@@ -680,6 +682,22 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
         return True
 
     def about_command(self,text):
+        if text == '/version':
+            if getattr(self, 'version_check_pending', False):
+                self.lines.append('Version check already running.')
+                return True
+            self.version_check_pending = True
+            self.lines.append('Checking running versions and origin/main; no update or restart will be performed.')
+            def work():
+                try:
+                    from .version_status import check
+                    lines = check(VERSION, getattr(self, 'running_revision', ''),
+                                  getattr(self, 'host_version', None))
+                    self.inbox.put(dict(type='local_version_status', lines=lines))
+                finally:
+                    self.version_check_pending = False
+            threading.Thread(target=work, daemon=True).start()
+            return True
         if text == '/changelog':
             from .release import changelog
             self.lines.extend(changelog())
@@ -817,7 +835,9 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
             if self.search_result(msg):continue
             if self.announcement_event(msg):
                 continue
-            if kind == 'local_api_notice':
+            if kind == 'local_version_status':
+                self.lines.extend(safe(line) for line in msg.get('lines', []))
+            elif kind == 'local_api_notice':
                 self.lines.append(safe(msg.get('text','')))
             elif kind == 'local_koel':
                 self.koel_local(msg)
@@ -940,6 +960,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
                     self.open_urls('forknite',[url],'Open this FORKNITE room in your browser?')
                     self.lines.append('FORKNITE: '+msg['url']+' | /browser reopens this room. Host: /start or /start bonus; friends join, or add /sabo LOGIN /diners 5 first.')
             elif kind=='welcome':
+                self.host_version = str(msg.get('version', 'unknown'))
                 self.signed_in=bool(getattr(self,'secure',False) and msg.get('verified'))
                 self.remote_approved=bool(getattr(self,'secure',False) and msg.get('remote_approved'))
                 self.id = msg['id']
@@ -1204,7 +1225,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
         banner = curses.A_BOLD | curses.A_REVERSE
         if getattr(self,'colors',False):
             banner |= curses.color_pair(4 if game_window else 2)
-        label = f" LAN42 | {self.window_label()} | {self.name} [{'42 signed in' if getattr(self,'signed_in',getattr(self,'secure',False)) else 'Guest'}] | "+('ONLINE' if self.connected else 'DISCONNECTED')+' | '+self.clock_badge()
+        label = f" LAN42 v{VERSION} | {self.window_label()} | {self.name} [{'42 signed in' if getattr(self,'signed_in',getattr(self,'secure',False)) else 'Guest'}] | "+('ONLINE' if self.connected else 'DISCONNECTED')+' | '+self.clock_badge()
         self.line(screen,0,label.ljust(w-1),banner)
         hint = ('GAME CONTROLS: /start /leave /quit | /lobby /game | HQ stays in its other window'
                 if game_window else 'HQ: /join IP [PORT] | /game NAME | /games | /who')
