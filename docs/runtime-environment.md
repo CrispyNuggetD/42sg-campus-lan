@@ -328,3 +328,19 @@ All 42 selected checks passed: viewport/input/PTY (6), main-shell wrapper (3),
 iSH setup (6), terminal setup (10), client (9), Python setup (4), shell feature
 (1), website (3). Website build passed. No live credentials, student sessions,
 notifications or iSH app preferences were accessed or changed.
+
+## Friend shortcut and shared relationship views — 15 November 2026 SGT
+
+/friend now assigns the existing friends relationship and enables personal
+tracking through the same private registry. It works in HQ/game tabs and the
+cluster viewer, with existing numbered-occupant confirmation and SG whitelist
+validation. Alert opt-outs are preserved. Cluster windows reload account-local
+relationship settings every five seconds; no relationship label is published
+to peers and no reciprocal request, notification or cloud sync is added.
+
+All 61 selected checks passed: relationships (17), cluster viewer (11),
+completion (3), shell feature (1), client (9), tracking (9), lobby view (8),
+website (3). Guide refresh and website build passed. New tests cover persistence,
+friend overlays, game-tab use, rejected mixed targets, occupant confirmation
+and cross-window cluster reloads using temporary state and fake identities.
+No real person was friended, tracked or messaged during validation.

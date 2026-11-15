@@ -105,6 +105,40 @@ class Relationships(unittest.TestCase):
         c=Client.__new__(Client);c.name='owner';c.lines=collections.deque();c.send=Mock()
         return c
 
+    def test_friend_command_tracks_persists_and_preserves_alert_optouts(self):
+        from campus_lan.lobby_view import relationship_overlay
+        self.tracker.change(['dthoo'])
+        self.tracker.set_alerts(['dthoo'],'campus',False)
+        for role in ('lobby','game'):
+            c=self.client();c.role=role;c.state={};c.tracker=self.tracker
+            c.tracking_update=Mock()
+            self.assertTrue(c.tracking_command('/friend dthoo thtay'))
+            saved=Tracker('owner')
+            self.assertEqual(set(saved.names),{'dthoo','thtay'})
+            self.assertEqual(saved.data['people']['dthoo']['relationship'],'friends')
+            self.assertFalse(saved.data['people']['dthoo']['alerts']['campus'])
+            rows=relationship_overlay([dict(name='dthoo',verified=True)],saved.data)
+            self.assertEqual(rows[0]['local_relationship'],'friend')
+            c.send.assert_not_called()
+        self.assertTrue(c.tracking_command('/friend'))
+        self.assertIn('Friends', '\n'.join(c.lines))
+
+    def test_friend_numeric_target_confirms_before_saving(self):
+        c=self.client();c.role='lobby';c.state={};c.tracker=self.tracker
+        c.tracking_update=Mock();c.confirm_occupants=Mock()
+        c.tracking_command('/friend 1')
+        self.assertEqual(Tracker('owner').names,[])
+        c.confirm_occupants.assert_called_once()
+        c.confirm_occupants.call_args.args[1](['dthoo'])
+        self.assertEqual(Tracker('owner').resolve(['friends']),['dthoo'])
+
+    def test_friend_rejects_unknown_targets_atomically(self):
+        c=self.client();c.role='lobby';c.state={};c.tracker=self.tracker
+        c.tracking_update=Mock()
+        c.tracking_command('/friend dthoo not-a-real-person')
+        self.assertEqual(Tracker('owner').names,[])
+        c.send.assert_not_called()
+
     def test_group_expansion_stays_local_and_quotes_are_removed(self):
         t=self.tracker;t.set_relationship(['dthoo','thtay'],'friends');c=self.client()
         self.assertTrue(c.group_command('/dm friends "do you all want lunch?"'))

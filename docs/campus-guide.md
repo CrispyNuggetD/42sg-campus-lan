@@ -287,7 +287,7 @@ cancels the pending request. `/track LOGIN LOGIN` still works in HQ.
 Relationships, lists and independent arrival rules are configured locally:
 
 ```text
-/track dthoo thtay
+/friend dthoo thtay
 /track
 /track friends
 /track friends dthoo
@@ -301,6 +301,16 @@ Relationships, lists and independent arrival rules are configured locally:
 /settings clusters c1
 /settings clusters on
 ```
+
+`/friend LOGIN...` both tracks the person and sets their relationship to friend.
+`/friend` alone lists friends. It also works in game/HQ tabs and the cluster
+viewer; numeric occupants use the existing confirmation before saving. Your
+friend label is reused by lobby/cluster highlights, arrival tracking and the
+`friends` selector across LAN42. Open HQ and cluster views reload choices from
+other windows within five seconds. Existing alert opt-outs are preserved.
+This is your account's private relationship label, not a reciprocal request or
+a public friendship declaration. Separate devices still need the existing
+portable-preferences setup to share settings; this adds no cloud sync.
 
 `/track` displays sorted names under relationship headings and named lists.
 `/track friends`, `/track mutuals` (or `/track moots`), `/track oomf` and

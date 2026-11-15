@@ -195,6 +195,14 @@ class ClusterViewer(ProfileCommands):
                     self.status='Host connection closed. Last snapshot remains visible; reopen from HQ to refresh.'
 
     def segments(self):
+        now=time.monotonic()
+        if self.owner and now>=getattr(self,'relationships_due',0):
+            self.relationships_due=now+5
+            try:
+                from .tracking import Tracker
+                fresh=Tracker(self.owner)
+                if not fresh.load_error:self.tracker_data=fresh.data
+            except (OSError,ValueError):pass
         players=relationship_overlay(overlay_campus(self.players,[]),self.tracker_data,self.owner,getattr(self,'cohorts',{}))
         return lobby_lines(players,self.view,self.cluster)
 
@@ -315,6 +323,21 @@ class ClusterViewer(ProfileCommands):
             self.page=max(0,self.page-1);return True
         if text in ('/map','/roster'):
             self.view=text[1:];self.page=0;return True
+        if text=='/friend' or text.startswith('/friend '):
+            arguments=text.split()[1:]
+            def friend(names):
+                try:
+                    from .tracking import Tracker
+                    from .relationship_commands import configure
+                    tracker=Tracker(self.owner)
+                    result=configure(tracker,['friends',*names])
+                    self.tracker_data=tracker.data
+                    self.status=' | '.join(result)
+                except (OSError,ValueError) as error:self.status=str(error)[:180]
+            if any(value.isdecimal() for value in arguments):
+                self.confirm_occupants(arguments,lambda names:friend(['login:'+name for name in names]))
+            else:friend(arguments)
+            return True
         if text.startswith('/track '):
             numbers=text.split()[1:]
             if not numbers or any(not number.isdecimal() for number in numbers):

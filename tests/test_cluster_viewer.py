@@ -108,6 +108,27 @@ class ClusterViewerTests(unittest.TestCase):
             tracker.assert_not_called()
             self.assertIn('changed',viewer.status)
 
+    def test_friend_number_confirms_then_saves_shared_relationships(self):
+        viewer,_=self.viewer();viewer.owner='fixture-owner';viewer.stamp=100
+        viewer.players=[dict(name='fixture',seat='c1r1s1')]
+        viewer.command('/friend 1')
+        self.assertIn('fixture (c1r1s1)',viewer.status)
+        with patch('campus_lan.tracking.Tracker') as tracker, patch('campus_lan.relationship_commands.configure',return_value=['Saved friend']) as configure:
+            viewer.command('y')
+            configure.assert_called_once_with(tracker.return_value,['friends','login:fixture'])
+            self.assertEqual(viewer.status,'Saved friend')
+
+    def test_cluster_view_reloads_friend_labels_from_other_windows(self):
+        viewer,_=self.viewer();viewer.owner='fixture-owner'
+        viewer.players=[dict(name='fixture',seat='c1r1s1')]
+        with patch('campus_lan.tracking.Tracker') as tracker, patch('campus_lan.cluster_viewer.time.monotonic',return_value=10):
+            tracker.return_value.load_error=None
+            tracker.return_value.data={'people':{'fixture':{'relationship':'friends'}}}
+            viewer.segments()
+            self.assertEqual(viewer.tracker_data,tracker.return_value.data)
+            viewer.segments()
+            tracker.assert_called_once_with('fixture-owner')
+
     def test_local_fallback_requires_approved_operator(self):
         events=queue.Queue()
         with patch('campus_lan.cluster_viewer.HostSource',side_effect=ValueError('host unavailable')),patch('campus_lan.cluster_viewer.LocalSource') as local:

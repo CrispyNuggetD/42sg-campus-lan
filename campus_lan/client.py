@@ -53,7 +53,7 @@ HELP = [
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
     '/tool LOGIN...|cohort1|all: private photo batch from local SG cache | /info [FILTER] [PAGE]: API-operator campus directory',
     '/clusters: open a separate map window | /c1 /c2: one cluster | in that window r/Enter refreshes and shows snapshot age',
-    '/track: friends/lists | /track friends LOGIN|NUMBER: label | /profile [LOGIN|NUMBER]: any tab; numbers confirm campus occupants',
+    '/friend LOGIN|NUMBER: track and mark friend | /track: relationships/lists | /profile [LOGIN|NUMBER]: any tab; numbers confirm campus occupants',
     '/alarm [30m|8pm|162532|daily 8pm|weekly mon,wed 08:00] | /timer 5m | /stopwatch | /clock: GMT+8 clock tools',
     '/settings storage [FOLDER] | export/import FOLDER [combine|overwrite] | /settings resolve FOLDER combine|overwrite: portable preferences',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
@@ -463,16 +463,22 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
 
     def tracking_command(self,text):
         parts=text.split()
-        if not parts or parts[0] not in ('/track','/untrack','/compose'):return False
+        if not parts or parts[0] not in ('/friend','/track','/untrack','/compose'):return False
         if parts[0]=='/compose':
             if getattr(self,'pending_draft',None) and not self.input:
                 self.input=self.pending_draft;self.pending_draft=None
             else:self.lines.append('No waiting draft, or finish the current input first.')
             return True
-        if getattr(self,'role','lobby')!='lobby':
+        if getattr(self,'role','lobby')!='lobby' and parts[0]!='/friend':
             self.lines.append('Use /track in your HQ window; tracking stays local to your login.')
             return True
         tracker=self.get_tracker()
+        if parts[0]=='/friend':
+            # Another tab may have saved relationships since this window loaded.
+            from .tracking import Tracker
+            fresh=Tracker(self.name)
+            fresh.campus,fresh.peers,fresh.targets=tracker.campus,tracker.peers,tracker.targets
+            self.tracker=tracker=fresh
         try:
             if parts[1:3]!=['clusters','scope'] and any(value.isdecimal() for value in parts[1:]):
                 self.confirm_occupants(parts[1:],lambda names:self.tracking_command(parts[0]+' '+' '.join('login:'+name if original.isdecimal() else name for original,name in zip(parts[1:],names))))
@@ -483,7 +489,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
                 self.lines.append('Removed from tracking: '+(', '.join(names) or 'nobody'))
             else:
                 from .relationship_commands import configure
-                self.lines.extend(configure(tracker,parts[1:]))
+                self.lines.extend(configure(tracker,['friends',*parts[1:]] if parts[0]=='/friend' else parts[1:]))
             self.track_next=0
             self.tracking_update(self.state.get('players',[]),'lobby')
         except (OSError,ValueError) as error:self.lines.append(safe(str(error)))
