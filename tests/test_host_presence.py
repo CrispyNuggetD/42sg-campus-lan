@@ -44,7 +44,7 @@ class HostPresence(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn('private-fixture-detail',str(output.call_args))
         self.assertEqual(path.read_bytes(),before)
 
-    async def test_maintenance_seeds_immediately_then_refreshes_once_per_minute(self):
+    async def test_maintenance_seeds_immediately_then_waits_30_seconds_between_refreshes(self):
         with patch('campus_lan.auth_server.prime_campus_presence',new_callable=AsyncMock,return_value=True) as prime,patch('campus_lan.auth_server.asyncio.sleep',new_callable=AsyncMock,side_effect=[None,asyncio.CancelledError]) as sleep:
             with self.assertRaises(asyncio.CancelledError):await maintain_campus_presence()
-        self.assertEqual(prime.await_count,2);self.assertEqual([c.args[0] for c in sleep.call_args_list],[60,60])
+        self.assertEqual(prime.await_count,2);self.assertEqual([c.args[0] for c in sleep.call_args_list],[30,30])

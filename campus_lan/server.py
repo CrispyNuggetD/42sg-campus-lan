@@ -106,11 +106,24 @@ class Lobby:
         from .campus_status import cached_status
         try:
             Policy().require_host()
-            status=cached_status()
+            status=await asyncio.to_thread(cached_status)
         except (OSError,ValueError):status=None
+        cluster_snapshot=None
         for client in list(self.clients.values()):
-            if client.get('role')=='clusters':continue
-            if self.campus_allowed(client):await self.send(client,dict(type='campus_status',status=status))
+            if not self.campus_allowed(client):continue
+            if client.get('role')=='clusters':
+                if status is None or client.get('campus_snapshot_sent')==status['updated_at']:continue
+                if cluster_snapshot is None:
+                    from .clusters import cached_snapshot
+                    try:cluster_snapshot=await asyncio.to_thread(cached_snapshot)
+                    except (OSError,ValueError):continue
+                players,stamp=cluster_snapshot
+                # Never publish a roster from a different generation than HQ's count.
+                if stamp!=status['updated_at']:continue
+                await self.send(client,dict(type='clusters',players=players,updated_at=stamp))
+                client['campus_snapshot_sent']=stamp
+            else:
+                await self.send(client,dict(type='campus_status',status=status))
         for room in list(self.rooms.values()):
             if room.get('game')=='forknite':
                 try:await room['web'].control(dict(action='campus_status',status=status))

@@ -7,8 +7,60 @@ from unittest.mock import Mock,AsyncMock,patch
 from campus_lan.campus_status import summarize,validate_status,format_status,publish_status,local_status
 from campus_lan.client import Client
 from campus_lan.auth import AuthError
+from campus_lan.server import Lobby
 
 STATUS=dict(total=17,c1=8,c2=9,updated_at=100)
+
+
+class CampusSnapshotBroadcast(unittest.IsolatedAsyncioTestCase):
+    async def test_hq_and_clusters_follow_same_snapshot_without_api_reads(self):
+        lobby=Lobby(auth_broker=Mock())
+        hq=dict(role='lobby',allowed=True)
+        viewer=dict(role='clusters',allowed=True)
+        denied=dict(role='clusters',allowed=False)
+        lobby.clients=dict(hq=hq,viewer=viewer,denied=denied)
+        players=[dict(name='fixture',seat='c1r1s1')]
+        with patch('campus_lan.access.Policy.require_host'), \
+             patch('campus_lan.campus_status.cached_status',return_value=STATUS) as status, \
+             patch('campus_lan.clusters.cached_snapshot',return_value=(players,100)) as cached, \
+             patch('campus_lan.clusters.snapshot') as api, \
+             patch.object(lobby,'campus_allowed',side_effect=lambda c:c['allowed']), \
+             patch.object(lobby,'send',new=AsyncMock()) as send:
+            await lobby.send_campus_status()
+            self.assertEqual(send.call_args_list[0].args,(hq,dict(type='campus_status',status=STATUS)))
+            self.assertEqual(send.call_args_list[1].args,(viewer,dict(type='clusters',players=players,updated_at=100)))
+            send.reset_mock()
+            await lobby.send_campus_status()
+            self.assertEqual(send.call_count,1)  # No duplicate roster on each HQ tick.
+            self.assertEqual(cached.call_count,1)
+            status.return_value=dict(STATUS,updated_at=130)
+            cached.return_value=([],130)
+            await lobby.send_campus_status()
+            self.assertEqual(send.call_args.args,(viewer,dict(type='clusters',players=[],updated_at=130)))
+            viewer['allowed']=False
+            send.reset_mock();status.return_value=dict(STATUS,updated_at=160)
+            await lobby.send_campus_status()
+            self.assertEqual(send.call_count,1)
+            api.assert_not_called()
+
+    async def test_host_revocation_prevents_cached_roster_delivery(self):
+        lobby=Lobby(auth_broker=Mock());lobby.clients={'viewer':dict(role='clusters')}
+        with patch('campus_lan.access.Policy.require_host',side_effect=AuthError('revoked')), \
+             patch('campus_lan.clusters.cached_snapshot') as cached, \
+             patch.object(lobby,'campus_allowed',return_value=True), \
+             patch.object(lobby,'send',new=AsyncMock()) as send:
+            await lobby.send_campus_status()
+            cached.assert_not_called();send.assert_not_called()
+
+    async def test_racing_snapshot_waits_for_next_matching_hq_tick(self):
+        lobby=Lobby(auth_broker=Mock());viewer=dict(role='clusters');lobby.clients={'viewer':viewer}
+        with patch('campus_lan.access.Policy.require_host'), \
+             patch('campus_lan.campus_status.cached_status',return_value=STATUS), \
+             patch('campus_lan.clusters.cached_snapshot',return_value=([],130)), \
+             patch.object(lobby,'campus_allowed',return_value=True), \
+             patch.object(lobby,'send',new=AsyncMock()) as send:
+            await lobby.send_campus_status()
+            send.assert_not_called();self.assertNotIn('campus_snapshot_sent',viewer)
 
 
 class CampusStatus(unittest.TestCase):

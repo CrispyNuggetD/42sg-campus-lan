@@ -104,10 +104,10 @@ async def prime_campus_presence():
 
 
 async def maintain_campus_presence():
-    """Seed immediately and refresh once a minute through the shared API pacing."""
+    """Seed immediately, then wait 30 seconds between paced refreshes."""
     while True:
         await prime_campus_presence()
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
 
 
 async def maintain_remote_listeners(http, lobby, bind, settings, context):
