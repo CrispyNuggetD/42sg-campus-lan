@@ -1,8 +1,16 @@
 {
-  "version": "2.34.2-beta.1",
-  "date": "2026-11-15T12:47:26+08:00",
-  "source": "2f1932b5fdfe56060f565c2c4de370ab1fe1dbc3",
+  "version": "2.34.3-beta.1",
+  "date": "2026-11-15T13:08:30+08:00",
+  "source": "1d55822f35b691b00b2d72c5fc982a804d892db7",
   "history": [
+    {
+      "version": "2.34.3-beta.1",
+      "date": "2026-11-15T13:08:30+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(ish): automatically open and focus clusters after API readiness"
+      ]
+    },
     {
       "version": "2.34.2-beta.1",
       "date": "2026-11-15T12:47:26+08:00",
@@ -711,5 +719,5 @@
       ]
     }
   ],
-  "runtime_sha256": "2d5ca5a189b7f4647c4baf40010c23b72fec09a6fe13c9314ba438c9c641a59f"
+  "runtime_sha256": "92f0544c8abf6144c37966461cbf254f311083d7a3bf979a0b597fe2909909da"
 }
