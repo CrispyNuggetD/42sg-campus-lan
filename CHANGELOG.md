@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.30.2-beta.1 · 2026-11-15T11:43:39+08:00
+
+- fix(startup): allow slow iSH server readiness
+
 ## 2.30.1-beta.1 · 2026-11-15T11:28:30+08:00
 
 - fix(setup): finish iSH zsh helpers and attach local workspace

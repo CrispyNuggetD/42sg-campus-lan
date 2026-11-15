@@ -1,8 +1,16 @@
 {
-  "version": "2.30.1-beta.1",
-  "date": "2026-11-15T11:28:30+08:00",
-  "source": "1ebd7495590c80cb364c9a7198c7876008b83fc0",
+  "version": "2.30.2-beta.1",
+  "date": "2026-11-15T11:43:39+08:00",
+  "source": "86c49b9cb6ac47a0525d8705298ea0725ea3106e",
   "history": [
+    {
+      "version": "2.30.2-beta.1",
+      "date": "2026-11-15T11:43:39+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(startup): allow slow iSH server readiness"
+      ]
+    },
     {
       "version": "2.30.1-beta.1",
       "date": "2026-11-15T11:28:30+08:00",
@@ -647,5 +655,5 @@
       ]
     }
   ],
-  "runtime_sha256": "bc99a39af1d2f3756896cd1dddb4c99488a7661d392749aada0a51b903a55781"
+  "runtime_sha256": "6f6335f8ea913a6f2e47e78a2380f1a1cf634563abaa3fa4c9f021ab49528196"
 }
