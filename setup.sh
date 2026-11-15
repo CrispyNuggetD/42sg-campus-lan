@@ -8,8 +8,40 @@ case "${1:-}" in
 esac
 [ "$#" -le 1 ] || { echo 'Usage: sh setup.sh [--no-zsh]' >&2; exit 1; }
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-command -v git >/dev/null || { echo "Git is required."; exit 1; }
 . "$repo_dir/useful-scripts/setup_python.sh"
+# iSH exposes its emulated Linux environment through /proc/ish.
+# Keep the same entry point; do not infer iSH from Alpine or a root account alone.
+setup_ish=0
+if [ -d /proc/ish ] || { [ -r /proc/version ] && grep -qi 'ish' /proc/version; }; then
+    setup_ish=1
+    echo 'Detected iSH: using its configured Alpine packages (no repository upgrades).'
+    command -v apk >/dev/null 2>&1 || { echo 'iSH apk is unavailable; restore its package manager and rerun setup.' >&2; exit 1; }
+    ish_packages=''
+    command -v git >/dev/null 2>&1 || ish_packages="$ish_packages git"
+    if ! command -v python3 >/dev/null 2>&1 || ! python_works python3; then
+        ish_packages="$ish_packages python3"
+    fi
+    command -v tmux >/dev/null 2>&1 || ish_packages="$ish_packages tmux"
+    if [ "$install_zsh" = 1 ] && ! command -v zsh >/dev/null 2>&1; then
+        ish_packages="$ish_packages zsh"
+    fi
+    apk info -e ncurses-terminfo >/dev/null 2>&1 || ish_packages="$ish_packages ncurses-terminfo"
+    if [ -n "$ish_packages" ]; then
+        echo "iSH packages:$ish_packages" >&2
+        echo 'Python/curses runs LAN42; Git updates it; terminfo describes the terminal. tmux and zsh helpers are optional.' >&2
+        echo 'This uses apk update and apk add inside iSH, not on iOS or a campus computer. No apk upgrade or repository changes.' >&2
+        if setup_install_choice; then
+            # Fixed package names above; splitting this list is intentional.
+            apk update && apk add $ish_packages || { echo 'iSH package setup failed; check its configured repositories and rerun setup.' >&2; exit 1; }
+        fi
+    fi
+    if ! command -v python3 >/dev/null 2>&1 || ! python_works python3; then
+        echo 'iSH needs Alpine Python 3.9+ with curses. Run apk add python3; no uv runtime will be downloaded.' >&2
+        exit 1
+    fi
+    echo 'iSH: launch here with sh lan42.sh; keep the app open. Desktop integrations and on-device compatibility are not verified.'
+fi
+command -v git >/dev/null || { echo "Git is required."; exit 1; }
 setup_python || exit 1
 python3 - "$repo_dir" <<'PYSETUP'
 import sys
@@ -30,7 +62,8 @@ print('Core guest mode uses the Python standard library; no pip packages or staf
 
 PYSETUP
 tmux_allowed=1
-if ! command -v tmux >/dev/null 2>&1 && [ ! -x "${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/tmux/bin/tmux" ]; then
+if [ "$setup_ish" = 1 ] && ! command -v tmux >/dev/null 2>&1; then tmux_allowed=0; fi
+if [ "$setup_ish" != 1 ] && ! command -v tmux >/dev/null 2>&1 && [ ! -x "${FORTYTWO_TOOLS_ROOT:-$HOME/.local/share/42-tools}/tmux/bin/tmux" ]; then
     echo 'Optional: tmux keeps LAN42 windows/jobs running when you detach and provides the lobby/game workspace.' >&2
     echo 'Without it, LAN42 still launches with ./lan42.sh (or lan42_here), but has no managed tmux workspace or detach/reconnect support; keep its terminal open.' >&2
     case "$(uname -s)" in

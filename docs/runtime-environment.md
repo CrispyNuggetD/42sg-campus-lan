@@ -268,3 +268,15 @@ or API calls were added. All 37 selected cluster/name/shell-feature/website
 checks and the full site build passed. A hidden Tk smoke check confirmed
 read-only Unicode selection and copy payloads without writing the clipboard;
 visible desktop interaction and macOS have not been validated.
+
+
+## iSH dependency bootstrap — 15 November 2026 SGT
+
+The shared setup.sh detects iSH and offers its configured Alpine packages, with
+no repository rewrite, Alpine upgrade or uv fallback. Four simulated iSH tests
+cover acceptance, decline/EOF, compatible Python and failed apk; existing Python
+setup (4), terminal setup (9), shell feature (1) and website (3) checks passed
+on the development Linux container. Website build passed with its pinned Markdown
+dependency. Fake tools and a temporary proc tree were used; no device packages,
+credentials, API enrollment or live student operations were changed. Actual iSH
+lobby/UI/networking and desktop integrations remain unverified.

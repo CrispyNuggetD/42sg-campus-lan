@@ -171,3 +171,29 @@ not grant API-host enrollment or install optional game dependencies.
 On Mac, missing tmux uses an existing Homebrew installation; Homebrew itself
 is not installed automatically. The current school terminal has not been
 retested from this Mac; no new campus compatibility claim is made here.
+
+
+## iSH on iPhone/iPad (experimental)
+
+The same `sh setup.sh` detects iSH through `/proc/ish` or its kernel version.
+After cloning, no platform flag or separate installer is needed. If Git is not
+installed yet, run `apk update && apk add git` before the clone command.
+
+Setup offers one package installation for missing Git, Python, ncurses terminal
+information, tmux and (unless `--no-zsh`) zsh. Accepting runs `apk update` then
+`apk add` inside iSH. It does not change repositories or run `apk upgrade`.
+Declining still permits setup when Python/curses and Git already work; tmux and
+zsh remain optional. An incompatible Python stops with an Alpine repair hint,
+without attempting the desktop uv download. Rerunning checks existing tools.
+
+Launch in the current terminal with `sh lan42.sh`. The default iSH shell does
+not load `.zshrc`; installing helpers does not change the default shell. Desktop
+window launchers, notifications, audio, browser opening and API-host startup
+are not certified on iSH. Use at least 76 columns by 28 rows and keep iSH open;
+tmux does not prevent iOS suspending the app.
+
+This is dependency setup only. API keys alone do not approve an API operator or
+service host; existing access-policy and TLS enrollment still apply. The campus
+systemd service is not an iSH service manager. No credentials are installed or
+copied by setup. a-Shell is a different environment and is not supported by this
+Alpine setup path. On-device lobby, networking and UI validation remains pending.
