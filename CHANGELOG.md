@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.33.0-beta.1 · 2026-11-15T12:15:37+08:00
+
+- feat(campus): clarify seat selection and add silent-baseline arrivals
+
 ## 2.32.0-beta.1 · 2026-11-15T12:07:16+08:00
 
 - feat(api): add explicit standalone iSH operator setup

@@ -1,8 +1,16 @@
 {
-  "version": "2.32.0-beta.1",
-  "date": "2026-11-15T12:07:16+08:00",
-  "source": "0d8ef5c9f8ed75792e7a21b73dbf2474009d6814",
+  "version": "2.33.0-beta.1",
+  "date": "2026-11-15T12:15:37+08:00",
+  "source": "50ade138b6bfc332b5c395f38d879df8e51565d9",
   "history": [
+    {
+      "version": "2.33.0-beta.1",
+      "date": "2026-11-15T12:15:37+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat(campus): clarify seat selection and add silent-baseline arrivals"
+      ]
+    },
     {
       "version": "2.32.0-beta.1",
       "date": "2026-11-15T12:07:16+08:00",
@@ -679,5 +687,5 @@
       ]
     }
   ],
-  "runtime_sha256": "ea2b1c328fbf6a337a891378e7c97c2b99ecc9885f02de88ef5f2fa2ff586cb3"
+  "runtime_sha256": "5492bd76e410372be31fcc40839d20ce6f97899f4f26e8ad2da5ef4c202ed838"
 }
