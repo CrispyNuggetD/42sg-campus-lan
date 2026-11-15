@@ -74,7 +74,7 @@ class IshZshSetup(unittest.TestCase):
             (root/'proc/ish').mkdir(parents=True)
             binary = root/'bin'; binary.mkdir()
             helpers = root/'useful-scripts'; helpers.mkdir()
-            for name in ('setup_python.sh', 'install_zsh.py', 'ensure_tmux.py'):
+            for name in ('setup_python.sh', 'install_zsh.py', 'ensure_tmux.py', 'install_ish_shell.py'):
                 shutil.copy2(ROOT/'useful-scripts'/name, helpers/name)
             (root/'lan42.sh').touch()
             (helpers/'campus.zsh').touch()
@@ -105,7 +105,7 @@ class IshZshSetup(unittest.TestCase):
         self.assertIn('Install zsh', result.stderr)
         self.assertIn('add zsh', calls)
         self.assertIn('campus.zsh', rc)
-        self.assertIn('Run zsh, then lan42', result.stdout)
+        self.assertIn('Fresh iSH main shell: lan42', result.stdout)
 
     def test_decline_or_no_zsh_preserves_direct_launch(self):
         for answer, optout in [('n\n', False), ('', True)]:

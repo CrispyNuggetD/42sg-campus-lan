@@ -75,6 +75,32 @@ MIN_COLUMNS = 76
 MIN_ROWS = 28
 
 
+def terminal_fits(screen):
+    rows, columns = screen.getmaxyx()
+    return columns >= MIN_COLUMNS and rows >= MIN_ROWS
+
+
+def terminal_size_help(columns, rows, ish=False):
+    """Wrap actionable first-run help to the real viewport, including phones."""
+    messages = [
+        'LAN42 needs more terminal space',
+        f'Current: {columns} columns x {rows} rows. Needed: {MIN_COLUMNS} x {MIN_ROWS}.',
+    ]
+    if ish:
+        messages += [
+            'iSH: gear > Appearance > Font Size. Tap minus to reduce the font.',
+            'Return here; LAN42 continues automatically when it fits.',
+            'Rotate or hide the keyboard for more room. Both dimensions must fit.',
+            'iSH font settings affect the app, not just this tmux session.',
+        ]
+    else:
+        messages += ['Enlarge the terminal or reduce its font size.',
+                     'LAN42 continues automatically when it fits.']
+    messages += ['Ctrl-C exits. Ctrl-L redraws.']
+    return [line for message in messages
+            for line in textwrap.wrap(message, width=max(1, columns-1))]
+
+
 def request_terminal_resize(stream=sys.stdout, get_size=shutil.get_terminal_size):
     """Ask compatible terminals to grow to the minimum UI dimensions."""
     if not stream.isatty():
@@ -1154,9 +1180,9 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
         self.control_hits=[]
         self.lobby_hits=[]
         h,w = screen.getmaxyx()
-        if h<28 or w<76:
-            self.line(screen,0,'Please resize terminal to at least 76 columns x 28 rows.')
-            self.line(screen,1,'Ctrl-C exits.')
+        if not terminal_fits(screen):
+            for y, text in enumerate(terminal_size_help(w,h,getattr(self,'ish_terminal',False))):
+                self.line(screen,y,text)
             screen.refresh()
             return
         game_window = getattr(self,'role','lobby')=='game'
@@ -1575,6 +1601,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
             self.lines.append(f'Trying friend server at {seat} = {target}...')
 
     def run(self,screen):
+        self.ish_terminal = Path('/proc/ish').is_dir()
         history=History()
         installed_generation = generation()
         from .cohort_display import cohort_index
@@ -1623,6 +1650,9 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
             key = screen.getch()
             if key in (curses.KEY_RESIZE,12):
                 screen.clearok(True)
+                continue
+            # Do not accept invisible chat, consent answers or game controls.
+            if not terminal_fits(screen):
                 continue
             if key==curses.KEY_MOUSE:
                 try:

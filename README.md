@@ -20,7 +20,7 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 ## Highlights
 
 <!-- shell-installer-features:start -->
-- **Campus HQ:** `lan42` has its own tmux workspace; setup asks before dependencies. iSH offers Alpine packages and zsh helpers. Mac remote guest approval is opt-in and separate from Intra sign-in.
+- **Campus HQ:** `lan42` has its own tmux workspace; setup asks before dependencies. iSH offers Alpine packages and main-shell commands. Mac remote guest approval is opt-in and separate from Intra sign-in.
 - **Find your people:** `/who` lists peers; `/track` keeps friends. Cluster clicks show photos/copyable names (Tk/Pillow); double-click opens Intra. `/profile` confirms numbered students; `/settings` combines private preferences.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. `/core` opens external CORE Game by 42core-team; `/core clone` fetches its source separately. CORE sign-in/competitions stay on its own site.
@@ -70,9 +70,11 @@ cloning, run `apk update && apk add git` in iSH first. Setup detects iSH and ask
 before installing missing Alpine Python, terminal data and tmux. It then offers
 zsh separately and configures the same LAN42 helpers. It keeps
 existing repositories and does not upgrade Alpine. Launch with `sh lan42.sh` in
-the current terminal, or run `zsh` then `lan42` for the tmux workspace in iSH.
-Zsh is optional (`sh setup.sh --no-zsh`). Interactive setup offers to start it
-without changing your default shell. Keep iSH open.
+the current terminal, or type `lan42` in a fresh iSH main-shell session for the
+tmux workspace. Setup adds a backed-up `.profile` wrapper that invokes zsh for
+you when configured; there is no manual shell switch. In your current main
+shell, load it once with `. ~/.profile`. Zsh is optional (`--no-zsh`); the
+wrapper then launches directly. Keep iSH open.
 This provisions dependencies, not verified full iOS support or API-host enrollment.
 [Details and limitations →](docs/getting-started.md#ish-on-iphoneipad-experimental)
 

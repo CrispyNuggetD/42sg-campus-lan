@@ -307,3 +307,24 @@ existing lifecycle/tmux checks passed on the development Linux container.
 Simulated checks cover delayed readiness, bounded timeout, early exit and reuse;
 real process lifecycle tests use isolated loopback/state. No iSH retest or live
 campus/student operation was performed.
+
+## iSH first-run shell and viewport guidance — 15 November 2026 SGT
+
+Fresh iSH login shells now receive LAN42 command wrappers in a backed-up
+.profile block. The wrapper invokes configured zsh automatically; --no-zsh
+retains direct launch, with no default-shell change. First-run tests execute the
+wrapper from POSIX sh through real zsh with a fake LAN42 helper, checking literal
+arguments, opt-out, idempotence and moved-clone profile preservation.
+
+The undersized UI now reports actual columns/rows and wrapped iSH settings steps.
+It resumes automatically when both dimensions fit and ignores hidden typing.
+iSH upstream exposes font_size as an app-wide preference, not a tmux-scoped
+setting; LAN42 leaves it unchanged. Sources inspected: ish-app/ish
+app/UserPreferences.m, app/TerminalView.m and app/Base.lproj/About.storyboard.
+A real development pseudo-terminal rendered the phone help with curses and
+recognized resizing from 60x40 to 90x30. This is not an iPhone settings test.
+
+All 42 selected checks passed: viewport/input/PTY (6), main-shell wrapper (3),
+iSH setup (6), terminal setup (10), client (9), Python setup (4), shell feature
+(1), website (3). Website build passed. No live credentials, student sessions,
+notifications or iSH app preferences were accessed or changed.

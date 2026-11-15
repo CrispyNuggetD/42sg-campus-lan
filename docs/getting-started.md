@@ -189,13 +189,17 @@ Declining still permits setup when Python/curses and Git already work; tmux and
 zsh remain optional. An incompatible Python stops with an Alpine repair hint,
 without attempting the desktop uv download. Rerunning checks existing tools.
 
-Launch in the current terminal with `sh lan42.sh`, or run `zsh` then `lan42`.
+Launch in the current terminal with `sh lan42.sh`, or type `lan42` directly
+from a fresh iSH main-shell session. Setup backs up `.profile` and adds guarded
+LAN42 command wrappers. If zsh is configured, the wrapper invokes it and loads
+the LAN42 helpers automatically; otherwise it uses the direct launcher.
+In an existing main shell, run `. ~/.profile` once after setup.
 On iSH, `lan42` creates the same tmux workspace and attaches in the existing
 terminal; inside tmux it switches clients instead of nesting. `lan42_here` runs
-directly. Interactive setup offers to start zsh immediately after helper setup.
-The default iSH shell does not load `.zshrc`; installing helpers does not change
-the default shell or rewrite `.profile`. If already in zsh, reload `.zshrc` or
-start a fresh zsh. Desktop notifications, audio, browser opening and API-host
+directly. The default iSH shell is unchanged; you do not need to launch zsh
+manually. Other `.profile` content is preserved; setup updates only its own
+marked wrapper block when the clone path changes. If already in zsh, reload
+`.zshrc` or open a fresh session. Desktop notifications, audio, browser opening and API-host
 startup are not certified on iSH. Use at least 76 columns by 28 rows and keep iSH open;
 tmux does not prevent iOS suspending the app.
 
@@ -214,3 +218,18 @@ A timeout does not kill the server. Inspect
 `~/.local/state/42sg-campus-lan/server-31415.log` if it still fails.
 The log saying “listening” confirms the socket opened, not that the full UI or
 API sign-in has passed device testing.
+
+### Fit LAN42 on an iPhone screen
+
+If the UI does not fit, LAN42 shows the current columns/rows and iSH-specific
+steps instead of a clipped resize warning. Open iSH's gear button, choose
+**Appearance → Font Size**, and tap minus until at least **76 columns × 28 rows**
+fit. Return to the terminal; LAN42 checks the size and continues automatically.
+Rotating or hiding the keyboard can help, but both dimensions must fit together.
+Ctrl-L redraws; Ctrl-C exits. No chat, game actions or consent answers are
+accepted behind the size screen.
+
+iSH exposes a scriptable `font_size` preference, but it is app-wide, not scoped
+to LAN42 or a tmux session. LAN42 therefore does not silently change it or fake
+the terminal dimensions with `stty`. Desktop terminals retain the existing resize
+request. Settings may be adjusted back after leaving LAN42.

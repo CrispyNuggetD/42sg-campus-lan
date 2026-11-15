@@ -96,15 +96,8 @@ if [ "$install_zsh" = 1 ]; then
 fi
 
 if [ "$setup_ish" = 1 ]; then
+    python3 "$repo_dir/useful-scripts/install_ish_shell.py" "$repo_dir" "$install_zsh"
     echo 'LAN42 setup complete. Keep iSH open while using LAN42.'
-    if [ "$install_zsh" = 1 ] && command -v zsh >/dev/null 2>&1; then
-        echo 'Run zsh, then lan42 to open the tmux workspace here (lan42_here runs directly).'
-        if [ -t 0 ] && [ -t 1 ]; then
-            printf 'Start zsh now with your LAN42 helpers? [y/N]: '
-            start_zsh=''; IFS= read -r start_zsh || :
-            case "$start_zsh" in y|Y|yes|YES) exec zsh -i ;; esac
-        fi
-    else
-        echo 'Start LAN42 here: sh lan42.sh'
-    fi
+    echo 'Fresh iSH main shell: lan42. Existing main shell: . ~/.profile then lan42.'
+    echo 'lan42_here runs directly without tmux. Your default shell is unchanged.'
 fi
