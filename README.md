@@ -20,8 +20,8 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 ## Highlights
 
 <!-- shell-installer-features:start -->
-- **Campus HQ:** `lan42` has its own tmux workspace; setup asks before dependencies. iSH offers Alpine packages and main-shell commands. Mac remote guest approval is opt-in and separate from Intra sign-in.
-- **Find your people:** `/who` lists peers; `/friend` tracks and marks friends. Cluster clicks show photos/names; double-click opens Intra. `/profile` confirms numbered students; `/settings` combines preferences.
+- **Campus HQ:** `lan42` has its own tmux workspace; setup asks before dependencies. iSH supports main-shell launch and standalone owner API setup. Mac remote guest approval is separate from Intra sign-in.
+- **Find your people:** `/who` lists peers; `/friend` or `/friends` tracks friends. Cluster clicks show photos/names; double-click opens Intra. `/profile` confirms numbered students; `/settings` combines preferences.
 - **KoelDrop:** `/koel` adds sender/version-named files; edits and renames add copies, never replace/delete. Shared uploads: 6/minute; own folder: 30/minute. Separate receive consent and dock/Files shortcuts.
 - **Games:** `/games` offers Tetris, Bluff, Hex Wars and FORKNITE. `/core` opens external CORE Game by 42core-team; `/core clone` fetches its source separately. CORE sign-in/competitions stay on its own site.
 - **Easy controls:** F2 sign-in, F3 clusters, F4 mute, F5 volume, F6/F7 uwu. `/alarm`, `/timer`, `/stopwatch`, `/clock` honor quiet/audio settings. Desktop title shows all timers and stopwatch.
@@ -30,13 +30,19 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 - **Web search:** `/search` defaults to Ecosia; Google/custom engines are optional. Permanent aggregate impact totals and estimated unique searches have a counting opt-out.
 <!-- shell-installer-features:end -->
 
-**Campus API features need a running approved host on campus (currently hnah’s).**
+**Student API sign-in needs a running approved host on campus (currently hnah’s).**
 With that host online and its public trust configured, Singapore students can
 sign in and run `/clusters` or `/clusters 2` for API-reported occupied seats.
 The host shares a 30-second cache across clients. Installing this repo alone does
 not provide sign-in/API access. Guest chat and games remain available while the
 host is offline; stable, always-on hosting is future work.
 [Sign-in and host setup →](docs/sign-in.md)
+
+The API owner can use standalone read-only SG clusters on an owner-controlled
+iSH device: `sh lan42.sh api-setup`, then launch LAN42 and use `/clusters`.
+The wizard privately prompts for the application UID/secret and runs explicit
+operator enrollment; no school host, TLS broker or systemd is needed.
+[Standalone owner setup →](docs/getting-started.md#standalone-owner-api-on-ish)
 
 ## Quick start
 

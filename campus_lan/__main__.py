@@ -142,6 +142,10 @@ def main():
     from .release import banner
     if '--version' not in sys.argv:
         print(banner(), flush=True)
+    if sys.argv[1:2] == ['api-setup']:
+        from .local_api_setup import main as setup_local_api
+        setup_local_api()
+        return
     if sys.argv[1:2] == ['admin']:
         from .popup_permissions import ensure_session
         ensure_session()

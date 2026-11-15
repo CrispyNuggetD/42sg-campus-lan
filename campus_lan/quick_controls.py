@@ -47,7 +47,8 @@ class QuickControls:
         signed = getattr(self,'signed_in',getattr(self,'secure',False))
         if getattr(self, 'role', 'lobby') != 'game':
             text = ('42 signed in: click here to sign out (F2).' if signed else
-                    'Guest: /signin or click here (F2). API views need the campus host online.')
+                    'Local API operator: /clusters or F3. Guest mesh identity is separate.' if getattr(self,'occupancy_local_allowed',False) else
+                    'Guest: /signin (F2), or owner standalone setup: sh lan42.sh api-setup.')
             self.line(screen, h-3, text, curses.A_BOLD)
             self.control_hits.append((h-3, 0, min(len(text), w-1), 'account'))
         controls = [('account', 'F2 '+('Sign out' if signed else 'Sign in')), ('clusters','F3 Clusters'),

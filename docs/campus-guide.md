@@ -302,7 +302,7 @@ Relationships, lists and independent arrival rules are configured locally:
 /settings clusters on
 ```
 
-`/friend LOGIN...` both tracks the person and sets their relationship to friend.
+`/friend LOGIN...` and `/friends LOGIN...` are exact aliases. Either both tracks the person and sets their relationship to friend.
 `/friend` alone lists friends. It also works in game/HQ tabs and the cluster
 viewer; numeric occupants use the existing confirmation before saving. Your
 friend label is reused by lobby/cluster highlights, arrival tracking and the

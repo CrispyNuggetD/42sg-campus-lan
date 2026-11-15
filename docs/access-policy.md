@@ -276,3 +276,20 @@ contacts or raw campus responses are stored. Cluster clicks read that cache
 offline, with login-only fallback. HTTP 429/5xx stop this operation immediately
 and preserve the previous complete name cache. No new API route or permission
 is introduced.
+
+
+## Explicit standalone iSH operator setup
+
+`sh lan42.sh api-setup` is a local owner CLI wizard. It stores hidden-prompt
+application credentials privately if absent, then invokes the existing
+`access enroll-local` path. UID 234449/hnah SG membership is checked before the
+initial policy/operator grant, and existing revoked/unapproved hosts cannot
+reenroll themselves. Existing auth/TLS configurations are never overwritten.
+No guest endpoint, credential export, TLS broker, systemd service or new API
+route is added. LocalSource and all existing Singapore/read-only/pacing checks
+remain in force; mesh guest identity remains unverified.
+
+iSH fingerprints a private mode-600 random installation ID instead of relying
+on an unavailable machine-id. This is installation identity, not hardware
+attestation; copying private configuration also copies that identity. Enrollment
+is explicit and does not establish physical campus presence.

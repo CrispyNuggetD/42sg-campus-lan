@@ -344,3 +344,25 @@ website (3). Guide refresh and website build passed. New tests cover persistence
 friend overlays, game-tab use, rejected mixed targets, occupant confirmation
 and cross-window cluster reloads using temporary state and fake identities.
 No real person was friended, tracked or messaged during validation.
+
+
+## Standalone iSH owner API and friends alias — 15 November 2026 SGT
+
+The explicit local api-setup wizard privately imports absent credentials or
+reuses existing configuration, then invokes the existing enrollment CLI. No
+new upstream route, guest privilege, TLS certificate, service or network listener
+is added. iSH uses a private random installation identity in lieu of machine-id;
+this is not hardware attestation. The local API footer distinguishes owner access
+from the unverified guest mesh nickname. /friends is an exact /friend alias in
+HQ/game tabs and cluster views.
+
+The 224-test security/auth/TLS/access/client/network/tracking/mesh/KoelDrop/
+notifications/relationship/cluster/completion/website selection passed 222 checks
+with two failures and no errors. Both failures are unchanged TLS-test assumptions
+that a new SSLContext has zero CAs; this runtime preloads one CA. Running the
+unchanged checkout's test_auth.py reproduces the same two failures. No TLS
+verification was weakened to accommodate the environment. An additional initial
+enrollment regression passed with a fake Singapore owner (seven standalone setup
+tests total). Guide refresh, website build and exported-feature checks passed.
+No actual credential, live API request, phone enrollment or student operation
+was performed. The on-device standalone path still requires user verification.

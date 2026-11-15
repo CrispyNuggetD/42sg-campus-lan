@@ -2,7 +2,7 @@
 from .tracking import relationship, RELATIONSHIPS, ALIASES
 
 HELP=[
- '/friend LOGIN|NUMBER... — track and mark friends across your LAN42 views; /friend lists friends',
+ '/friend or /friends LOGIN|NUMBER... — track and mark friends across your LAN42 views; /friend lists friends',
  '/track LOGIN... — acquaintances (tracked); /untrack LOGIN...|all',
  '/track — grouped relationships and lists; /track friends|mutuals|oomf|tracked — view a group',
  '/track friends dthoo thtay — track as friends; other relationship labels and @lists work too',

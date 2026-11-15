@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import platform
 import re
+import secrets
 import subprocess
 from .auth import AuthError, config_dir, private_read, private_write
 
@@ -18,6 +19,17 @@ DEFAULT = dict(schema=1, campus_id=SG_CAMPUS_ID, admins=[INITIAL_OWNER_UID],
 @lru_cache(maxsize=1)
 def host_id():
     """Local fingerprint only; never export raw hardware identifiers."""
+    if Path('/proc/ish').is_dir():
+        # iSH has no guaranteed machine-id. This identifies the private install,
+        # not physical hardware; copying this private state copies its identity.
+        identity=config_dir()/'ish-install-id'
+        try:value=private_read(identity).decode().strip()
+        except FileNotFoundError:
+            value=secrets.token_hex(32)
+            private_write(identity,value)
+        if not re.fullmatch('[a-f0-9]{64}',value):
+            raise AuthError('Invalid private iSH installation identity; enrollment denied.')
+        return hashlib.sha256(('lan42-ish-install-v1:'+value).encode()).hexdigest()
     if platform.system() == 'Linux':
         try:value=Path('/etc/machine-id').read_text().strip()
         except OSError:raise AuthError('Cannot identify this host; host approval is required.') from None

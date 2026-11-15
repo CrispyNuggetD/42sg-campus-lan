@@ -112,7 +112,7 @@ class Relationships(unittest.TestCase):
         for role in ('lobby','game'):
             c=self.client();c.role=role;c.state={};c.tracker=self.tracker
             c.tracking_update=Mock()
-            self.assertTrue(c.tracking_command('/friend dthoo thtay'))
+            self.assertTrue(c.tracking_command(('/friend' if role=='lobby' else '/friends')+' dthoo thtay'))
             saved=Tracker('owner')
             self.assertEqual(set(saved.names),{'dthoo','thtay'})
             self.assertEqual(saved.data['people']['dthoo']['relationship'],'friends')
@@ -120,7 +120,7 @@ class Relationships(unittest.TestCase):
             rows=relationship_overlay([dict(name='dthoo',verified=True)],saved.data)
             self.assertEqual(rows[0]['local_relationship'],'friend')
             c.send.assert_not_called()
-        self.assertTrue(c.tracking_command('/friend'))
+        self.assertTrue(c.tracking_command('/friends'))
         self.assertIn('Friends', '\n'.join(c.lines))
 
     def test_friend_numeric_target_confirms_before_saving(self):

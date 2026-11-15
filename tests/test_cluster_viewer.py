@@ -111,7 +111,7 @@ class ClusterViewerTests(unittest.TestCase):
     def test_friend_number_confirms_then_saves_shared_relationships(self):
         viewer,_=self.viewer();viewer.owner='fixture-owner';viewer.stamp=100
         viewer.players=[dict(name='fixture',seat='c1r1s1')]
-        viewer.command('/friend 1')
+        viewer.command('/friends 1')
         self.assertIn('fixture (c1r1s1)',viewer.status)
         with patch('campus_lan.tracking.Tracker') as tracker, patch('campus_lan.relationship_commands.configure',return_value=['Saved friend']) as configure:
             viewer.command('y')

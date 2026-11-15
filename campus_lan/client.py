@@ -53,7 +53,7 @@ HELP = [
     '/start /leave | /answer TEXT | /vote USER1 USER2 ... | /connect IP [PORT]',
     '/tool LOGIN...|cohort1|all: private photo batch from local SG cache | /info [FILTER] [PAGE]: API-operator campus directory',
     '/clusters: open a separate map window | /c1 /c2: one cluster | in that window r/Enter refreshes and shows snapshot age',
-    '/friend LOGIN|NUMBER: track and mark friend | /track: relationships/lists | /profile [LOGIN|NUMBER]: any tab; numbers confirm campus occupants',
+    '/friend or /friends LOGIN|NUMBER: track and mark friend | /track: relationships/lists | /profile [LOGIN|NUMBER]: any tab; numbers confirm campus occupants',
     '/alarm [30m|8pm|162532|daily 8pm|weekly mon,wed 08:00] | /timer 5m | /stopwatch | /clock: GMT+8 clock tools',
     '/settings storage [FOLDER] | export/import FOLDER [combine|overwrite] | /settings resolve FOLDER combine|overwrite: portable preferences',
     '/settings clusters: include/exclude arrival rules; login targets require the local private Singapore whitelist',
@@ -463,6 +463,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
 
     def tracking_command(self,text):
         parts=text.split()
+        if parts and parts[0]=='/friends':parts[0]='/friend'
         if not parts or parts[0] not in ('/friend','/track','/untrack','/compose'):return False
         if parts[0]=='/compose':
             if getattr(self,'pending_draft',None) and not self.input:

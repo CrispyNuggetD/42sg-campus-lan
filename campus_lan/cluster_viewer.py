@@ -288,6 +288,8 @@ class ClusterViewer(ProfileCommands):
 
     def command(self,text):
         text=text.strip()
+        if text=='/friends' or text.startswith('/friends '):
+            text='/friend'+text[len('/friends'):]
         if self.session_hint_pending:
             self.session_hint_pending=False
             if not text and not self.pending_profile_decision and not getattr(getattr(self,'consent',None),'active',None):

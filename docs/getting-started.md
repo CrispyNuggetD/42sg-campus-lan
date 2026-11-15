@@ -233,3 +233,42 @@ iSH exposes a scriptable `font_size` preference, but it is app-wide, not scoped
 to LAN42 or a tmux session. LAN42 therefore does not silently change it or fake
 the terminal dimensions with `stty`. Desktop terminals retain the existing resize
 request. Settings may be adjusted back after leaving LAN42.
+
+
+## Standalone owner API on iSH
+
+An owner-controlled iPhone can read Singapore campus clusters directly from 42's
+API without the school computer online. This is the existing local API-operator
+path, not student OAuth sign-in or a new public auth host.
+
+Exit LAN42 to the shell, enter the checkout, and run:
+
+```sh
+git pull --ff-only
+sh lan42.sh api-setup
+```
+
+Accept the local setup prompt. Enter the **42 application UID and secret** at
+the hidden prompts on your phone, not in chat or a shell command. Existing
+private application settings are reused and not overwritten. The wizard verifies
+the existing hnah Singapore operator via the campus-scoped enrollment check;
+existing host revocations remain enforced. There are no pip dependencies,
+certificate generation, systemd services or new network listeners in this setup.
+
+Then run `lan42` and type `/clusters` (or press F3). The local approved API source
+is used when the trusted school host is not configured/available. Your lobby
+nickname may still say `root [Guest]`: that is your unverified mesh identity,
+separate from local API-operator access. `/signin` is not required for these local
+cluster reads. The footer indicates local API access once the operator check
+succeeds. Keep iSH foregrounded and use a working internet connection.
+
+Credentials stay mode 600 below `~/.config/42sg-campus-lan` (or XDG_CONFIG_HOME),
+outside Git. The app UID alone is insufficient; the client secret is also needed.
+This owner setup does not provision other students. It retains Singapore-only,
+read-only routes, request pacing and local operator checks. It does not attest
+physical campus presence or enable campus sharing privileges.
+
+iSH uses a private random installation identity because its emulated environment
+may have no `/etc/machine-id`. It identifies this iSH installation, not physical
+hardware. Do not copy its private identity/policy to another device; enroll that
+installation explicitly. Removing private settings loses local enrollment.
