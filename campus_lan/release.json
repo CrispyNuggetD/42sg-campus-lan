@@ -1,8 +1,16 @@
 {
-  "version": "2.30.0-beta.1",
-  "date": "2026-11-15T11:21:30+08:00",
-  "source": "189f7e2d036aba94459365b1cb1a64dd49d43dea",
+  "version": "2.30.1-beta.1",
+  "date": "2026-11-15T11:28:30+08:00",
+  "source": "1ebd7495590c80cb364c9a7198c7876008b83fc0",
   "history": [
+    {
+      "version": "2.30.1-beta.1",
+      "date": "2026-11-15T11:28:30+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(setup): finish iSH zsh helpers and attach local workspace"
+      ]
+    },
     {
       "version": "2.30.0-beta.1",
       "date": "2026-11-15T11:21:30+08:00",
@@ -639,5 +647,5 @@
       ]
     }
   ],
-  "runtime_sha256": "f074ab2e16f56511efce268c13a329b3238a2f6a981a63453c825fd3db26b32e"
+  "runtime_sha256": "bc99a39af1d2f3756896cd1dddb4c99488a7661d392749aada0a51b903a55781"
 }
