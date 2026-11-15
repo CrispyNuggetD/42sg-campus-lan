@@ -1,8 +1,16 @@
 {
-  "version": "2.34.5-beta.1",
-  "date": "2026-11-15T17:53:07+08:00",
-  "source": "3123004df64bde6dace2168d60289099b65c7b4f",
+  "version": "2.34.6-beta.1",
+  "date": "2026-11-15T19:06:05+08:00",
+  "source": "f7dfabb6f232d51c037e3207c854f7cd69224a03",
   "history": [
+    {
+      "version": "2.34.6-beta.1",
+      "date": "2026-11-15T19:06:05+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix: make update the unambiguous tab completion command"
+      ]
+    },
     {
       "version": "2.34.5-beta.1",
       "date": "2026-11-15T17:53:07+08:00",
@@ -735,5 +743,5 @@
       ]
     }
   ],
-  "runtime_sha256": "565caabbe803653d7da8f98e88b42b7fd1d65be15b0e8bc584304578c35b2b48"
+  "runtime_sha256": "6d435ef9b6231fb69aa1ade928a593711ba55524528c4ab5f9879b7811b88be9"
 }
