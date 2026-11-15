@@ -1,8 +1,16 @@
 {
-  "version": "2.34.0-beta.1",
-  "date": "2026-11-15T12:19:47+08:00",
-  "source": "b1c3e47e66ae1fa5e2fcd3882362db5b31e02893",
+  "version": "2.34.1-beta.1",
+  "date": "2026-11-15T12:37:49+08:00",
+  "source": "8355653633c1caa88d1cf82eb6b3649161bdffd3",
   "history": [
+    {
+      "version": "2.34.1-beta.1",
+      "date": "2026-11-15T12:37:49+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(clusters): restore occupied-seat colors and pulse selection"
+      ]
+    },
     {
       "version": "2.34.0-beta.1",
       "date": "2026-11-15T12:19:47+08:00",
@@ -695,5 +703,5 @@
       ]
     }
   ],
-  "runtime_sha256": "942030b3052054440aa2bbaccdbfcedc5d9bb134db216d8913eb89880b1173df"
+  "runtime_sha256": "a982f14091a40fdc1a121b7b1243499097a367e2bfffdb237b1115dba83b3bb2"
 }
