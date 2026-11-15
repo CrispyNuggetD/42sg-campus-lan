@@ -1,8 +1,16 @@
 {
-  "version": "2.34.1-beta.1",
-  "date": "2026-11-15T12:37:49+08:00",
-  "source": "8355653633c1caa88d1cf82eb6b3649161bdffd3",
+  "version": "2.34.2-beta.1",
+  "date": "2026-11-15T12:47:26+08:00",
+  "source": "2f1932b5fdfe56060f565c2c4de370ab1fe1dbc3",
   "history": [
+    {
+      "version": "2.34.2-beta.1",
+      "date": "2026-11-15T12:47:26+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(clusters): keep cohort hues independent of relationships and selection"
+      ]
+    },
     {
       "version": "2.34.1-beta.1",
       "date": "2026-11-15T12:37:49+08:00",
@@ -703,5 +711,5 @@
       ]
     }
   ],
-  "runtime_sha256": "a982f14091a40fdc1a121b7b1243499097a367e2bfffdb237b1115dba83b3bb2"
+  "runtime_sha256": "2d5ca5a189b7f4647c4baf40010c23b72fec09a6fe13c9314ba438c9c641a59f"
 }

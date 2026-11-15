@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.34.2-beta.1 · 2026-11-15T12:47:26+08:00
+
+- fix(clusters): keep cohort hues independent of relationships and selection
+
 ## 2.34.1-beta.1 · 2026-11-15T12:37:49+08:00
 
 - fix(clusters): restore occupied-seat colors and pulse selection
