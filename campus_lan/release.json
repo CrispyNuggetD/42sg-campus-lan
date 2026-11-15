@@ -1,8 +1,17 @@
 {
-  "version": "2.34.6-beta.1",
-  "date": "2026-11-15T19:06:05+08:00",
-  "source": "f7dfabb6f232d51c037e3207c854f7cd69224a03",
+  "version": "2.35.0-beta.1",
+  "date": "2026-11-15T19:47:43+08:00",
+  "source": "7f7805d39a80a24e3b64d907c88d524e1fc628d3",
   "history": [
+    {
+      "version": "2.35.0-beta.1",
+      "date": "2026-11-15T19:47:43+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat: copy selected seat and full details from cluster photos",
+        "feat: show HQ version and check running and upstream versions"
+      ]
+    },
     {
       "version": "2.34.6-beta.1",
       "date": "2026-11-15T19:06:05+08:00",
@@ -743,5 +752,5 @@
       ]
     }
   ],
-  "runtime_sha256": "6d435ef9b6231fb69aa1ade928a593711ba55524528c4ab5f9879b7811b88be9"
+  "runtime_sha256": "3520b83bd11dd17cbffd233f5323e4abea06d920e382d5ce915e82ac3dbb12b8"
 }
