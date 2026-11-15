@@ -4,6 +4,10 @@ Generated from `campus_lan/release.json`, also used by `/changelog`. Alpha is su
 
 [Read alpha logs](docs/alpha-history.md) · [Read from the beginning ↓](#beginning)
 
+## 2.34.4-beta.1 · 2026-11-15T17:16:25+08:00
+
+- fix: synchronize cluster snapshots with HQ and refresh every 30 seconds
+
 ## 2.34.3-beta.1 · 2026-11-15T13:08:30+08:00
 
 - fix(ish): automatically open and focus clusters after API readiness
