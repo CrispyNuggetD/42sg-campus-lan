@@ -2,6 +2,7 @@
 from .tracking import relationship, RELATIONSHIPS, ALIASES
 
 HELP=[
+ '/arrivals on|off|status — new campus logins after a silent startup baseline; not friends or personal tracking',
  '/friend or /friends LOGIN|NUMBER... — track and mark friends across your LAN42 views; /friend lists friends',
  '/track LOGIN... — acquaintances (tracked); /untrack LOGIN...|all',
  '/track — grouped relationships and lists; /track friends|mutuals|oomf|tracked — view a group',
@@ -44,8 +45,15 @@ def configure(tracker,args):
             lines.append(f'  @{name} ({len(members)})')
             lines.extend('    '+member for member in sorted(members))
         if not tracker.data['lists']:lines.append('  None yet. /track list NAME add LOGIN...')
-        return lines+['','Campus checks every five minutes while HQ runs. /track help']+rule_lines(tracker)
+        return lines+['','Campus arrivals feed: '+('on (30-second checks)' if tracker.arrivals_enabled else 'off'),
+                      'Personal campus checks every '+('30 seconds' if tracker.arrivals_enabled else 'five minutes')+' while HQ runs. /track help']+rule_lines(tracker)
     command=args[0].lower()
+    if command=='arrivals':
+        if len(args)>2 or (len(args)==2 and args[1] not in ('on','off','status')):
+            raise ValueError('Use /arrivals on|off|status')
+        if len(args)==2 and args[1]!='status':tracker.set_arrivals(args[1]=='on')
+        return ['Campus arrivals: '+('on' if tracker.arrivals_enabled else 'off'),
+                'First successful snapshot is silent; later new campus API logins are reported every ~30 seconds while HQ runs. Requires API access; adds no friend/tracked labels.']
     if command=='help':return HELP
     if command=='config':return ['Private relationship config: '+str(tracker.path)]
     if command in RELATIONSHIPS or command in ALIASES:

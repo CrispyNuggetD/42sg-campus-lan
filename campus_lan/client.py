@@ -36,6 +36,7 @@ from .announcement_ui import AnnouncementUI
 from .forknite_controls import HELP as FORKNITE_HELP, summary as forknite_summary
 
 HELP = [
+    '/arrivals on|off|status: new campus API logins after a silent startup baseline; no friend/tracked labels',
     "/quiet status: LAN42-only exam audio mute | /exams: cached SG schedule | admin /quiet MINUTES | release popups: max once/24h",
     "/search TERMS: chosen engine in your browser | /settings search: engine + aggregate counting opt-out | /search stats",
     "/notify: channel preferences | /notify dms on | /notify host off | /notify all off: silence every desktop alert",
@@ -464,6 +465,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
     def tracking_command(self,text):
         parts=text.split()
         if parts and parts[0]=='/friends':parts[0]='/friend'
+        if parts and parts[0]=='/arrivals':parts=['/track','arrivals',*parts[1:]]
         if not parts or parts[0] not in ('/friend','/track','/untrack','/compose'):return False
         if parts[0]=='/compose':
             if getattr(self,'pending_draft',None) and not self.input:
@@ -479,6 +481,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
             from .tracking import Tracker
             fresh=Tracker(self.name)
             fresh.campus,fresh.peers,fresh.targets=tracker.campus,tracker.peers,tracker.targets
+            fresh.arrival_seen=tracker.arrival_seen if fresh.arrivals_enabled==tracker.arrivals_enabled else None
             self.tracker=tracker=fresh
         try:
             if parts[1:3]!=['clusters','scope'] and any(value.isdecimal() for value in parts[1:]):
@@ -608,13 +611,14 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
                 fresh=Tracker(self.name)
                 if not fresh.load_error:
                     fresh.campus,fresh.peers,fresh.targets=tracker.campus,tracker.peers,tracker.targets
+                    fresh.arrival_seen=tracker.arrival_seen if fresh.arrivals_enabled==tracker.arrivals_enabled else None
                     self.tracker=tracker=fresh
                     self.track_next=0
                     self.lines.append('Tracking choices updated from another LAN42 window.')
-        if (not tracker.names and not tracker.rules_enabled) or now<getattr(self,'track_next',0):return
+        if (not tracker.names and not tracker.rules_enabled and tracker.arrivals_enabled is not True) or now<getattr(self,'track_next',0):return
         if getattr(self,'track_pending',0) and now-self.track_pending<90:return
         from .tracking import INTERVAL
-        self.track_next=now+INTERVAL;self.track_pending=now
+        self.track_next=now+(30 if tracker.arrivals_enabled is True else INTERVAL);self.track_pending=now
         # No names/watch list cross the network; request the shared campus view.
         if not self.local_api_command('/campus-presence'):
             self.send(dict(type='command',text='/campus-presence'))
@@ -627,6 +631,9 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
             return
         from .tracking import describe
         for notice in tracker.transitions(players,source):
+            if notice.get('reason')=='arrivals':
+                from .student_names import cached_name
+                notice=dict(notice,cohort=getattr(self,'cohorts',{}).get(notice['login']),display_name=cached_name(notice['login']))
             title,body=describe(notice)
             self.lines.extend([title,body])
             if not self.notification_allowed('tracking'):continue
@@ -1099,6 +1106,8 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
         tracker=getattr(self,'tracker',None)
         players=relationship_overlay(players,getattr(tracker,'data',{}),self.name if getattr(self,'signed_in',False) else None,getattr(self,'cohorts',{}))
         content = lobby_lines(players,getattr(self,'lobby_view','roster'),getattr(self,'cluster',1))
+        from .lobby_view import selection_overlay,selected_details
+        content=selection_overlay(players,content,getattr(self,'lobby_view','roster'),getattr(self,'cluster',1),getattr(self,'focus_location',None),getattr(self,'focus_name',None))
         if campus:
             content[-1]=[('API seat snapshot; unmarked desks have no active reported login. /clusters refreshes.',0)]
         capacity = min(max(1,h-13),max(10,len(content)))
@@ -1121,7 +1130,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
             heading=f"CURRENTLY ONLINE: {len(players)} | " + ('TLS lobby: sign-in and remote approval are separate' if getattr(self, 'secure', False) else 'Guest names are unverified')
         self.line(screen,3,heading,curses.A_BOLD)
         controls=f'/clusters: both | /c1 /c2 | Tab: map/roster | /next /prev | page {self.lobby_page+1}/{pages}'
-        if getattr(self,'focus_name',None):controls='SELECTED '+self.focus_name+' | c%dr%ds%d'%self.focus_location+' | /next /prev'
+        if getattr(self,'focus_name',None):controls=selected_details(players,self.focus_location,self.focus_name)+' | /next /prev'
         self.line(screen,4,controls)
         for y,segments in enumerate(content[self.lobby_page*capacity:(self.lobby_page+1)*capacity],5):
             x = 0
@@ -1131,7 +1140,7 @@ class Client(ProfileCommands,TimeControls,QuietUI,SearchControls,NotificationCon
                     attr |= curses.color_pair(style)
                 if re.fullmatch(r'\[\d+\]',text) and not style:attr|=curses.A_DIM
                 if any(row==y and left<x+len(text) and x<right and seat(member)==getattr(self,'focus_location',None)
-                       for row,left,right,member in self.lobby_hits) and int(time.monotonic()*2)%2==0:
+                       for row,left,right,member in self.lobby_hits) :
                     attr|=curses.A_REVERSE|curses.A_BOLD
                 self.line(screen,y,text,attr,x)
                 x += len(text)

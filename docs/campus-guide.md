@@ -77,8 +77,8 @@ connection on each server, without appearing twice in the mesh roster.
 ## The lobby: who's online?
 
 The main screen shows a numbered roster grouped into **Cluster 1**, **Cluster 2**
-and **off campus / seat unknown**. Guests get consistent colours, while the
-Guest label stays visible: colour isn't verification. Presence refreshes about
+and **off campus / seat unknown**. Guest and relationship symbols remain visible without colour; colour is not
+verification. Presence refreshes about
 every five seconds. The list covers connected LAN42 users, not everyone on Intra.
 
 Press **Tab** to switch between the roster and an ASCII seat map. `/map 1` and
@@ -619,14 +619,32 @@ Clock tools never raise system volume or enable sound permissions automatically.
 
 ## Cohorts alongside friends and lists
 
-Cluster maps and rosters decorate each existing person **once**. The color
-priority is **You → friend → named list → cohort → sign-in/API status**. The
-cohort stays visible as a separate text/pattern marker, so a friend in your own
-cohort is `friend / I4~` and a friend in cohort 5 is `friend / I5~`; neither gets
-a duplicate seat or roster entry. A map token such as `4:09` means **cohort 4,
-roster number 9**. Shared seats keep `[++]`, with each occupant listed below.
-Cohorts with two-digit numbers retain the usual numbered map token and appear
-in the roster badge.
+Cluster maps and rosters decorate each existing person **once**. Cluster 1 keeps
+cyan headings and Cluster 2 amber headings. Relationship badges carry meaning
+without relying on color:
+
+| Badge | Meaning |
+| --- | --- |
+| Y | You (trusted identity only) |
+| F / M / O | Friend / mutual / oomf |
+| L / T | Named list / individually tracked |
+| A / + / ? | API-only / verified or approved / guest |
+| >09< | Selected roster number 9 |
+| [++] / >++< | Shared seat / selected shared seat |
+
+An occupied map token such as `[F9]` means friend, roster number 9; `F:12` means
+friend, roster number 12. Empty `[09]` remains a desk number, not a roster number.
+Selected cells use persistent `>nn<` delimiters and strong emphasis, including
+when color is disabled. Selecting an occupant shows their login, seat and
+relationship in the details line. `/locate LOGIN` in the cluster viewer selects
+the matching map seat and opens its page. A stale selection does not silently
+move to a replacement occupant. Shared seats still require choosing an individual
+roster entry before opening an Intra profile.
+
+Intake uses the `I4~` text label in the roster/details rather than another
+rainbow palette. Friend magenta and list blue supplement these symbols; unknown
+API/guest names are neutral. Self and selection use contrasting badges. This
+keeps intake, cluster, relationship and selection from competing for one color.
 
 `~` means the cohort comes from the existing local Singapore cache's inferred
 intake numbering, not official membership metadata. Missing or conflicting
@@ -670,3 +688,30 @@ copy shortcut. **Copy name** copies the cached name, **Copy Intra** copies the l
 **Copy details** copies the name (if available), login and Intra profile link.
 Copy name is disabled if no name is cached. Clipboard changes occur only when
 you copy explicitly.
+
+
+## Campus arrival feed without tracking people
+
+Enable `/arrivals on` in HQ to see **new active campus API logins after startup**.
+The first successful campus snapshot is a silent baseline: people already there
+are not announced. Later newly observed logins appear in HQ with a seat, cached
+display name when available, and locally inferred intake or “Intake unknown”.
+They are not added to friends, named lists or personal tracking.
+
+`/arrivals status` shows the preference; `/arrivals off` disables it. It defaults
+off and the switch follows the existing account-scoped portable preferences.
+Each new HQ session or re-enable establishes a fresh silent baseline. Baselines
+and comparisons stay in memory, not a saved attendance log. Seat moves and
+logouts alone are not arrival notices; a login seen leaving and later reappearing
+can be reported again. Existing friend/personal alerts remain independent.
+
+HQ polls the existing shared, authorized Singapore campus view roughly every
+30 seconds while the feed is enabled. This needs trusted-host sign-in or an
+approved local API operator; guests gain no new API access. Failed snapshots
+preserve the baseline. The API/cache may be delayed, so this detects a new active
+login, not a person's exact physical arrival. No extra per-person profile/photo
+requests are made to identify arrivals. Unknown cohort details are not guessed.
+
+Notices always appear inside HQ. Desktop delivery uses the existing tracking
+notification channel and its opt-outs (`/notify tracking off`); no one is
+messaged by enabling the feed. Keep HQ running; iOS suspension can pause checks.

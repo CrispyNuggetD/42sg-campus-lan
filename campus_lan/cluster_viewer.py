@@ -204,7 +204,9 @@ class ClusterViewer(ProfileCommands):
                 if not fresh.load_error:self.tracker_data=fresh.data
             except (OSError,ValueError):pass
         players=relationship_overlay(overlay_campus(self.players,[]),self.tracker_data,self.owner,getattr(self,'cohorts',{}))
-        return lobby_lines(players,self.view,self.cluster)
+        from .lobby_view import selection_overlay,selected_details
+        self.selected_summary=selected_details(players,self.focus_location,getattr(self,'focus_name',None))
+        return selection_overlay(players,lobby_lines(players,self.view,self.cluster),self.view,self.cluster,self.focus_location,getattr(self,'focus_name',None))
 
     def rows(self):
         return [''.join(text for text,_ in row) for row in self.segments()]
@@ -262,6 +264,7 @@ class ClusterViewer(ProfileCommands):
                     self.report_profile('Campus occupant or map position changed; select again.')
                     return True
                 self.focus_location=seat(members[0])
+                self.focus_name=members[0].get('name') if len(members)==1 else None
                 self.status='Selected '+', '.join(str(next((n for n,p,_ in roster(self.players) if p.get('name')==player.get('name') and seat(p)==seat(player)),'?'))+' = '+player.get('name','') for player in members)+' at c%dr%ds%d'%self.focus_location
                 if not double:
                     if len(members)==1:
@@ -365,7 +368,8 @@ class ClusterViewer(ProfileCommands):
             entry=next((player for player in self.players if player.get('name','').lower()==login),None)
             location=seat(entry) if entry else None
             if location:
-                self.cluster=location[0];self.view='roster';self.page=0
+                self.cluster=location[0];self.view='map';self.page=0
+                self.focus_location=location;self.focus_name=login;self.focus_pending=True
                 self.status=f'{login} is at c{location[0]}r{location[1]}s{location[2]} · snapshot {age_label(self.stamp)}.'
             else:self.status='Login absent from this snapshot. Press r to refresh.'
             return True
@@ -406,7 +410,7 @@ class ClusterViewer(ProfileCommands):
             def line(y,value):
                 if y<height:screen.addnstr(y,0,value,max(1,width-1))
             line(0,self.heading())
-            line(1,'Auto 30s · r/Enter refresh · /clusters both · /c1 /c2 · Tab map/roster · PgUp/PgDn · q quit')
+            line(1,getattr(self,'selected_summary','') or 'Auto 30s · r/Enter refresh · /clusters both · /c1 /c2 · Tab map/roster · PgUp/PgDn · q quit')
             decision=self.pending_profile_decision
             active=getattr(getattr(self,'consent',None),'active',None)
             description=decision[0] if decision else active[1]+' [y/N]' if active else (
@@ -423,6 +427,12 @@ class ClusterViewer(ProfileCommands):
             content=self.segments() if self.stamp else [[('Waiting for the first campus snapshot…',0)]]
             capacity=max(1,notice_start-content_start-1)
             pages=max(1,(len(content)+capacity-1)//capacity)
+            from .lobby_view import occupant_hits
+            if getattr(self,'focus_pending',False):
+                match=next((row for row,_,_,members in occupant_hits(self.players,self.view,self.cluster)
+                            if any(seat(p)==self.focus_location and p.get('name')==self.focus_name for p in members)),None)
+                if match is not None:self.page=match//capacity
+                self.focus_pending=False
             self.page=min(self.page,pages-1)
             from .lobby_view import occupant_hits
             start=self.page*capacity

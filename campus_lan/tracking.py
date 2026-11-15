@@ -31,7 +31,8 @@ def relationship(value):
 class Tracker:
     def __init__(self,owner):
         self.path=settings_path('tracking-'+hashlib.sha256(owner.lower().encode()).hexdigest()+'.json',config_dir())
-        self.data=dict(schema_version=2,people={},lists={},clusters=dict(enabled=False,include=[],exclude=[],scope='all'))
+        self.data=dict(schema_version=2,people={},lists={},clusters=dict(enabled=False,include=[],exclude=[],scope='all'),arrivals=False)
+        self.arrival_seen=None
         self.campus={};self.peers={};self.rules_error=None;self.load_error=None;self.targets={}
         try:
             stored=json.loads(private_read(self.path))
@@ -52,6 +53,9 @@ class Tracker:
                 for key in ('include','exclude'):
                     if not isinstance(rules[key],list) or any(not isinstance(x,str) for x in rules[key]):raise ValueError('Invalid selectors')
                 self.data.update(people=people,lists=lists,clusters=rules)
+                arrivals=stored.get('arrivals',False)
+                if type(arrivals) is not bool:raise ValueError('Invalid arrivals switch')
+                self.data['arrivals']=arrivals
         except FileNotFoundError:pass
         except (OSError,ValueError,KeyError,TypeError,AttributeError):
             self.load_error='Cannot read relationship configuration; repair the file shown by /track config before making changes.'
@@ -60,6 +64,9 @@ class Tracker:
 
     @property
     def names(self):return list(self.data['people'])
+
+    @property
+    def arrivals_enabled(self):return self.data['arrivals']
 
     @property
     def rules_enabled(self):return self.data['clusters']['enabled'] and bool(self.data['clusters']['include'])
@@ -183,6 +190,12 @@ class Tracker:
         else:raise ValueError('Clusters: c1|c2|all, on|off, include SELECTOR..., exclude SELECTOR..., clear [include|exclude].')
         self.save(candidate)
 
+    def set_arrivals(self, enabled):
+        if type(enabled) is not bool:raise ValueError('Arrivals: on or off.')
+        candidate=deepcopy(self.data);candidate['arrivals']=enabled
+        self.save(candidate)
+        self.arrival_seen=None  # First successful campus snapshot is a silent baseline.
+
     def transitions(self,players,source):
         previous=self.campus if source=='campus' else self.peers
         current={p.get('name','').lower():p for p in players}
@@ -226,11 +239,28 @@ class Tracker:
         # Drop obsolete selectors and bound state to current configured targets.
         for name in list(previous):
             if name not in personal|rules:previous.pop(name,None)
+        if source=='campus' and self.arrivals_enabled:
+            present={n:p for n,p in current.items() if seat(p)}
+            if self.arrival_seen is not None:
+                already={n['login'] for n in notices if 'online' in n['changes']}
+                for name in sorted(set(present)-self.arrival_seen-already):
+                    try:login(name)
+                    except ValueError:continue
+                    notices.append(dict(login=name,source='campus',seat=snapshot(present[name])['seat'],
+                                        verified=True,changes=['online'],previous_seat=None,
+                                        relationship=None,reason='arrivals',warm=False))
+            self.arrival_seen=set(present)
         return notices
 
 
 def describe(notice):
     name=notice['login']
+    if notice.get('reason')=='arrivals':
+        cohort=notice.get('cohort')
+        label='Intake '+str(cohort)+' (locally inferred)' if type(cohort) is int else 'Intake unknown'
+        display=notice.get('display_name')
+        identity=(display+' ('+name+')') if display else name
+        return 'Campus arrival: '+identity, label+' | '+notice.get('seat','unknown')+' | new active API login since the previous snapshot.'
     if notice.get('warm'):
         label={'friends':'friend','mutuals':'mutual','oomf':'oomf'}[notice['relationship']]
         prefix='Your '+label+' '+name

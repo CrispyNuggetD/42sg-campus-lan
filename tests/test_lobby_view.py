@@ -37,7 +37,7 @@ class LobbyView(unittest.TestCase):
         ordered = roster(peers)
         self.assertEqual([p['name'] for _,p,_ in ordered], ['hnah','thtay','home'])
         rows=lobby_lines(peers, 'map', 1)
-        self.assertTrue(any('[#1]' in text and style==GUEST_STYLE for line in rows for text,style in line))
+        self.assertTrue(any('[?1]' in text and style==GUEST_STYLE for line in rows for text,style in line))
         self.assertNotEqual(guest_style('hnah'),1)  # verified green remains reserved
         peers.append(player('other','c1r8s6'))
         self.assertTrue(any('[++]' in text for line in lobby_lines(peers,'map',1) for text,_ in line))
@@ -55,7 +55,7 @@ class LobbyView(unittest.TestCase):
         self.assertEqual(decorated[1]['local_relationship'],'list')
         self.assertNotIn('local_relationship',people[0])
         rows=lobby_lines(decorated,'map',1)
-        self.assertIn('Empty*',''.join(text for text,_ in rows[1]))
+        self.assertIn('>nn< selected',''.join(text for text,_ in rows[1]))
         self.assertTrue(any(style==0 and text=='[06]' for row in rows for text,style in row))
 
     def test_cluster_flavours_and_self_override_relationship_without_guest_spoof(self):
@@ -88,8 +88,8 @@ class LobbyView(unittest.TestCase):
         self.assertIn('friend / I4~',text)
         self.assertIn('friend / I5~',text)
         mapped=lobby_lines(decorated,'map',1)
-        self.assertTrue(any(token=='4:02' and style==FRIEND_STYLE for row in mapped for token,style in row))
-        self.assertTrue(any(token=='5:03' and style==FRIEND_STYLE for row in mapped for token,style in row))
+        self.assertTrue(any(token=='[F2]' and style==FRIEND_STYLE for row in mapped for token,style in row))
+        self.assertTrue(any(token=='[F3]' and style==FRIEND_STYLE for row in mapped for token,style in row))
         self.assertIsNone(decorated[-1]['local_cohort'])
 
     def test_guest_name_cannot_claim_friend_or_list_color(self):
@@ -138,3 +138,35 @@ class LobbyView(unittest.TestCase):
             self.assertIn('/next /prev',''.join(screen.rows[4]))
             self.assertIn('page ',''.join(screen.rows[4]))
             self.assertIn('chat remains visible',screen.text())
+
+
+class SelectionAccessibility(unittest.TestCase):
+    def test_monochrome_relationship_markers_and_intake_text(self):
+        from campus_lan.lobby_view import relationship_badge,map_legend,COHORT_STYLES,API_STYLE
+        people=[dict(name=n,seat='c1r1s'+str(i+1),api_presence=True) for i,n in enumerate(('me','friend','mutual','oomf','tracked','listed','other'))]
+        data={'people':{'friend':{'relationship':'friends'},'mutual':{'relationship':'mutuals'},'oomf':{'relationship':'oomf'},'tracked':{'relationship':'tracked'}},'lists':{'lunch':['listed']}}
+        shown=relationship_overlay(people,data,'me',{'friend':4})
+        self.assertEqual([relationship_badge(p)[0] for p in shown],list('YFMOTLA'))
+        text='\n'.join(''.join(t for t,_ in row) for row in lobby_lines(shown,'roster',1))
+        for badge in ('[Y]','[F]','[M]','[O]','[T]','[L]','[A]'):self.assertIn(badge,text)
+        self.assertIn('I4~',text)
+        self.assertEqual(set(COHORT_STYLES.values()),{API_STYLE})
+        self.assertLessEqual(sum(len(t) for t,_ in map_legend()),75)
+
+    def test_selection_is_persistent_and_does_not_change_hit_geometry(self):
+        from campus_lan.lobby_view import selection_overlay,occupant_hits,SELECTED_STYLE,selected_details
+        players=relationship_overlay([dict(name='friend',seat='c1r8s2',api_presence=True)],{'people':{'friend':{'relationship':'friends'}}})
+        content=lobby_lines(players,'map',1)
+        selected=selection_overlay(players,content,'map',1,(1,8,2),'friend')
+        self.assertTrue(any(text=='>01<' and style==SELECTED_STYLE for row in selected for text,style in row))
+        self.assertEqual([sum(len(t) for t,_ in row) for row in selected],[sum(len(t) for t,_ in row) for row in content])
+        self.assertIn('friend [F: friend]',selected_details(players,(1,8,2),'friend'))
+        changed=[dict(name='replacement',seat='c1r8s2',api_presence=True)]
+        self.assertEqual(selection_overlay(changed,lobby_lines(changed,'map',1),'map',1,(1,8,2),'friend'),lobby_lines(changed,'map',1))
+        self.assertIn('no longer',selected_details(changed,(1,8,2),'friend'))
+
+    def test_shared_seat_selection_is_explicit(self):
+        from campus_lan.lobby_view import selection_overlay
+        players=[dict(name=n,seat='c1r1s1',api_presence=True) for n in ('a','b')]
+        result=selection_overlay(players,lobby_lines(players,'map',1),'map',1,(1,1,1))
+        self.assertTrue(any(text=='>++<' for row in result for text,_ in row))

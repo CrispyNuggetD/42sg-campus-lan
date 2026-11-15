@@ -19,5 +19,5 @@ class ClusterCommandTests(unittest.TestCase):
         self.assertIn('CLUSTER 1', output)
         self.assertIn('CLUSTER 2', output)
         self.assertEqual(sum('CURRENTLY ONLINE -' in line for line in lines), 1)
-        self.assertIn('[#1]', output)
-        self.assertIn('[#2]', output)
+        self.assertIn('[?1]', output)
+        self.assertIn('[?2]', output)

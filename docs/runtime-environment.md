@@ -366,3 +366,28 @@ enrollment regression passed with a fake Singapore owner (seven standalone setup
 tests total). Guide refresh, website build and exported-feature checks passed.
 No actual credential, live API request, phone enrollment or student operation
 was performed. The on-device standalone path still requires user verification.
+
+
+## Accessible cluster selection and post-start arrivals — 15 November 2026 SGT
+
+Cluster selection has persistent >nn< delimiters, shared-seat >++< markers,
+textual relationship badges and a login/relationship/seat details line. Locate
+opens the selected map page; a replacement occupant is not silently selected.
+Cluster headings retain cyan/amber, but inferred intake is text-only and guest/
+API names are neutral instead of competing with relationship colors.
+
+The optional /arrivals on feed uses existing authorized campus snapshots every
+30 seconds. Its first successful snapshot is a silent in-memory baseline. Only
+newly observed active logins generate feed notices; no friends/tracked records
+are added. Snapshot failure preserves comparisons, restart/re-enable rebaselines,
+and known identity/intake uses only private local caches. API/cache freshness
+limits detection: these are active-login observations, not physical arrival times.
+The preference persists; transient observations do not. Desktop delivery retains
+the existing tracking channel opt-outs and no person is messaged by tests.
+
+All 120 selected tests passed: arrivals, tracking, relationships, cluster/lobby
+rendering, click/profile confirmation, campus commands, client, completion,
+portable preferences, notification preferences, shell features and website.
+Tests use fake people, temporary state and mocked API/browser/desktop operations.
+Guide refresh and website build passed. Actual phone color legibility and live
+campus feed delivery remain unverified; no live attendance history was collected.
