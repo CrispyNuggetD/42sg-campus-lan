@@ -17,6 +17,19 @@ The website supports mobile browsers; desktop with a mouse or trackpad gives the
 
 <a id="lan42-in-your-daily-workspace"></a>
 
+## Current workflow
+
+- **Check and update:** HQ shows its client version. `/version` checks the client,
+  host and upstream; `/up` + Tab completes `/update`. Answer **y** to reload all
+  managed local windows/services. Other computers update separately.
+- **Clusters:** shared 30-second snapshots, visible age, independent intake and
+  relationship cues, and seat copying from cached-photo previews. See the
+  [campus guide](docs/campus-guide.md#cluster-freshness-and-refresh-controls).
+- **Arrivals and phones:** `/arrivals on` observes login/seat changes after a
+  silent baseline; fresh iSH profiles can open/focus clusters after API access.
+  Read [iSH setup](docs/getting-started.md#ish-on-iphoneipad-experimental) and
+  [update/reload behavior](docs/hosting.md#check-running-versions).
+
 ## Highlights
 
 <!-- shell-installer-features:start -->

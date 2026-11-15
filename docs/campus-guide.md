@@ -404,7 +404,7 @@ In cluster settings, `c1`/`cluster1` and `c2`/`cluster2` select the location rat
 than being added as logins. The include/exclude lists still contain people or
 cohort selectors. `login:c1` addresses a literal login with that spelling.
 
-Cluster map colors: **magenta** friends/mutuals/oomf; **cyan** members of your named lists; **green** signed-in or explicitly remote-approved LAN42 connections (the roster distinguishes approval from Intra sign-in); **yellow** guests; **blue** API-only logins; **dim** desks with no reported occupant. Friend coloring takes priority over list coloring. Local relationship/list labels stay on your computer; unverified guest names cannot claim friend/list colors. The map legend and roster labels explain the colors. An unreported desk is not proof that it is physically empty.
+Cluster map foreground colors identify locally inferred intake/cohort, repeating after eight colors. Friend, mutual/oomf, list and self relationships add a letter and a dark background band without replacing the cohort hue. For example, `4F09` is intake 4, a friend, roster entry 9. Selection retains that text and color, adds arrows and underline, and pulses its bold emphasis. Unknown-intake API seats are cyan and guests amber. Empty/unreported desks are dim; this is not proof of physical absence. Labels remain useful without color. See [the detailed map legend](#cohorts-alongside-friends-and-lists).
 
 ## Select campus-online people for FORKNITE
 
@@ -471,11 +471,29 @@ and the table's 50-seat limit. `/sabo cohort1` selects a cohort; `cohort 1`
 is two arguments and is rejected. These selectors apply to commands that accept
 people, never to ordinary chat text. `c1` continues to mean physical Cluster 1.
 
+## Cluster freshness and refresh controls
+
+The dedicated clusters window requests the shared campus snapshot every 30 seconds
+while connected, pausing automatic requests during typed input and confirmations.
+The approved host refreshes the underlying campus API cache every 30 seconds;
+HQ counts and pushed cluster rosters use the same completed snapshot generation.
+API pacing and failures can delay updates. `r` or Enter requests a refresh; an
+unchanged cached snapshot keeps its original timestamp rather than pretending
+to be fresh. The header marks data older than two minutes as stale.
+
+If a host connection closes, the last snapshot remains visible. Reopen clusters
+from HQ to reconnect. `/version` in HQ checks the running client, connected host
+and upstream checkout; `/update` followed by **y** reloads managed local windows
+and services after pulling. Updating files alone does not reload old processes.
+
+The C1 schematic includes the R5/R6 dividing wall and bocal room with doorway.
+This is a navigation aid, not a live measurement of the room or occupancy.
+
 ## Campus occupancy in window headers
 
 HQ and every terminal game show `Campus: 17 online (C1:8 | C2:9)` with snapshot
 age. These are campus API logins, not LAN42 participants. The approved host
-loads presence in the background at startup and refreshes every minute through
+loads presence in the background at startup and refreshes every 30 seconds through
 the existing global API pacing; headers receive cached counts about every five
 seconds. Each login counts once; if multiple active records exist, the highest
 location-record ID chooses its cluster. Empty successful crawls show zero;
@@ -490,11 +508,12 @@ operator windows; it overwrites the previous count and is not a history log.
 
 ## Cluster colors and portable preferences
 
-Cluster 1 uses cyan headings and row/seat labels; cluster 2 uses amber. Your own
-signed-in entry has a contrasting white **You** badge in the map and roster,
-including when you also belong to a friend/list category. The local operator
-hnah is recognized in the dedicated clusters window too. Text labels remain
-available without color. Friend/list/status colors retain their meanings.
+Cluster 1 uses cyan headings and row/seat labels; cluster 2 uses amber. Occupied
+seat foregrounds identify intake; relationship/self letters and background bands
+remain independent. The selected occupant keeps those cues while arrows,
+underline and pulsing bold weight mark selection. The local operator hnah is
+recognized in the dedicated clusters window too. Text labels remain available
+without color.
 
 Friends, relationships, named lists, campus arrival rules, cluster auto-open and
 login, notification, search, audio and saved popup preferences are portable JSON preferences, keyed by your login rather than

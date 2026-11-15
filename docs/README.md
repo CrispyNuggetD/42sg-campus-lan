@@ -7,6 +7,17 @@
 Choose the task you need below. For every command in one searchable page, use
 the [command reference](quick-guide.html).
 
+## Freshness, versions and today’s controls
+
+- [Check versions and update/reload](hosting.md#check-running-versions): `/version`,
+  `/up` + Tab, and package-wide reload confirmation.
+- [Cluster freshness](campus-guide.md#cluster-freshness-and-refresh-controls):
+  30-second snapshots, stale data and reconnecting.
+- [Campus/social guide](campus-guide.md): intake/relationship selection cues,
+  photo name/login/seat copying, `/friend` and the opt-in arrivals feed.
+- [iSH setup](getting-started.md#ish-on-iphoneipad-experimental): main-shell launch,
+  viewport guidance, startup and optional standalone API enrollment.
+
 ## Using LAN42
 
 | Guide | What is inside |

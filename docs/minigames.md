@@ -163,7 +163,7 @@ freeze their timing display.
 In a FORKNITE room, the signed-in room host can use `/sabo online [COUNT]` for
 stand-ins from the host's last campus API presence snapshot. These users need
 not run LAN42. The snapshot age is reported; this command does not refresh it.
-The approved host seeds it at startup and refreshes every minute; if the crawl
+The approved host seeds it at startup and refreshes every 30 seconds; if the crawl
 is still pending or has failed, `/clusters` retries it. A missing or
 empty snapshot never selects the whole directory or substitutes sign-ins.
 
