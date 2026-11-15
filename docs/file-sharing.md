@@ -163,3 +163,12 @@ Shared locations allow 6 additions/minute (24 MiB); your own member folder allow
 ## Ubuntu desktop shortcuts
 
 Startup asks separately about a **dock launcher** and a **Files sidebar bookmark**, skipping existing entries. Enter declines. `/koel dock` asks to pin the launcher; `/koel bookmark` (or `/koel sidebar`) asks to pin `~/KoelDrop` inside GNOME Files. `/koel favorite` remains a legacy alias for the dock launcher. Neither shortcut joins a flock or approves transfers.
+
+## Temporary synchronization errors
+
+A failed automatic sync keeps local files and retries on the worker interval
+(normally five seconds). HQ reports the failure reason and announces recovery
+after a successful retry; an old warning is not a permanent pause indicator.
+`/koel pending` lists offers, while `/koel sync` requests another pass. Persistent
+failures can require renewed sign-in/campus presence, group membership or fixing
+folder permissions/quotas. Client and host versions can be checked with `/version`.

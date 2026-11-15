@@ -1,5 +1,7 @@
 """Opt-in KoelDrop worker. Only a deliberately joined dedicated folder is polled."""
 import queue
+import errno
+import os
 import hashlib
 import re
 import threading
@@ -150,10 +152,21 @@ class Courier:
                     operation,args='sync',()
                 if operation=='stop':break
                 try:
-                    self.perform(operation,args);failed=False
-                except (OSError,ValueError,KeyError,TypeError):
+                    self.perform(operation,args)
+                    if failed and operation == 'sync':
+                        self.emit(lines=['KoelDrop sync recovered. Automatic sync is running again; local copies were kept.'])
+                    failed=False
+                except (OSError,ValueError,KeyError,TypeError) as error:
                     if not failed or operation!='sync':
-                        self.emit(lines=['KoelDrop could not complete '+operation+'. Sharing is paused; local copies are kept. Check sign-in/campus seat, membership, folder permissions and quotas; /koel pending'])
+                        from .security import Conflict,Limit
+                        if isinstance(error,(Denied,Conflict,Limit)):
+                            reason=' '.join(str(error).split())[:180]
+                        elif isinstance(error,OSError):
+                            reason=os.strerror(error.errno) if error.errno in errno.errorcode else 'Local storage or connection unavailable.'
+                        else:
+                            reason='Invalid sync data; update both client and host, then retry.'
+                        retry=' Automatic sync will retry in '+str(self.interval)+' seconds.' if operation=='sync' and self.sync else ''
+                        self.emit(lines=['KoelDrop could not complete '+operation+': '+reason+retry+' Local copies are kept; /koel pending lists offers.'])
                     failed=True
                 finally:
                     if operation in ('create','accept','flock'):self.join_pending=None
