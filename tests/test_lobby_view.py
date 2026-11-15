@@ -23,6 +23,33 @@ class Canvas:
 
 
 class LobbyView(unittest.TestCase):
+    def test_c1_wall_and_bocal_keep_real_seats_clickable(self):
+        from campus_lan.lobby_view import occupant_hits
+        people=[player('above','c1r6s6'),player('below','c1r5s5')]
+        rows=[''.join(text for text,_ in line) for line in lobby_lines(people,'map',1)]
+        wall=next(i for i,row in enumerate(rows) if 'WALL R5/R6' in row)
+        self.assertLess(next(i for i,row in enumerate(rows) if row.startswith('R6')),wall)
+        self.assertGreater(next(i for i,row in enumerate(rows) if row.startswith('R5')),wall)
+        self.assertTrue(rows[wall].endswith('+          |'))
+        self.assertEqual(sum('bocal' in row for row in rows),1)
+        self.assertFalse(any('staff room' in row or 'no S07' in row for row in rows))
+        empty_rows=[''.join(text for text,_ in line) for line in lobby_lines([],'map',1)]
+        seat9=next(row for row in empty_rows if '[09]' in row and row.startswith('    '))
+        right=seat9.index('[09]')+3
+        top=next(row for row in rows if '+---    ---+' in row)
+        bottom=next(row for row in rows if '+----------+' in row)
+        self.assertEqual(len(top)-1,right)
+        self.assertEqual(len(bottom)-1,right)
+        self.assertEqual(top[28:],'+---    ---+')
+        hits=occupant_hits(people,'map',1)
+        map_hits=[hit for hit in hits if hit[0]<rows.index('CURRENTLY ONLINE - map markers match these roster numbers')]
+        self.assertEqual(len(map_hits),2)
+        for y,left,right,members in map_hits:
+            self.assertLessEqual(right,28)
+            self.assertNotEqual(y,wall)
+        c2='\n'.join(''.join(text for text,_ in line) for line in lobby_lines([],'map',2))
+        self.assertNotIn('bocal',c2);self.assertNotIn('WALL R5/R6',c2)
+
     def test_layout_and_stagger_match_screenshots(self):
         self.assertEqual(sum(LAYOUT[1].values()),57)
         self.assertEqual(sum(LAYOUT[2].values()),93)

@@ -166,6 +166,10 @@ def lobby_lines(players, view='roster', cluster=1):
         if s and s[0]==cluster:
             occupied.setdefault((s[1],s[2]), []).append((n,p))
     for row,count in LAYOUT[cluster].items():
+        if cluster==1 and row==6:
+            lines.append(plain(' '*28+'+---    ---+'))
+        if cluster==1 and row==5:
+            lines.append(plain('    '+' WALL R5/R6 '.center(24,'=')+'+          |'))
         for parity in (0,1):
             line = [(f'R{row:<2} ' if parity==0 else '    ',CLUSTER_STYLES[cluster])]
             for desk in range(1,count+1):
@@ -184,7 +188,12 @@ def lobby_lines(players, view='roster', cluster=1):
                     token = '[++]' if len(members)>1 else (intake+badge+number if len(intake)==1 else intake+badge+(str(n) if n<10 else '*'))
                     style = player_style(p)
                 line.append((token,style))
+            if cluster==1 and row in (5,6):
+                label='bocal' if (row,parity)==(6,1) else ''
+                line.append(('|'+label.center(10)+'|',CLUSTER_STYLES[1]))
             lines.append(line)
+        if cluster==1 and row==5:
+            lines.append(plain(' '*28+'+----------+'))
     lines.append([('Intake colors: ',0)]+[(f'I{number} ',COHORT_STYLES[number]) for number in range(1,9)]+[('(~ inferred)',0)])
     lines += [plain(''), plain('CURRENTLY ONLINE - map markers match these roster numbers')]
     lines.extend(player_line(n,p,s) for n,p,s in entries)
@@ -217,9 +226,9 @@ def occupant_hits(players, view='map', cluster=0):
             current_row=None
             continue
         if first.startswith('CURRENTLY ONLINE'):current_row=None
-        if current_cluster and current_row and len(segments)==LAYOUT[current_cluster][current_row]+1:
+        if current_cluster and current_row and (row or first=='    ') and len(segments)>=LAYOUT[current_cluster][current_row]+1:
             x=len(first)
-            for desk,(text,_) in enumerate(segments[1:],1):
+            for desk,(text,_) in enumerate(segments[1:LAYOUT[current_cluster][current_row]+1],1):
                 members=occupied.get((current_cluster,current_row,desk),[])
                 if text.strip() and members:hits.append((y,x,x+len(text),members))
                 x+=len(text)
