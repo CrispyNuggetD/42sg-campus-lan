@@ -1,8 +1,16 @@
 {
-  "version": "2.30.2-beta.1",
-  "date": "2026-11-15T11:43:39+08:00",
-  "source": "86c49b9cb6ac47a0525d8705298ea0725ea3106e",
+  "version": "2.30.3-beta.1",
+  "date": "2026-11-15T11:53:54+08:00",
+  "source": "81964257631780e8d81d138591f07ae4af7023b9",
   "history": [
+    {
+      "version": "2.30.3-beta.1",
+      "date": "2026-11-15T11:53:54+08:00",
+      "kind": "patch",
+      "notes": [
+        "fix(ish): launch from main shell and guide phone viewport setup"
+      ]
+    },
     {
       "version": "2.30.2-beta.1",
       "date": "2026-11-15T11:43:39+08:00",
@@ -655,5 +663,5 @@
       ]
     }
   ],
-  "runtime_sha256": "6f6335f8ea913a6f2e47e78a2380f1a1cf634563abaa3fa4c9f021ab49528196"
+  "runtime_sha256": "b821fcf0da1e1e78f47bdff092a8d1f3ab330fac613bab7bb05863eb0081b8d6"
 }
