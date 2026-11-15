@@ -1,8 +1,16 @@
 {
-  "version": "2.30.3-beta.1",
-  "date": "2026-11-15T11:53:54+08:00",
-  "source": "81964257631780e8d81d138591f07ae4af7023b9",
+  "version": "2.31.0-beta.1",
+  "date": "2026-11-15T11:57:07+08:00",
+  "source": "2ae90e59933b736ecff39156069858f1ac01df29",
   "history": [
+    {
+      "version": "2.31.0-beta.1",
+      "date": "2026-11-15T11:57:07+08:00",
+      "kind": "minor",
+      "notes": [
+        "feat(friends): track and label friends across LAN42 views"
+      ]
+    },
     {
       "version": "2.30.3-beta.1",
       "date": "2026-11-15T11:53:54+08:00",
@@ -663,5 +671,5 @@
       ]
     }
   ],
-  "runtime_sha256": "b821fcf0da1e1e78f47bdff092a8d1f3ab330fac613bab7bb05863eb0081b8d6"
+  "runtime_sha256": "bcb8b4a782aee392cdb26ca47f326a48684ba2b690c8824900c6b496e553cd93"
 }
