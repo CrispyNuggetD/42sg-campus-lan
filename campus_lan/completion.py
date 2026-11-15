@@ -6,7 +6,7 @@ COMMANDS = ('/core','/quiet','/exams','/search','/key4','/changelog','/setup','/
             '/help', '/info', '/info_campus', '/home', '/host', '/invite', '/invite-room', '/join', '/leave',
             '/lobby', '/map', '/next', '/meals', '/notify', '/practice', '/prev', '/preset', '/profile', '/quit', '/settings',
             '/restart', '/roster', '/rooms', '/signin', '/start', '/stop', '/status', '/storm', '/timings',
-            '/update', '/upgrade', '/vote', '/who')
+            '/update', '/vote', '/who')
 
 
 def complete(text):

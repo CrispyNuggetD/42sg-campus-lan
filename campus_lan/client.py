@@ -66,7 +66,7 @@ HELP = [
     '/core [open|signin|visualizer|source]: external CORE Game by 42core-team | /core clone: separate source clone',
     '/koel flock once|always|never|ask: host-started 42SG flock | /koel flock-dir PATH: service root; local copies are kept',
     '/roadmap koeldrop | /koel help: campus file sharing; /koel create | /koel pending',
-    '/update (or /upgrade): update package + reload local instances | /restart: choose this window or all local LAN42 tabs',
+    '/update: pull updates, then ask to reload all local tabs/services | /restart: reload without pulling',
     'Chat: type and Enter. Tab completes /commands and games. PgUp/PgDn scroll. Tetris: Tab toggles play/chat.',
     'Tetris play: arrows or WASD move/rotate, Space drops. Shared board!',
     'Bluff: identify each entry author in order; own entry is ignored in scoring.',

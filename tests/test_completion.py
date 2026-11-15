@@ -3,6 +3,10 @@ from campus_lan.completion import complete
 
 
 class Completion(unittest.TestCase):
+    def test_update_has_one_unambiguous_completion(self):
+        self.assertEqual(complete('/up'), ('/update ', ['/update']))
+        self.assertEqual(complete('/upd'), ('/update ', ['/update']))
+
     def test_commands_and_games(self):
         self.assertEqual(complete('/sig'),('/signin ',['/signin']))
         self.assertEqual(complete('/rest'),('/restart ',['/restart']))

@@ -157,9 +157,13 @@ as the fallback when Linux `notify-send` isn't available.
 
 ## Update the whole LAN42 package
 
-`/update` (alias `/upgrade`) is LAN42's global package update: it fast-forwards
-this checkout and notifies all updated local HQ/game clients, managed lobby
-nodes and supervised FORKNITE servers to reload. Active local matches end.
+`/update` is the single advertised package-update command. Type `/up` then Tab
+to complete it. `/upgrade` remains accepted as a compatibility alias but is not
+offered in completion. It fast-forwards this checkout, then asks before notifying
+local HQ/game clients, managed lobby nodes and supervised FORKNITE servers to
+reload. Answer **y** to activate the update everywhere locally; Enter/No leaves
+other processes on their running code and restarts only the initiating window.
+Active local matches end on a package-wide reload.
 Each computer updates its own checkout; no command restarts a friend's machine.
 `/restart` asks whether to reload all local LAN42 tabs and host services without
 pulling. Answer **y** for all; Enter/No restarts only the initiating terminal.
